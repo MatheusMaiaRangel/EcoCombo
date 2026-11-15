@@ -1,0 +1,18 @@
+{
+  "name": "ecocombo-3d",
+  "private": true,
+  "version": "0.1.0",
+  "description": "EcoCombo 3D — MVP Sprint 1 (E1-01, E1-02, E2-01, E3-01, E3-02, E4-01)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
