@@ -88,7 +88,7 @@ Para incentivar o jogador a dominar e variar todas as combinações das 4 cores 
 
 ---
 
-## 4. Regras de Negócio do Sistema (`RN01` a `RN14`)
+## 4. Regras de Negócio do Sistema (`RN01` a `RN15`)
 
 * **RN01 (Padrão de 4 Cores CONAMA):** Os elementos de reciclagem seguem as $4\text{ cores}$ oficiais: Vermelho/Plástico (`1`/`Q`), Azul/Papel (`2`/`E`), Verde/Vidro (`3`/`R`) e Amarelo/Metal (`4`/`F`).
 * **RN02 (Movimentação Isométrica e Mira):** O protagonista se move livremente pela arena 3D com câmera isométrica usando `WASD` e mira na direção do cursor do mouse (`Raycaster` + Clique Esquerdo).
@@ -104,6 +104,7 @@ Para incentivar o jogador a dominar e variar todas as combinações das 4 cores 
 * **RN12 (Execução Web Multiplataforma sem Login):** Execução direta no navegador via Vite + Three.js + WebGL sem exigir login ou instalação, compatível com Linux/Wayland (CachyOS com Niri).
 * **RN13 (Privacidade e LGPD no Ranking Local):** Recordes locais em `localStorage` restritos a apelido curto ($3\text{ a }12\text{ caracteres}$), sem dados sensíveis e com limpeza total pelo usuário.
 * **RN14 (Catálogo de Receitas e Educação Ambiental):** Exibição das receitas de fusão dos materiais recicláveis e seu impacto ambiental.
+* **RN15 (Sincronização Obrigatória com GitHub Projects):** Sempre que uma nova funcionalidade/estória for solicitada, iniciada, concluída ou cancelada durante o desenvolvimento, as Issues e o quadro do GitHub Projects (`MatheusMaiaRangel/EcoCombo`) devem ser atualizados imediatamente (`Status`, `Sprint`, `Estimativa`, `Prioridade` e vínculo de sub-issue ao épico).
 
 ---
 
