@@ -1,0 +1,815 @@
+:root {
+  --bg-deep: #14121d;
+  --panel-width: 350px;
+  --bottom-bar-height: 54px;
+
+  /* Cores Oficiais CONAMA (RN01) */
+  --conama-plastic: #FF3B30;
+  --conama-paper: #007AFF;
+  --conama-glass: #34C759;
+  --conama-metal: #FFCC00;
+
+  /* Paleta Until Then + Estrutura Capsule */
+  --ut-warm-amber: #f4a261;
+  --ut-sun-gold: #ffd166;
+  --ut-slate-dark: #1d1e2c;
+  --ut-slate-mid: #2b2d42;
+  --ut-metal-light: #c9bfa8;
+  --ut-metal-mid: #9c927e;
+  --ut-metal-dark: #5c5446;
+  --capsule-salmon: #d48c78;
+  --capsule-grid-line: rgba(74, 88, 138, 0.48);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  color: #f8f5f0;
+  font-family: 'Space Grotesk', sans-serif;
+  image-rendering: pixelated;
+}
+
+#app-shell {
+  display: grid;
+  grid-template-columns: var(--panel-width) 1fr;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   PAINEL LATERAL ESQUERDO FIXO (E4-01 — Estrutura Capsule + Arte Until Then)
+   ========================================================================== */
+#left-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: var(--panel-width);
+  height: 100vh;
+  border-right: 4px solid #2b232a;
+  /* Fundo em grade diagonal isométrica inspirado diretamente em @Docs/2d.webp */
+  background-color: #c28d7c;
+  background-image:
+    linear-gradient(30deg, transparent 46%, var(--capsule-grid-line) 47%, var(--capsule-grid-line) 53%, transparent 54%),
+    linear-gradient(150deg, transparent 46%, var(--capsule-grid-line) 47%, var(--capsule-grid-line) 53%, transparent 54%),
+    linear-gradient(180deg, rgba(25, 22, 38, 0.18) 0%, rgba(20, 18, 30, 0.55) 100%);
+  background-size: 36px 21px, 36px 21px, 100% 100%;
+  position: relative;
+  z-index: 20;
+  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.55);
+}
+
+.sidebar-brand {
+  background: linear-gradient(180deg, #d86c58 0%, #b85240 100%);
+  border-bottom: 4px solid #3d2224;
+  padding: 10px 12px 8px;
+  text-align: center;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+.brand-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.35rem;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow:
+    3px 3px 0 #3d2224,
+    -2px -2px 0 #3d2224,
+    2px -2px 0 #3d2224,
+    -2px 2px 0 #3d2224;
+}
+
+.brand-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+  letter-spacing: 1.5px;
+  color: #ffe8d6;
+  margin-top: 3px;
+}
+
+/* Palco Superior do Personagem (Meio-corpo canalizando o combo) */
+.character-stage-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+#character-upper-canvas {
+  width: 260px;
+  height: 235px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 0 rgba(28, 20, 32, 0.65));
+}
+
+.conjured-badge {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 18, 30, 0.9);
+  border: 2px solid #ffd166;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: 'VT323', monospace;
+  font-size: 1.08rem;
+  letter-spacing: 0.8px;
+  color: #ffd166;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
+  transition: all 0.15s ease;
+}
+
+.conjured-badge.empty {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #dcd6f7;
+}
+
+/* Console Metálico Inferior (Inspirado no bloco de baixo de @Docs/2d.webp) */
+.sidebar-hud-console {
+  background: linear-gradient(180deg, #b8ae99 0%, #998f7a 100%);
+  border-top: 4px solid #3c352d;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: inset 0 3px 0 #e6decb;
+}
+
+.console-top-row {
+  display: grid;
+  grid-template-columns: 122px 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* Moldura do Retrato 2D Reativo */
+.portrait-frame-bezel {
+  background: #ded6c6;
+  border: 3px solid #3c352d;
+  border-radius: 6px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  box-shadow: inset 0 2px 0 #ffffff, 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.portrait-frame-bezel.state-stale {
+  border-color: #d90429;
+  background: #f5ccd0;
+  animation: pulseStaleBorder 0.7s infinite alternate;
+}
+
+.portrait-frame-bezel.state-hit {
+  border-color: #ff3b30;
+  background: #ff9999;
+}
+
+#character-portrait-canvas {
+  width: 104px;
+  height: 104px;
+  background: #272638;
+  border: 3px solid #4a4238;
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+
+.portrait-mood-tag {
+  margin-top: 4px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  padding: 4px 2px;
+  background: #2b2d42;
+  color: #64dfdf;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+/* Coluna Direita do Console: Multiplicador + Slots */
+.console-Telemetry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.telemetry-card {
+  background: #232232;
+  border: 3px solid #3c352d;
+  border-radius: 5px;
+  padding: 6px 8px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+}
+
+.telemetry-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  color: #a8a4c0;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+/* Visor do Multiplicador (RN04 / E3-02 / E4-01) */
+.multiplier-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+#multiplier-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.25rem;
+  color: #00f5d4;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.65);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.multiplier-card.state-max #multiplier-value {
+  color: #00f5d4;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.75);
+}
+
+.multiplier-card.state-mid #multiplier-value {
+  color: #ffd166;
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.65);
+}
+
+.multiplier-card.state-low #multiplier-value {
+  color: #f8961e;
+  text-shadow: 0 0 8px rgba(248, 150, 30, 0.65);
+}
+
+.multiplier-card.state-stale {
+  border-color: #ff3b30;
+  background: #361820;
+}
+
+.multiplier-card.state-stale #multiplier-value {
+  color: #ff4d6d;
+  text-shadow: 0 0 10px rgba(255, 77, 109, 0.9);
+}
+
+.repeat-tag {
+  font-family: 'VT323', monospace;
+  font-size: 0.95rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e0fbfc;
+}
+
+.decay-steps-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  font-family: 'VT323', monospace;
+  font-size: 0.92rem;
+  color: #7c7894;
+}
+
+.decay-step {
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+.decay-step.active {
+  background: #ffd166;
+  color: #191724;
+  font-weight: 700;
+}
+
+.decay-step[data-step="3"].active {
+  background: #ff3b30;
+  color: #ffffff;
+}
+
+/* Slots de Fusão Elemental */
+.combo-slots-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.element-slot {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: #181724;
+  min-height: 34px;
+  transition: all 0.12s ease;
+}
+
+.element-slot.empty {
+  opacity: 0.7;
+}
+
+.slot-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  background: #323048;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.slot-name {
+  font-family: 'VT323', monospace;
+  font-size: 1.02rem;
+  color: #f1faee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-plus {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  color: #ffd166;
+}
+
+/* Card da Receita / Objeto Reciclado Formado */
+.recipe-display-card {
+  background: #1f1e2e;
+  border: 3px solid #3c352d;
+  border-radius: 5px;
+  padding: 7px 9px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.recipe-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.recipe-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: #a8a4c0;
+}
+
+.recipe-hint {
+  font-family: 'VT323', monospace;
+  font-size: 0.9rem;
+  color: #ffd166;
+}
+
+.recipe-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.68rem;
+  color: #ffffff;
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+
+.recipe-desc {
+  font-size: 0.76rem;
+  color: #c5c3d6;
+  line-height: 1.25;
+}
+
+/* Alerta de Combo Saturado 1x (RN04) */
+.stale-combo-alert {
+  background: #d90429;
+  border: 2px solid #ffccd5;
+  color: #ffffff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  line-height: 1.4;
+  text-align: center;
+  padding: 6px 8px;
+  border-radius: 4px;
+  animation: flashAlert 0.45s infinite alternate;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes flashAlert {
+  from {
+    background: #d90429;
+    transform: scale(1);
+  }
+  to {
+    background: #9b001a;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes pulseStaleBorder {
+  from {
+    box-shadow: 0 0 0 rgba(255, 59, 48, 0);
+  }
+  to {
+    box-shadow: 0 0 12px rgba(255, 59, 48, 0.9);
+  }
+}
+
+/* Barra de Pureza Ambiental */
+.purity-block {
+  background: #232232;
+  border: 3px solid #3c352d;
+  border-radius: 5px;
+  padding: 6px 9px;
+}
+
+.purity-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  color: #e0fbfc;
+  margin-bottom: 5px;
+}
+
+.purity-bar-track {
+  width: 100%;
+  height: 12px;
+  background: #12111a;
+  border: 2px solid #4a455c;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.purity-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34c759 0%, #00f5d4 100%);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+/* Botões / Pílulas das 4 Cores CONAMA */
+.conama-legend {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.conama-key-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 3px;
+  border-radius: 4px;
+  border: 2px solid #2b2520;
+  cursor: pointer;
+  color: #ffffff;
+  font-family: 'VT323', monospace;
+  transition: transform 0.08s ease, filter 0.12s ease;
+}
+
+.conama-key-pill:hover {
+  filter: brightness(1.15);
+}
+
+.conama-key-pill:active,
+.conama-key-pill.pressed {
+  transform: translateY(2px) scale(0.97);
+}
+
+.conama-key-pill.plastic {
+  background: linear-gradient(180deg, #ff5247 0%, #c9251b 100%);
+}
+
+.conama-key-pill.paper {
+  background: linear-gradient(180deg, #268fff 0%, #0058b8 100%);
+}
+
+.conama-key-pill.glass {
+  background: linear-gradient(180deg, #4cd96c 0%, #1f993c 100%);
+}
+
+.conama-key-pill.metal {
+  background: linear-gradient(180deg, #ffd633 0%, #c79c00 100%);
+  color: #1b1708;
+}
+
+.key-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.elem-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* ==========================================================================
+   COLUNA PRINCIPAL: ARENA ISOMÉTRICA 3D + BARRA INFERIOR (STAGE / SCORE)
+   ========================================================================== */
+#main-stage-column {
+  display: grid;
+  grid-template-rows: 1fr var(--bottom-bar-height);
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+#arena-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #13111c;
+  cursor: crosshair;
+}
+
+#three-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Overlay de Controles Superiores */
+.arena-top-overlay {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.control-chip {
+  background: rgba(20, 18, 32, 0.82);
+  border: 2px solid rgba(244, 162, 97, 0.55);
+  border-radius: 4px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  color: #f8f5f0;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+
+.control-chip kbd {
+  background: #322f46;
+  border: 1px solid #ffd166;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin: 0 2px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  color: #ffd166;
+}
+
+.audio-btn {
+  pointer-events: auto;
+  background: rgba(25, 24, 38, 0.9);
+  border: 2px solid #ffd166;
+  color: #ffd166;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.58rem;
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.audio-btn:hover {
+  background: #ffd166;
+  color: #191826;
+}
+
+/* Textos Flutuantes de Dano / Pontos / Multiplicador na Arena 3D */
+#floating-texts-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 12;
+}
+
+.floating-combat-text {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  text-shadow:
+    2px 2px 0 #111,
+    -1px -1px 0 #111,
+    1px -1px 0 #111,
+    -1px 1px 0 #111;
+  animation: floatUpFade 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes floatUpFade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(0.85);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -44px) scale(0.95);
+  }
+}
+
+/* Modal de Pureza 0% (RN11) */
+.arena-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 12, 22, 0.82);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.arena-modal-card {
+  background: #232134;
+  border: 4px solid #ff3b30;
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-width: 460px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75);
+}
+
+.modal-badge {
+  display: inline-block;
+  background: #ff3b30;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.58rem;
+  padding: 5px 10px;
+  border-radius: 3px;
+  margin-bottom: 12px;
+}
+
+.arena-modal-card h2 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.15rem;
+  color: #ffd166;
+  margin-bottom: 10px;
+}
+
+.arena-modal-card p {
+  font-size: 0.9rem;
+  color: #d8d4e8;
+  line-height: 1.45;
+  margin-bottom: 18px;
+}
+
+.modal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.modal-stat-item {
+  background: #171524;
+  border: 2px solid #3f3b5c;
+  border-radius: 5px;
+  padding: 10px 6px;
+}
+
+.stat-label {
+  display: block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.48rem;
+  color: #9e99b8;
+  margin-bottom: 6px;
+}
+
+.stat-num {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.95rem;
+  color: #00f5d4;
+}
+
+.btn-primary-retro {
+  width: 100%;
+  background: linear-gradient(180deg, #34c759 0%, #22943e 100%);
+  border: 3px solid #e9f5ec;
+  border-radius: 5px;
+  padding: 12px 16px;
+  color: #ffffff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.72rem;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #135423;
+}
+
+.btn-primary-retro:hover {
+  filter: brightness(1.1);
+}
+
+/* Barra Inferior de STAGE e SCORE (Inspirada diretamente em @Docs/2d.webp — E4-01) */
+#bottom-status-bar {
+  height: var(--bottom-bar-height);
+  background: #483848;
+  border-top: 4px solid #2b212b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  position: relative;
+  z-index: 20;
+  box-shadow: inset 0 3px 0 #705b6d;
+}
+
+.status-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.05rem;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #211821;
+}
+
+.status-prefix {
+  color: #f8edeb;
+}
+
+.status-number {
+  color: #ffd166;
+}
+
+.enemies-pill {
+  margin-left: 8px;
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+  background: rgba(20, 16, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #ffcad4;
+}
+
+/* Recorte Central Trapezoidal idêntico à barra inferior de Capsule (@Docs/2d.webp) */
+.status-bar-center-notch {
+  background: #705b6d;
+  border: 3px solid #2b212b;
+  border-bottom: none;
+  padding: 6px 18px;
+  border-radius: 8px 8px 0 0;
+  transform: translateY(-4px);
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  color: #fff3b0;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25);
+}
+
+@media (max-width: 960px) {
+  :root {
+    --panel-width: 300px;
+  }
+  .brand-title {
+    font-size: 1.05rem;
+  }
+  .status-bar-side {
+    font-size: 0.82rem;
+  }
+}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoCombo 3D — MVP Sprint 1 (HD-2D Isometric Action)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app-shell">
+    <!-- PAINEL LATERAL ESQUERDO FIXO (Estrutura inspirada em Capsule @Docs/2d.webp + Arte Until Then @Docs/until-then-2.webp — E4-01) -->
+    <aside id="left-sidebar" aria-label="Painel do Protagonista e Estado de Combate">
+      <!-- Banner Superior Estilo Capsule -->
+      <header class="sidebar-brand">
+        <div class="brand-title">ECOCOMBO</div>
+        <div class="brand-subtitle">ARENA 2.5D // CONAMA</div>
+      </header>
+
+      <!-- Área Superior do Personagem Canalizando o Combo (Inspirado em Capsule + Estética Until Then) -->
+      <div class="character-stage-wrapper">
+        <canvas id="character-upper-canvas" width="260" height="250"></canvas>
+        <!-- Tag flutuante do objeto/energia sintetizado nas mãos -->
+        <div id="conjured-floating-badge" class="conjured-badge empty">
+          <span id="conjured-badge-text">CANALIZE 2 CORES (1-4 / QERF)</span>
+        </div>
+      </div>
+
+      <!-- Painel Metálico Inferior do HUD Lateral (Retrato Reativo + Slots + Multiplicador + Pureza) -->
+      <section class="sidebar-hud-console">
+        <div class="console-top-row">
+          <!-- Moldura do Retrato Reativo 2D (Canto Inferior Esquerdo estilo Capsule) -->
+          <div class="portrait-frame-bezel" id="portrait-bezel">
+            <div class="bezel-screws"></div>
+            <canvas id="character-portrait-canvas" width="112" height="112"></canvas>
+            <div id="portrait-mood-tag" class="portrait-mood-tag">PRONTO</div>
+          </div>
+
+          <!-- Coluna Direita do Console: Multiplicador + Slots CONAMA -->
+          <div class="console-Telemetry">
+            <!-- Visor do Multiplicador Decrescente (E3-02 / E4-01) -->
+            <div id="multiplier-box" class="telemetry-card multiplier-card state-max">
+              <div class="telemetry-label">MULTIPLICADOR</div>
+              <div class="multiplier-value-row">
+                <span id="multiplier-value">4.0x</span>
+                <span id="repeat-counter-tag" class="repeat-tag">VARIADO (R=0)</span>
+              </div>
+              <div class="decay-steps-bar" aria-label="Escala de Decaimento por Repetição">
+                <span class="decay-step active" data-step="0">4x</span>
+                <span class="decay-arrow">→</span>
+                <span class="decay-step" data-step="1">2.5x</span>
+                <span class="decay-arrow">→</span>
+                <span class="decay-step" data-step="2">1.5x</span>
+                <span class="decay-arrow">→</span>
+                <span class="decay-step" data-step="3">1x</span>
+              </div>
+            </div>
+
+            <!-- Visor dos 2 Slots de Elementos Carregados (E3-01 / E4-01) -->
+            <div class="telemetry-card slots-card">
+              <div class="telemetry-label">FUSÃO ELEMENTAL</div>
+              <div class="combo-slots-row">
+                <div id="slot-0" class="element-slot empty">
+                  <span class="slot-icon">?</span>
+                  <span class="slot-name">SLOT 1</span>
+                </div>
+                <span class="slot-plus">+</span>
+                <div id="slot-1" class="element-slot empty">
+                  <span class="slot-icon">?</span>
+                  <span class="slot-name">SLOT 2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visor da Receita / Objeto ou Energia Reciclada Formada -->
+        <div id="recipe-display-card" class="recipe-display-card">
+          <div class="recipe-header-row">
+            <span class="recipe-label">OBJETO / ENERGIA PRONTA:</span>
+            <span id="recipe-Action-hint" class="recipe-hint">CLIQUE ESQ. (LMB) DISPARA</span>
+          </div>
+          <div id="recipe-name" class="recipe-name">Aguardando 2 elementos...</div>
+          <div id="recipe-desc" class="recipe-desc">Combine 2 cores (1/Q, 2/E, 3/R, 4/F) e clique no bicho na arena.</div>
+        </div>
+
+        <!-- Alerta de Combo Repetido em 1.0x (RN04 / E3-02 / E4-01) -->
+        <div id="stale-combo-alert" class="stale-combo-alert hidden" role="alert">
+          ⚠ 1x — COMBO REPETIDO! VARIE OS RECICLÁVEIS!
+        </div>
+
+        <!-- Barra de Pureza / Integridade Ambiental (E2-01 / E4-01 / RN11) -->
+        <div class="purity-block">
+          <div class="purity-header">
+            <span>PUREZA AMBIENTAL</span>
+            <span id="purity-value">100%</span>
+          </div>
+          <div class="purity-bar-track">
+            <div id="purity-bar-fill" class="purity-bar-fill" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- Guia Rápido das 4 Cores CONAMA (RN01) -->
+        <div class="conama-legend" aria-label="Atalhos das 4 Cores da Reciclagem CONAMA">
+          <button type="button" class="conama-key-pill plastic" data-element="PLASTIC" title="Plástico (Tecla 1 ou Q)">
+            <span class="key-badge">1/Q</span>
+            <span class="elem-label">Plástico</span>
+          </button>
+          <button type="button" class="conama-key-pill paper" data-element="PAPER" title="Papel (Tecla 2 ou E)">
+            <span class="key-badge">2/E</span>
+            <span class="elem-label">Papel</span>
+          </button>
+          <button type="button" class="conama-key-pill glass" data-element="GLASS" title="Vidro (Tecla 3 ou R)">
+            <span class="key-badge">3/R</span>
+            <span class="elem-label">Vidro</span>
+          </button>
+          <button type="button" class="conama-key-pill metal" data-element="METAL" title="Metal (Tecla 4 ou F)">
+            <span class="key-badge">4/F</span>
+            <span class="elem-label">Metal</span>
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DIREITA: VIEWPORT 3D ISOMÉTRICA + BARRA INFERIOR DE STAGE/SCORE -->
+    <main id="main-stage-column">
+      <!-- Container da Arena Isométrica 3D (Three.js + UnrealBloomPass — E1-01, E1-02, E2-01, E3-01, E3-02) -->
+      <div id="arena-viewport">
+        <canvas id="three-canvas"></canvas>
+
+        <!-- Camada de Textos Flutuantes de Dano / Multiplicador / Pontos no Espaço da Arena -->
+        <div id="floating-texts-layer" aria-hidden="true"></div>
+
+        <!-- HUD Compacto de Controles no Topo da Arena -->
+        <div class="arena-top-overlay">
+          <div class="control-chip">
+            <kbd>WASD</kbd> Mover na Arena
+          </div>
+          <div class="control-chip">
+            <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> ou <kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd> Combinar 2 Cores
+          </div>
+          <div class="control-chip">
+            <kbd>Mouse + LMB</kbd> Mirar e Disparar
+          </div>
+          <button id="btn-toggle-audio" class="audio-btn" type="button" title="Alternar Áudio Sintetizado Web Audio API">
+            🔊 SOM: ON
+          </button>
+        </div>
+
+        <!-- Overlay quando Pureza chega a 0% (RN11) -->
+        <div id="purity-depleted-overlay" class="arena-modal-overlay hidden">
+          <div class="arena-modal-card">
+            <div class="modal-badge">PUREZA AMBIENTAL ESGOTADA (0%)</div>
+            <h2>ARENA CONTAMINADA</h2>
+            <p id="gameover-summary-text">Os bichos da poluição dominaram a estação. Varie suas combinações para manter o multiplicador em 4.0x!</p>
+            <div class="modal-stats-grid">
+              <div class="modal-stat-item">
+                <span class="stat-label">SCORE FINAL</span>
+                <span id="final-score-val" class="stat-num">0</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">STAGE ALCANÇADO</span>
+                <span id="final-stage-val" class="stat-num">1</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">BICHOS PURIFICADOS</span>
+                <span id="final-kills-val" class="stat-num">0</span>
+              </div>
+            </div>
+            <button id="btn-restart-match" type="button" class="btn-primary-retro">
+              REINICIAR PARTIDA (TECLA ENTER)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra Inferior de Status inspirada em @Docs/2d.webp (STAGE e SCORE) -->
+      <footer id="bottom-status-bar">
+        <div class="status-bar-side left">
+          <span class="status-prefix">STAGE:</span>
+          <span id="stage-counter" class="status-number">1</span>
+          <span id="enemies-alive-pill" class="enemies-pill">BICHOS NA ARENA: 0</span>
+        </div>
+
+        <!-- Recorte Central Trapezoidal estilo Capsule (@Docs/2d.webp) -->
+        <div class="status-bar-center-notch">
+          <span id="last-combo-used-label">ÚLTIMO DISPARO: NENHUM</span>
+        </div>
+
+        <div class="status-bar-side right">
+          <span class="status-prefix">SCORE:</span>
+          <span id="score-counter" class="status-number">0</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
