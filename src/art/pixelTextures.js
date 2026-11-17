@@ -218,81 +218,165 @@ export function createProtagonistTextures() {
 }
 
 /**
- * E2-01 — Sprites Pixel Art 2.5D dos Inimigos ("Bichos" da Poluição)
- * Retorna pares de frames animados para 3 espécies de bichos de poluição
+ * E2-01 / E2-05 — Sprites Pixel Art 2.5D dos Inimigos como ITENS RECICLÁVEIS REAIS:
+ * - PLASTIC (Vermelho / Q): Garrafa PET
+ * - PAPER   (Azul / E):     Caixa de Papelão
+ * - GLASS   (Verde / R):    Garrafa de Vidro
+ * - METAL   (Amarelo / F):  Porca de Metal
  */
 export function createEnemyTextures() {
-  const variants = [
-    // 0: Ácaro de Microplástico (Carapaça escura + espinhos vermelhos neon)
-    {
-      shellDark: '#261423',
-      shellMid: '#4a1936',
-      accent: '#ff3b30',
-      eye: '#ffbe0b'
-    },
-    // 1: Gorgulho de Chorume (Lodo tóxico esverdeado/roxo)
-    {
-      shellDark: '#192924',
-      shellMid: '#284b3a',
-      accent: '#34c759',
-      eye: '#ff006e'
-    },
-    // 2: Besouro de Fuligem Metálica (Sucata oxidada + faíscas amarelas)
-    {
-      shellDark: '#292218',
-      shellMid: '#4f3f24',
-      accent: '#ffcc00',
-      eye: '#00f5d4'
-    }
-  ];
+  const categories = ['PLASTIC', 'PAPER', 'GLASS', 'METAL'];
+  const map = {};
 
-  return variants.map((v) => {
-    return [0, 1].map((animFrame) => {
+  categories.forEach((cat) => {
+    map[cat] = [0, 1].map((animFrame) => {
       const canvas = document.createElement('canvas');
       canvas.width = 32;
-      canvas.height = 32;
+      canvas.height = 36;
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingEnabled = false;
 
-      const legShift = animFrame === 0 ? 0 : 2;
+      const bob = animFrame === 0 ? 0 : -1;
+      const legL = animFrame === 0 ? 0 : -2;
+      const legR = animFrame === 1 ? 0 : -2;
 
-      // Pernas articuladas de inseto/bicho da poluição
-      ctx.fillStyle = '#140d18';
-      for (let i = 0; i < 3; i++) {
-        const ly = 18 + i * 4;
-        ctx.fillRect(3, ly - (i % 2 === animFrame ? 2 : 0), 6, 2);
-        ctx.fillRect(23, ly - ((i + 1) % 2 === animFrame ? 2 : 0), 6, 2);
+      const px = (x, y, w, h, color) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y + bob, w, h);
+      };
+
+      // Perninhas animadas de resíduo vivo
+      ctx.fillStyle = '#181422';
+      ctx.fillRect(10, 30 + legL, 4, 5);
+      ctx.fillRect(18, 30 + legR, 4, 5);
+
+      if (cat === 'PLASTIC') {
+        // ==================== GARRAFA PET (PLÁSTICO — VERMELHO Q) ====================
+        // Tampa vermelha da Garrafa PET
+        px(13, 2, 6, 3, '#ff3b30');
+        px(12, 5, 8, 2, '#c91e14');
+        // Gargalo translúcido avermelhado
+        px(12, 7, 8, 3, '#ff9b94');
+        // Corpo da Garrafa PET com frisos de plástico amassado
+        px(9, 10, 14, 19, '#d62828');
+        px(10, 11, 12, 17, '#ff5a52');
+        // Reflexo vertical de plástico PET brilhante
+        px(11, 11, 2, 16, '#ffd6d4');
+        // Rótulo central Vermelho CONAMA
+        px(9, 15, 14, 7, '#9e1111');
+        px(10, 16, 12, 5, '#ff3b30');
+        // Frisos horizontais da garrafa
+        px(10, 13, 12, 1, '#c91e14');
+        px(10, 24, 12, 1, '#c91e14');
+        // Olhos expressivos no rótulo
+        px(11, 17, 3, 3, '#ffffff');
+        px(18, 17, 3, 3, '#ffffff');
+        px(12, 18, 2, 2, '#14121d');
+        px(19, 18, 2, 2, '#14121d');
+      } else if (cat === 'PAPER') {
+        // ==================== CAIXA DE PAPELÃO (PAPEL — AZUL E) ====================
+        // Abas superiores abertas da caixa de papelão
+        px(5, 6, 8, 4, '#c6935b');
+        px(19, 6, 8, 4, '#d9a76c');
+        // Corpo quadrado da Caixa de Papelão
+        px(7, 10, 18, 19, '#8c5e32');
+        px(8, 11, 16, 17, '#c6935b');
+        px(9, 12, 7, 15, '#d9a76c');
+        // Faixa Adesiva Azul CONAMA (Papel)
+        px(7, 14, 18, 6, '#0055b3');
+        px(8, 15, 16, 4, '#007aff');
+        px(15, 10, 2, 18, '#007aff');
+        // Olhos brilhantes na faixa azul
+        px(10, 16, 3, 3, '#ffffff');
+        px(19, 16, 3, 3, '#ffffff');
+        px(11, 17, 2, 2, '#0a1931');
+        px(20, 17, 2, 2, '#0a1931');
+      } else if (cat === 'GLASS') {
+        // ==================== GARRAFA DE VIDRO (VIDRO — VERDE R) ====================
+        // Gargalo fino e longo de vidro verde
+        px(14, 2, 4, 2, '#a3ffba');
+        px(13, 4, 6, 6, '#1f993c');
+        px(14, 4, 3, 6, '#34c759');
+        // Ombro e corpo de Garrafa de Vidro Verde
+        px(10, 10, 12, 3, '#1f993c');
+        px(9, 13, 14, 16, '#146b29');
+        px(10, 13, 12, 15, '#34c759');
+        // Reflexo cristalino branco/verde-claro e trinca de vidro
+        px(11, 12, 2, 14, '#c7ffd4');
+        px(18, 14, 1, 4, '#ffffff');
+        px(17, 17, 2, 1, '#ffffff');
+        // Olhos luminosos
+        px(11, 18, 3, 3, '#ffffcc');
+        px(18, 18, 3, 3, '#ffffcc');
+        px(12, 19, 2, 2, '#0d2b14');
+        px(19, 19, 2, 2, '#0d2b14');
+      } else {
+        // ==================== PORCA DE METAL SEXTAVADA (METAL — AMARELO F) ====================
+        // Formato octogonal/sextavado robusto de Porca de Metal Amarela/Dourada
+        px(10, 6, 12, 23, '#997300');
+        px(6, 10, 20, 15, '#997300');
+        px(11, 7, 10, 21, '#ffcc00');
+        px(7, 11, 18, 13, '#ffcc00');
+        // Chanfro metálico iluminado superior
+        px(11, 7, 10, 2, '#fff099');
+        px(8, 11, 3, 10, '#fff099');
+        // Furo central de rosca da Porca de Metal!
+        px(12, 13, 8, 8, '#2b2412');
+        px(13, 14, 6, 6, '#14121d');
+        // Frisos da rosca interna
+        px(13, 15, 6, 1, '#7a5c00');
+        px(13, 18, 6, 1, '#7a5c00');
+        // Olhos elétricos ciano/brancos saindo do núcleo da porca
+        px(11, 16, 3, 3, '#ffffff');
+        px(18, 16, 3, 3, '#ffffff');
+        px(12, 17, 2, 2, '#d90429');
+        px(19, 17, 2, 2, '#d90429');
       }
-
-      // Corpo / Carapaça de resíduo tóxico
-      ctx.fillStyle = v.shellDark;
-      ctx.fillRect(7, 9 + (animFrame ? -1 : 0), 18, 17);
-      ctx.fillStyle = v.shellMid;
-      ctx.fillRect(9, 11 + (animFrame ? -1 : 0), 14, 13);
-
-      // Cristais / Espinhos de poluição nas costas
-      ctx.fillStyle = v.accent;
-      ctx.fillRect(10, 6 + (animFrame ? -1 : 0), 3, 4);
-      ctx.fillRect(15, 4 + (animFrame ? -1 : 0), 3, 6);
-      ctx.fillRect(20, 6 + (animFrame ? -1 : 0), 3, 4);
-
-      // Olhos brilhantes ameaçadores
-      ctx.fillStyle = v.eye;
-      ctx.fillRect(10, 16, 4, 3);
-      ctx.fillRect(18, 16, 4, 3);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(11, 16, 1, 1);
-      ctx.fillRect(19, 16, 1, 1);
-
-      // Mandíbulas de sucata
-      ctx.fillStyle = v.accent;
-      ctx.fillRect(11 - legShift * 0.5, 23, 3, 4);
-      ctx.fillRect(18 + legShift * 0.5, 23, 3, 4);
 
       const tex = new THREE.CanvasTexture(canvas);
       return applyNearestPixelFilter(tex);
     });
   });
+
+  return map;
+}
+
+/**
+ * E2-05 — Cria etiqueta pixelada flutuante com a tecla da Lixeira e nome do Item (ex: "[Q] GARRAFA PET")
+ */
+export function createEnemyBinBadgeTexture(binElement) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 160;
+  canvas.height = 32;
+  const ctx = canvas.getContext('2d');
+
+  // Fundo escuro com borda na cor CONAMA da lixeira
+  ctx.fillStyle = 'rgba(18, 16, 28, 0.92)';
+  ctx.fillRect(2, 2, 156, 28);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = binElement.hex;
+  ctx.strokeRect(2, 2, 156, 28);
+
+  // Quadrado da Tecla da Lixeira à esquerda
+  ctx.fillStyle = binElement.hex;
+  ctx.fillRect(4, 4, 28, 24);
+
+  ctx.fillStyle = binElement.id === 'METAL' ? '#191708' : '#ffffff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(binElement.keyAlt, 18, 16);
+
+  // Nome do Item Reciclável
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(binElement.enemyItemName.toUpperCase(), 38, 16);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
 }
 
 /**
