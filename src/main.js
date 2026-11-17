@@ -39,18 +39,20 @@ class EcoComboMVPApp {
       this.arena.groundPlane
     );
 
-    // 5. Sistema de Combinação CONAMA (1/2/3/4 ou Q/E/R/F), Disparo LMB e Multiplicador Decrescente (E3-01 / E3-02)
+    // 5. Sistema de Lixeiras e Leque Hwei (Q/E/R/F) + Medidor de Estilo Devil May Cry (E3-05 / E4-05)
     this.comboSystem = new ComboSystem({
       scene: this.arena.scene,
       player: this.player,
       hud: this.hud,
       sound: this.sound,
+      viewportEl: this.viewportEl,
+      camera: this.arena.camera,
       onShotFired: () => {
         this.sidebarCharacter.triggerShootFlash();
       }
     });
 
-    // 6. Gerenciador dos Inimigos ("Bichos" da Poluição) na Arena (E2-01)
+    // 6. Gerenciador dos Inimigos Recicláveis (Garrafa PET, Papelão, Vidro, Porca de Metal — E2-05)
     this.enemyManager = new EnemyManager({
       scene: this.arena.scene,
       player: this.player,
@@ -65,9 +67,9 @@ class EcoComboMVPApp {
 
     this.bindUIEvents();
 
-    // Instancia 2 bichos iniciais nas bordas para combate imediato
-    this.enemyManager.spawnEnemyAroundPerimeter(this.stage);
-    this.enemyManager.spawnEnemyAroundPerimeter(this.stage);
+    // Instancia 1 Garrafa PET (Plástico) e 1 Porca de Metal (Metal) iniciais nas bordas
+    this.enemyManager.spawnEnemyAroundPerimeter(this.stage, 'PLASTIC');
+    this.enemyManager.spawnEnemyAroundPerimeter(this.stage, 'METAL');
     this.hud.updatePurity(this.purity);
     this.hud.updateStageAndScore(this.stage, this.score, this.enemyManager.enemies.length);
 

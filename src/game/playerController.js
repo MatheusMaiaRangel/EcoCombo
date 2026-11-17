@@ -157,12 +157,18 @@ export class PlayerController {
     this.invulnerableTimer = 0;
     this.walkAnimTimer = 0;
 
+    // E3-05 — Estado do Escudo Protetivo Seletivo (Modo R no leque do Hwei)
+    this.activeShieldBin = null;
+    this.shieldTimer = 0;
+    this.shieldMaxDuration = 5.0;
+
     // Grupo 3D raiz do protagonista
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
 
     this.buildProtagonistSprite();
     this.buildOrbitingOrbs();
+    this.buildShieldMesh();
     this.buildAimReticleAndLine();
     this.buildConjuredPreviewAnchor();
     this.bindInputEvents();
@@ -251,6 +257,65 @@ export class PlayerController {
         baseAngle: (idx * Math.PI) / 2
       };
     });
+  }
+
+  /**
+   * E3-05 — Redoma 3D de Escudo Protetivo Seletivo (Modo R no leque da Lixeira)
+   */
+  buildShieldMesh() {
+    this.shieldGroup = new THREE.Group();
+    this.shieldGroup.position.y = 1.2;
+    this.shieldGroup.visible = false;
+
+    const domeGeo = new THREE.IcosahedronGeometry(1.38, 1);
+    this.shieldDomeMat = new THREE.MeshBasicMaterial({
+      color: 0x00f5d4,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.55
+    });
+    this.shieldDome = new THREE.Mesh(domeGeo, this.shieldDomeMat);
+
+    const auraGeo = new THREE.SphereGeometry(1.32, 16, 16);
+    this.shieldAuraMat = new THREE.MeshBasicMaterial({
+      color: 0x00f5d4,
+      transparent: true,
+      opacity: 0.16,
+      side: THREE.DoubleSide
+    });
+    this.shieldAura = new THREE.Mesh(auraGeo, this.shieldAuraMat);
+
+    const ringGeo = new THREE.RingGeometry(1.35, 1.58, 28);
+    this.shieldRingMat = new THREE.MeshBasicMaterial({
+      color: 0x00f5d4,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
+    });
+    this.shieldFloorRing = new THREE.Mesh(ringGeo, this.shieldRingMat);
+    this.shieldFloorRing.rotation.x = -Math.PI / 2;
+    this.shieldFloorRing.position.y = -1.14;
+
+    this.shieldGroup.add(this.shieldDome, this.shieldAura, this.shieldFloorRing);
+    this.rootGroup.add(this.shieldGroup);
+  }
+
+  activateShield(binId, duration = 5.0) {
+    const elem = CONAMA_ELEMENTS[binId];
+    if (!elem) return;
+    this.activeShieldBin = binId;
+    this.shieldTimer = duration;
+    this.shieldMaxDuration = duration;
+    this.shieldDomeMat.color.setHex(elem.hexNumber);
+    this.shieldAuraMat.color.setHex(elem.hexNumber);
+    this.shieldRingMat.color.setHex(elem.hexNumber);
+    this.shieldGroup.visible = true;
+  }
+
+  clearShield() {
+    this.activeShieldBin = null;
+    this.shieldTimer = 0;
+    this.shieldGroup.visible = false;
   }
 
   /**
@@ -357,6 +422,17 @@ export class PlayerController {
   update(elapsedTime, dt) {
     if (this.invulnerableTimer > 0) {
       this.invulnerableTimer = Math.max(0, this.invulnerableTimer - dt);
+    }
+
+    if (this.shieldTimer > 0) {
+      this.shieldTimer = Math.max(0, this.shieldTimer - dt);
+      this.shieldDome.rotation.y += dt * 1.8;
+      this.shieldDome.rotation.x += dt * 0.9;
+      const pulse = 1 + Math.sin(elapsedTime * 8) * 0.04;
+      this.shieldDome.scale.setScalar(pulse);
+      if (this.shieldTimer <= 0) {
+        this.clearShield();
+      }
     }
 
     // 1. Movimentação Isométrica em 8 Direções via WASD (E1-02)
@@ -469,6 +545,7 @@ export class PlayerController {
     this.position.set(0, 0, 0);
     this.rootGroup.position.set(0, 0, 0);
     this.invulnerableTimer = 0;
+    this.clearShield();
     this.spriteMesh.visible = true;
   }
 }

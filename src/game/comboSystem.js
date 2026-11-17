@@ -1,36 +1,48 @@
 import * as THREE from 'three';
 import {
+  CONAMA_ELEMENTS,
   KEY_TO_ELEMENT,
-  resolveRecipe,
-  computeStaleMultiplier
+  KEY_TO_HWEI_MODE,
+  resolveHweiSpell,
+  getStyleRankFromPoints
 } from '../constants/recipes.js';
 import { buildRecipeObjectMesh } from './playerController.js';
 import { ARENA_HALF_SIZE } from './arenaScene.js';
 
 /**
- * E3-01 e E3-02 — Sistema de Combinação das 4 Cores CONAMA, Disparo Mirado e Multiplicador Decrescente (Stale Decay)
+ * E3-01, E3-02, E3-05 e E4-05 — Sistema de Comandos Estilo Hwei (4 Lixeiras CONAMA + Leque de 3 Modos)
+ * e Medidor de Estilo Devil May Cry (Ranks D, C, B, A, S, SS, SSS + Multiplicador Destacado Abaixo)
  */
 export class ComboSystem {
-  constructor({ scene, player, hud, sound, onShotFired }) {
+  constructor({ scene, player, hud, sound, viewportEl, camera, onShotFired }) {
     this.scene = scene;
     this.player = player;
     this.hud = hud;
     this.sound = sound;
+    this.viewportEl = viewportEl;
+    this.camera = camera;
     this.onShotFired = onShotFired;
 
-    // Buffer de 2 elementos da combinação atual
-    this.slots = [];
-    this.currentRecipe = null;
-
-    // Rastreador de repetição de combo (E3-02: lastComboId e contador R)
-    this.lastComboId = null;
-    this.lastRecipe = null;
+    // Estado do Grimório / Lixeira estilo Hwei
+    // null = Nenhuma lixeira aberta (1º toque escolhe Q/E/R/F)
+    // 'PLASTIC' | 'PAPER' | 'GLASS' | 'METAL' = Lixeira aberta exibindo o Leque (2º toque: Q=Dano, E=Controle, R=Escudo, F=Cancelar)
+    this.openBinId = null;
+    this.lastSpell = null;
+    this.lastSpellId = null;
     this.repeatCount = 0;
-    this.activeMultiplier = 4.0;
 
-    // Lista de projéteis 3D ativos e partículas de impacto na arena
+    // Medidor de Estilo Devil May Cry (0 a 1000 pontos -> Ranks D, C, B, A, S, SS, SSS)
+    this.stylePoints = 110; // Começa em C (1.5x) pronto para subir até SSS (6.0x)!
+    this.styleState = getStyleRankFromPoints(this.stylePoints);
+    this.activeMultiplier = this.styleState.multiplier;
+
+    // Projéteis 3D, ondas de área (Controle de Grupo) e partículas
     this.projectiles = [];
+    this.areaWaves = [];
     this.particles = [];
+
+    // Callback de explosão de Controle de Grupo registrada pelo EnemyManager
+    this.onControlWaveDetonated = null;
 
     this.bindInputs();
     this.syncHUD();
@@ -39,189 +51,300 @@ export class ComboSystem {
   bindInputs() {
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
-      const elemId = KEY_TO_ELEMENT[e.code];
-      if (elemId) {
-        this.pushElement(elemId);
+
+      // Se nenhuma lixeira está aberta, Q/E/R/F (ou 1/2/3/4) abre a Lixeira correspondente (1º Toque Hwei)
+      if (!this.openBinId) {
+        const binId = KEY_TO_ELEMENT[e.code];
+        if (binId) {
+          this.openBin(binId);
+        }
+        return;
+      }
+
+      // Se uma lixeira JÁ está aberta, o 2º Toque escolhe o Modo no Leque (Q=Dano, E=Controle, R=Escudo, F=Cancelar)
+      const modeId = KEY_TO_HWEI_MODE[e.code];
+      if (modeId) {
+        this.executeModeFromOpenBin(modeId);
       }
     });
 
-    // Clique nas pílulas CONAMA do painel lateral também canaliza o elemento
+    // Clique Direito do Mouse cancela/fecha a lixeira aberta (igual ao Hwei no LoL)
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (this.openBinId) {
+        this.closeBin(true);
+      }
+    });
+
+    // Clique nas pílulas das 4 Lixeiras CONAMA no painel lateral
     const pills = document.querySelectorAll('.conama-key-pill');
     pills.forEach((pill) => {
       pill.addEventListener('click', () => {
-        const elemId = pill.getAttribute('data-element');
-        if (elemId) {
-          this.pushElement(elemId);
+        const binId = pill.getAttribute('data-element');
+        if (!binId) return;
+        if (this.openBinId === binId) {
+          this.closeBin(true);
+        } else {
+          this.openBin(binId);
+        }
+      });
+    });
+
+    // Clique direto nos cards do Leque Hwei no HUD
+    const fanButtons = document.querySelectorAll('[data-hwei-mode]');
+    fanButtons.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const modeId = btn.getAttribute('data-hwei-mode');
+        if (this.openBinId && modeId) {
+          this.executeModeFromOpenBin(modeId);
         }
       });
     });
   }
 
   /**
-   * Adiciona um dos 4 elementos CONAMA (Plástico, Papel, Vidro, Metal) ao buffer de 2 slots
+   * 1º Toque Estilo Hwei: Abre uma das 4 Lixeiras CONAMA (Q=Plástico, E=Papel, R=Vidro, F=Metal)
+   * e exibe o Leque de 3 Opções (Q=Mais Dano, E=Controle Único da Lixeira, R=Escudo Protetivo)
    */
-  pushElement(elemId) {
-    // Feedback visual no botão correspondente da legenda lateral
-    const btn = document.querySelector(`.conama-key-pill[data-element="${elemId}"]`);
-    if (btn) {
-      btn.classList.add('pressed');
-      setTimeout(() => btn.classList.remove('pressed'), 120);
-    }
+  openBin(binId) {
+    this.openBinId = binId;
+    this.sound.playElementSelect(binId, 0);
 
-    // Se já havia uma receita completa (2 slots) não disparada, iniciar nova dupla permite trocar de combo livremente
-    if (this.slots.length >= 2) {
-      this.slots = [elemId];
-      this.currentRecipe = null;
-      this.sound.playElementSelect(elemId, 0);
-    } else if (this.slots.length === 0) {
-      this.slots = [elemId];
-      this.currentRecipe = null;
-      this.sound.playElementSelect(elemId, 0);
-    } else if (this.slots.length === 1) {
-      this.slots.push(elemId);
-      this.currentRecipe = resolveRecipe(this.slots[0], this.slots[1]);
+    // Feedback no botão da lixeira
+    document.querySelectorAll('.conama-key-pill').forEach((pill) => {
+      pill.classList.toggle('active-bin', pill.getAttribute('data-element') === binId);
+    });
 
-      const preview = this.getPreviewDecayForRecipe(this.currentRecipe);
-      this.sound.playElementSelect(elemId, 1);
-      this.sound.playComboReady(this.currentRecipe, preview.multiplier);
-    }
-
-    this.player.setConjuredRecipePreview(this.currentRecipe, this.slots);
+    // Mostra preview do objeto da lixeira nas mãos do protagonista
+    const defaultSpell = resolveHweiSpell(binId, 'DAMAGE');
+    this.player.setConjuredRecipePreview(defaultSpell, [binId]);
     this.syncHUD();
   }
 
   /**
-   * Calcula qual será o contador R e o multiplicador M(R) para a receita informada
+   * Fecha o leque da lixeira atual
    */
-  getPreviewDecayForRecipe(recipe) {
-    if (!recipe) {
-      return {
-        repeatCount: this.repeatCount,
-        multiplier: this.activeMultiplier
-      };
+  closeBin(playCancelFeedback = false) {
+    this.openBinId = null;
+    document.querySelectorAll('.conama-key-pill').forEach((pill) => {
+      pill.classList.remove('active-bin');
+    });
+    if (playCancelFeedback) {
+      this.sound.playElementSelect('PAPER', 0);
     }
-
-    if (this.lastComboId === null) {
-      return { repeatCount: 0, multiplier: 4.0 };
-    }
-
-    if (recipe.id === this.lastComboId) {
-      const nextR = this.repeatCount + 1;
-      return {
-        repeatCount: nextR,
-        multiplier: computeStaleMultiplier(nextR)
-      };
-    }
-
-    // RN05: Trocar para uma combinação diferente restaura imediatamente o multiplicador para 4.0x (R = 0)
-    return {
-      repeatCount: 0,
-      multiplier: 4.0
-    };
+    this.player.setConjuredRecipePreview(null, []);
+    this.syncHUD();
   }
 
   /**
-   * E3-01 / E3-02 — Dispara o Objeto/Energia formado na direção mirada pelo Mouse (LMB)
+   * 2º Toque Estilo Hwei: Executa o modo escolhido dentro do Leque da Lixeira aberta
+   * - DAMAGE (Q / 1): Dispara ataque de Alto Dano na direção do mouse
+   * - CONTROL (E / 2): Dispara o Controle de Grupo exclusivo daquela lixeira (Separar / Juntar / Slow / Estunar)
+   * - SHIELD (R / 3): Ativa o Escudo Protetivo Seletivo daquela lixeira no protagonista
+   * - CANCEL (F / 4): Fecha o leque sem gastar ação
    */
-  tryFireAtAim(viewportEl, camera) {
-    if (!this.currentRecipe) {
-      // Se o jogador clicou sem ter formado 2 cores, avisa de forma amigável
-      this.hud.spawnFloatingText(
-        this.player.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
-        camera,
-        viewportEl,
-        'COMBINE 2 CORES (1-4 / QERF)!',
-        '#ffd166'
-      );
-      return false;
+  executeModeFromOpenBin(modeId) {
+    if (!this.openBinId) return false;
+
+    if (modeId === 'CANCEL') {
+      this.closeBin(true);
+      return true;
     }
 
-    const recipe = this.currentRecipe;
+    const binId = this.openBinId;
+    const spell = resolveHweiSpell(binId, modeId);
+    if (!spell) return false;
 
-    // Atualiza o rastreador oficial de repetição (RN04 / RN05 / E3-02)
-    if (this.lastComboId === recipe.id) {
+    // Atualiza contador de repetição da mesma habilidade exata
+    if (this.lastSpellId === spell.id) {
       this.repeatCount += 1;
     } else {
       this.repeatCount = 0;
-      this.lastComboId = recipe.id;
+      this.lastSpellId = spell.id;
+    }
+    this.lastSpell = spell;
+
+    // Se for o Modo 3 (R = Escudo Protetivo Seletivo), ativa na hora ao redor do jogador!
+    if (modeId === 'SHIELD') {
+      this.activateSelectiveShield(spell);
+      this.closeBin(false);
+      return true;
     }
 
-    this.lastRecipe = recipe;
-    this.activeMultiplier = computeStaleMultiplier(this.repeatCount);
+    // Para Q (Mais Dano) e E (Controle de Grupo), dispara na direção mirada pelo Mouse!
+    this.fireSpellProjectile(spell);
+    this.closeBin(false);
+    return true;
+  }
 
-    // Toca som sintetizado proporcional ao multiplicador (ou som desgastado em 1.0x)
-    this.sound.playShoot(this.activeMultiplier);
+  /**
+   * Se o jogador clicar com o Botão Esquerdo do Mouse (LMB) na arena:
+   * - Se uma lixeira estiver aberta, dispara o ataque principal (Modo Q = Mais Dano) daquela lixeira!
+   * - Se nenhuma lixeira estiver aberta, lembra o jogador de abrir uma lixeira (Q, E, R ou F)
+   */
+  tryFireAtAim(viewportEl, camera) {
+    if (this.openBinId) {
+      return this.executeModeFromOpenBin('DAMAGE');
+    }
 
-    // Se atingiu 1.0x (R >= 3), exibe aviso flutuante imediato sobre o protagonista
-    if (this.activeMultiplier <= 1.0) {
+    this.hud.spawnFloatingText(
+      this.player.position.clone().add(new THREE.Vector3(0, 2.3, 0)),
+      camera || this.camera,
+      viewportEl || this.viewportEl,
+      'ABRA UMA LIXEIRA [Q, E, R, F] E ESCOLHA O MODO!',
+      '#ffd166'
+    );
+    return false;
+  }
+
+  /**
+   * Ativa o Escudo Protetivo Seletivo (Modo R no leque da Lixeira)
+   */
+  activateSelectiveShield(spell) {
+    const binElem = CONAMA_ELEMENTS[spell.binId];
+    this.player.activateShield(spell.binId, spell.duration || 5.0);
+    this.sound.playComboReady(spell, this.activeMultiplier);
+
+    // Onda curta defensiva ao ativar o escudo
+    this.spawnAreaWave(this.player.position.clone(), spell.colorA, 2.8);
+    this.spawnImpactParticles(
+      this.player.position.clone().add(new THREE.Vector3(0, 1.1, 0)),
+      spell.colorA,
+      0xffffff,
+      16
+    );
+
+    // Se não estiver spammando o escudo sem parar, ganha um pequeno impulso de estilo
+    if (this.repeatCount === 0) {
+      this.addStylePoints(45);
+    }
+
+    if (this.viewportEl && this.camera) {
       this.hud.spawnFloatingText(
         this.player.position.clone().add(new THREE.Vector3(0, 2.5, 0)),
-        camera,
-        viewportEl,
-        '1.0x — COMBO REPETIDO! VARIE!',
-        '#ff4d6d'
+        this.camera,
+        this.viewportEl,
+        `🛡 ESCUDO DE ${binElem.shortName.toUpperCase()} ATIVO!`,
+        binElem.hex
       );
     }
 
-    // Instancia o(s) projétil(is) 3D na direção calculada pelo Raycaster
+    if (this.onShotFired) {
+      this.onShotFired(spell, this.activeMultiplier, this.repeatCount);
+    }
+  }
+
+  /**
+   * Dispara o projétil de Mais Dano (Q) ou Controle de Grupo (E) na direção da mira do Mouse
+   */
+  fireSpellProjectile(spell) {
+    // Se repetiu exatamente o mesmo ataque 3+ vezes seguidas sem variar modo ou lixeira, penaliza o estilo!
+    if (this.repeatCount >= 3) {
+      this.addStylePoints(-110);
+      if (this.viewportEl && this.camera) {
+        this.hud.spawnFloatingText(
+          this.player.position.clone().add(new THREE.Vector3(0, 2.5, 0)),
+          this.camera,
+          this.viewportEl,
+          '⚠ ATAQUE REPETIDO! VARIE O MODO [Q/E/R] OU LIXEIRA!',
+          '#ff4d6d'
+        );
+      }
+    }
+
+    this.sound.playShoot(this.activeMultiplier);
+
     const baseDir = this.player.aimDirection.clone().normalize();
     const spawnOrigin = this.player.position
       .clone()
       .add(new THREE.Vector3(baseDir.x * 0.9, 1.15, baseDir.z * 0.9));
+    const targetPoint = this.player.aimPoint.clone();
 
-    if (recipe.behavior === 'triple_fan') {
-      // Papel + Papel: Rajada de Origami Cortante (leque triplo)
-      const angles = [-0.18, 0, 0.18];
+    if (spell.behavior === 'damage_paper') {
+      // Papel (E + Q): Rajada tripla de lâminas de origami
+      const angles = [-0.15, 0, 0.15];
       angles.forEach((ang) => {
         const dir = baseDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), ang);
-        this.spawnProjectileInstance(recipe, spawnOrigin, dir, this.activeMultiplier);
+        this.spawnProjectileInstance(spell, spawnOrigin, dir, targetPoint, this.activeMultiplier);
       });
     } else {
-      this.spawnProjectileInstance(recipe, spawnOrigin, baseDir, this.activeMultiplier);
+      this.spawnProjectileInstance(spell, spawnOrigin, baseDir, targetPoint, this.activeMultiplier);
     }
-
-    // Limpa os 2 slots após o disparo para a próxima combinação
-    this.slots = [];
-    this.currentRecipe = null;
-    this.player.setConjuredRecipePreview(null, []);
-    this.syncHUD();
 
     if (this.onShotFired) {
-      this.onShotFired(recipe, this.activeMultiplier, this.repeatCount);
+      this.onShotFired(spell, this.activeMultiplier, this.repeatCount);
     }
-
-    return true;
   }
 
-  spawnProjectileInstance(recipe, origin, direction, multiplier) {
-    const mesh = buildRecipeObjectMesh(recipe, 1.0);
+  spawnProjectileInstance(spell, origin, direction, targetPoint, multiplier) {
+    const mesh = buildRecipeObjectMesh(spell, spell.modeId === 'CONTROL' ? 1.15 : 1.0);
     mesh.position.copy(origin);
     const yaw = Math.atan2(direction.x, direction.z);
     mesh.rotation.set(0, yaw, 0);
 
-    // Luz pontual no projétil para interagir com o chão em grid e UnrealBloomPass
-    const light = new THREE.PointLight(recipe.colorA, 1.6, 5.5);
+    const light = new THREE.PointLight(spell.colorA, 1.7, 5.8);
     mesh.add(light);
-
     this.scene.add(mesh);
+
+    const distToTarget = origin.distanceTo(targetPoint);
 
     this.projectiles.push({
       mesh,
-      recipe,
+      recipe: spell,
       direction: direction.clone().normalize(),
-      speed: recipe.speed,
+      targetPoint: targetPoint.clone(),
+      maxTravelDist: spell.modeId === 'CONTROL' ? Math.max(2.5, Math.min(13.5, distToTarget)) : 99,
+      traveledDist: 0,
+      speed: spell.speed,
       multiplier,
-      radius: recipe.radius,
-      life: 1.8,
-      pierceLeft: recipe.behavior === 'pierce' || recipe.behavior === 'precision_beam' ? 2 : 0,
-      ricochetLeft: recipe.behavior === 'ricochet' ? 1 : 0,
+      radius: spell.radius,
+      life: 1.7,
+      pierceLeft: spell.behavior === 'damage_glass' ? 2 : 0,
+      ricochetLeft: spell.behavior === 'damage_plastic' ? 1 : 0,
       hitEnemyIds: new Set(),
       trailTimer: 0
     });
   }
 
   /**
-   * Emite partículas 3D nas cores combinadas da receita (E3-01)
+   * Cria um anel 3D expansivo no chão para visualizar o Controle de Grupo (Separar / Juntar / Slow / Estunar)
+   */
+  spawnAreaWave(centerPos, colorHex, maxRadius = 4.2) {
+    const ringGeo = new THREE.RingGeometry(0.3, 0.65, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.set(centerPos.x, 0.08, centerPos.z);
+    this.scene.add(ringMesh);
+
+    this.areaWaves.push({
+      mesh: ringMesh,
+      mat: ringMat,
+      age: 0,
+      duration: 0.42,
+      maxScale: maxRadius / 0.55
+    });
+  }
+
+  /**
+   * Atualiza o Medidor de Estilo Devil May Cry (D -> C -> B -> A -> S -> SS -> SSS)
+   * e recalcula o Multiplicador em destaque abaixo
+   */
+  addStylePoints(delta) {
+    this.stylePoints = Math.max(0, Math.min(1000, this.stylePoints + delta));
+    this.styleState = getStyleRankFromPoints(this.stylePoints);
+    this.activeMultiplier = this.styleState.multiplier;
+    this.syncHUD();
+  }
+
+  /**
+   * Emite partículas 3D nas cores da lixeira/habilidade
    */
   spawnImpactParticles(position, colorA, colorB, count = 14) {
     for (let i = 0; i < count; i++) {
@@ -256,19 +379,45 @@ export class ComboSystem {
   }
 
   update(dt) {
-    // 1. Atualiza Projéteis em Trajetória na Arena
+    // 1. Decaimento temporal suave da barra de estilo Devil May Cry (mantém o ritmo de combate)
+    if (this.stylePoints > 0) {
+      const decayRate = this.styleState.index >= 4 ? 18 : 10;
+      this.stylePoints = Math.max(0, this.stylePoints - decayRate * dt);
+      const newState = getStyleRankFromPoints(this.stylePoints);
+      const rankChanged = newState.rank !== this.styleState.rank;
+      this.styleState = newState;
+      this.activeMultiplier = this.styleState.multiplier;
+      if (rankChanged) {
+        this.syncHUD();
+      } else {
+        this.hud.updateStyleMeterBarOnly(this.styleState);
+      }
+    }
+
+    // 2. Atualiza Projéteis em Trajetória na Arena
     const limit = ARENA_HALF_SIZE + 0.5;
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.life -= dt;
-      p.mesh.position.addScaledVector(p.direction, p.speed * dt);
+      const stepDist = p.speed * dt;
+      p.traveledDist += stepDist;
+      p.mesh.position.addScaledVector(p.direction, stepDist);
       p.mesh.rotation.z += dt * 7.5;
 
-      // Rastro sutil de partículas
       p.trailTimer += dt;
       if (p.trailTimer >= 0.04) {
         p.trailTimer = 0;
         this.spawnImpactParticles(p.mesh.position, p.recipe.colorA, p.recipe.colorB, 1);
+      }
+
+      // Se for uma habilidade de Controle de Grupo (Modo E) que chegou no ponto mirado pelo mouse, detona em área!
+      if (p.recipe.modeId === 'CONTROL' && p.traveledDist >= p.maxTravelDist) {
+        if (this.onControlWaveDetonated) {
+          this.onControlWaveDetonated(p.mesh.position.clone(), p.recipe, p.multiplier);
+        }
+        this.scene.remove(p.mesh);
+        this.projectiles.splice(i, 1);
+        continue;
       }
 
       const outOfBounds =
@@ -283,7 +432,23 @@ export class ComboSystem {
       }
     }
 
-    // 2. Atualiza Partículas 3D
+    // 3. Atualiza Ondas Visuais de Controle de Grupo
+    for (let i = this.areaWaves.length - 1; i >= 0; i--) {
+      const w = this.areaWaves[i];
+      w.age += dt;
+      const ratio = Math.min(1, w.age / w.duration);
+      const scale = 1 + ratio * (w.maxScale - 1);
+      w.mesh.scale.setScalar(scale);
+      w.mat.opacity = Math.max(0, (1 - ratio) * 0.85);
+      if (w.age >= w.duration) {
+        this.scene.remove(w.mesh);
+        w.mesh.geometry.dispose();
+        w.mat.dispose();
+        this.areaWaves.splice(i, 1);
+      }
+    }
+
+    // 4. Atualiza Partículas 3D
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const pt = this.particles[i];
       pt.life -= dt;
@@ -305,17 +470,13 @@ export class ComboSystem {
   }
 
   syncHUD() {
-    // Se uma receita está pronta nas mãos, mostra imediatamente o multiplicador que ela terá ao ser disparada
-    const preview = this.currentRecipe
-      ? this.getPreviewDecayForRecipe(this.currentRecipe)
-      : { repeatCount: this.repeatCount, multiplier: this.activeMultiplier };
-
     this.hud.updateComboHUD({
-      slots: this.slots,
-      recipe: this.currentRecipe,
-      displayMultiplier: preview.multiplier,
-      displayRepeatCount: preview.repeatCount,
-      lastRecipe: this.lastRecipe
+      openBinId: this.openBinId,
+      styleState: this.styleState,
+      displayMultiplier: this.activeMultiplier,
+      displayRepeatCount: this.repeatCount,
+      lastRecipe: this.lastSpell,
+      activeShieldBin: this.player.activeShieldBin
     });
   }
 
@@ -325,17 +486,23 @@ export class ComboSystem {
     }
     this.projectiles = [];
 
+    for (const w of this.areaWaves) {
+      this.scene.remove(w.mesh);
+    }
+    this.areaWaves = [];
+
     for (const pt of this.particles) {
       this.scene.remove(pt.mesh);
     }
     this.particles = [];
 
-    this.slots = [];
-    this.currentRecipe = null;
-    this.lastComboId = null;
-    this.lastRecipe = null;
+    this.openBinId = null;
+    this.lastSpell = null;
+    this.lastSpellId = null;
     this.repeatCount = 0;
-    this.activeMultiplier = 4.0;
+    this.stylePoints = 110;
+    this.styleState = getStyleRankFromPoints(this.stylePoints);
+    this.activeMultiplier = this.styleState.multiplier;
     this.player.setConjuredRecipePreview(null, []);
     this.syncHUD();
   }
