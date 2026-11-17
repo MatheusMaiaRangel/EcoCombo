@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EcoCombo 3D — MVP Sprint 1 (HD-2D Isometric Action)</title>
+  <title>EcoCombo 3D — Combos Devil May Cry & Grimório Hwei (HD-2D Isometric)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -11,24 +11,24 @@
 </head>
 <body>
   <div id="app-shell">
-    <!-- PAINEL LATERAL ESQUERDO FIXO (Estrutura inspirada em Capsule @Docs/2d.webp + Arte Until Then @Docs/until-then-2.webp — E4-01) -->
-    <aside id="left-sidebar" aria-label="Painel do Protagonista e Estado de Combate">
+    <!-- PAINEL LATERAL ESQUERDO FIXO (Estrutura inspirada em Capsule @Docs/2d.webp + Arte Until Then @Docs/until-then-2.webp — E4-01 / E4-05) -->
+    <aside id="left-sidebar" aria-label="Painel do Protagonista, Estilo DMC e Grimório Hwei">
       <!-- Banner Superior Estilo Capsule -->
       <header class="sidebar-brand">
         <div class="brand-title">ECOCOMBO</div>
-        <div class="brand-subtitle">ARENA 2.5D // CONAMA</div>
+        <div class="brand-subtitle">ARENA 2.5D // GRIMÓRIO CONAMA</div>
       </header>
 
-      <!-- Área Superior do Personagem Canalizando o Combo (Inspirado em Capsule + Estética Until Then) -->
+      <!-- Área Superior do Personagem Canalizando a Lixeira (Inspirado em Capsule + Estética Until Then) -->
       <div class="character-stage-wrapper">
         <canvas id="character-upper-canvas" width="260" height="250"></canvas>
-        <!-- Tag flutuante do objeto/energia sintetizado nas mãos -->
+        <!-- Tag flutuante da Lixeira / Escudo Ativo -->
         <div id="conjured-floating-badge" class="conjured-badge empty">
-          <span id="conjured-badge-text">CANALIZE 2 CORES (1-4 / QERF)</span>
+          <span id="conjured-badge-text">ESCOLHA A LIXEIRA (Q, E, R, F)</span>
         </div>
       </div>
 
-      <!-- Painel Metálico Inferior do HUD Lateral (Retrato Reativo + Slots + Multiplicador + Pureza) -->
+      <!-- Painel Metálico Inferior do HUD Lateral (Retrato Reativo + Rank DMC + Multiplicador + Grimório Hwei) -->
       <section class="sidebar-hud-console">
         <div class="console-top-row">
           <!-- Moldura do Retrato Reativo 2D (Canto Inferior Esquerdo estilo Capsule) -->
@@ -38,57 +38,70 @@
             <div id="portrait-mood-tag" class="portrait-mood-tag">PRONTO</div>
           </div>
 
-          <!-- Coluna Direita do Console: Multiplicador + Slots CONAMA -->
+          <!-- Coluna Direita do Console: Rank Devil May Cry + Multiplicador Destacado Embaixo (E4-05) -->
           <div class="console-Telemetry">
-            <!-- Visor do Multiplicador Decrescente (E3-02 / E4-01) -->
-            <div id="multiplier-box" class="telemetry-card multiplier-card state-max">
-              <div class="telemetry-label">MULTIPLICADOR</div>
-              <div class="multiplier-value-row">
-                <span id="multiplier-value">4.0x</span>
-                <span id="repeat-counter-tag" class="repeat-tag">VARIADO (R=0)</span>
+            <div id="multiplier-box" class="telemetry-card dmc-sidebar-card rank-c">
+              <div class="dmc-top-row">
+                <div class="dmc-rank-letter-wrap">
+                  <span class="dmc-rank-caption">RANK</span>
+                  <span id="dmc-rank-letter" class="dmc-rank-letter">C</span>
+                </div>
+                <div class="dmc-rank-info">
+                  <div id="dmc-rank-title" class="dmc-rank-title">COLETOR</div>
+                  <div class="dmc-style-bar-track">
+                    <div id="dmc-style-bar-fill" class="dmc-style-bar-fill" style="width: 20%"></div>
+                  </div>
+                  <div class="dmc-ladder-steps">
+                    <span class="dmc-step" data-rank="D">D</span>
+                    <span class="dmc-step active" data-rank="C">C</span>
+                    <span class="dmc-step" data-rank="B">B</span>
+                    <span class="dmc-step" data-rank="A">A</span>
+                    <span class="dmc-step" data-rank="S">S</span>
+                    <span class="dmc-step" data-rank="SS">SS</span>
+                    <span class="dmc-step" data-rank="SSS">SSS</span>
+                  </div>
+                </div>
               </div>
-              <div class="decay-steps-bar" aria-label="Escala de Decaimento por Repetição">
-                <span class="decay-step active" data-step="0">4x</span>
-                <span class="decay-arrow">→</span>
-                <span class="decay-step" data-step="1">2.5x</span>
-                <span class="decay-arrow">→</span>
-                <span class="decay-step" data-step="2">1.5x</span>
-                <span class="decay-arrow">→</span>
-                <span class="decay-step" data-step="3">1x</span>
-              </div>
-            </div>
 
-            <!-- Visor dos 2 Slots de Elementos Carregados (E3-01 / E4-01) -->
-            <div class="telemetry-card slots-card">
-              <div class="telemetry-label">FUSÃO ELEMENTAL</div>
-              <div class="combo-slots-row">
-                <div id="slot-0" class="element-slot empty">
-                  <span class="slot-icon">?</span>
-                  <span class="slot-name">SLOT 1</span>
-                </div>
-                <span class="slot-plus">+</span>
-                <div id="slot-1" class="element-slot empty">
-                  <span class="slot-icon">?</span>
-                  <span class="slot-name">SLOT 2</span>
-                </div>
+              <!-- MULTIPLICADOR EMBAIXO SUPER DESTACADO (Pedido do Usuário — E4-05) -->
+              <div class="dmc-multiplier-under-banner">
+                <span class="under-mult-label">MULTIPLICADOR</span>
+                <span id="multiplier-value" class="under-mult-value">1.5x</span>
+                <span id="repeat-counter-tag" class="repeat-tag">VARIADO</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Visor da Receita / Objeto ou Energia Reciclada Formada -->
+        <!-- Visor do Grimório Hwei: Lixeira Aberta + Leque de 3 Modos (Q=Dano, E=Controle, R=Escudo) -->
         <div id="recipe-display-card" class="recipe-display-card">
           <div class="recipe-header-row">
-            <span class="recipe-label">OBJETO / ENERGIA PRONTA:</span>
-            <span id="recipe-Action-hint" class="recipe-hint">CLIQUE ESQ. (LMB) DISPARA</span>
+            <span id="recipe-bin-status" class="recipe-label">PASSO 1: ABRA UMA LIXEIRA (Q/E/R/F)</span>
+            <span id="recipe-Action-hint" class="recipe-hint">PASSO 2: Q / E / R</span>
           </div>
-          <div id="recipe-name" class="recipe-name">Aguardando 2 elementos...</div>
-          <div id="recipe-desc" class="recipe-desc">Combine 2 cores (1/Q, 2/E, 3/R, 4/F) e clique no bicho na arena.</div>
+          <div id="recipe-name" class="recipe-name">4 Lixeiras CONAMA Prontas</div>
+          <div id="recipe-desc" class="recipe-desc">Veja o item que está vindo (Garrafa PET, Papelão, Vidro ou Porca de Metal) e aperte a cor da lixeira!</div>
+
+          <!-- Mini-Leque de 3 Opções no Painel Lateral -->
+          <div id="sidebar-hwei-modes" class="sidebar-hwei-modes">
+            <button type="button" class="hwei-mini-btn" data-hwei-mode="DAMAGE">
+              <span class="hwei-key">Q</span>
+              <span class="hwei-mode-title">MAIS DANO</span>
+            </button>
+            <button type="button" class="hwei-mini-btn" data-hwei-mode="CONTROL">
+              <span class="hwei-key">E</span>
+              <span id="sidebar-cc-name" class="hwei-mode-title">CONTROLE</span>
+            </button>
+            <button type="button" class="hwei-mini-btn" data-hwei-mode="SHIELD">
+              <span class="hwei-key">R</span>
+              <span class="hwei-mode-title">ESCUDO</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Alerta de Combo Repetido em 1.0x (RN04 / E3-02 / E4-01) -->
+        <!-- Alerta de Combo Repetido ou Lixeira Errada -->
         <div id="stale-combo-alert" class="stale-combo-alert hidden" role="alert">
-          ⚠ 1x — COMBO REPETIDO! VARIE OS RECICLÁVEIS!
+          ⚠ ATAQUE REPETIDO! USE CONTROLE [E], ESCUDO [R] OU OUTRA LIXEIRA!
         </div>
 
         <!-- Barra de Pureza / Integridade Ambiental (E2-01 / E4-01 / RN11) -->
@@ -102,23 +115,27 @@
           </div>
         </div>
 
-        <!-- Guia Rápido das 4 Cores CONAMA (RN01) -->
-        <div class="conama-legend" aria-label="Atalhos das 4 Cores da Reciclagem CONAMA">
-          <button type="button" class="conama-key-pill plastic" data-element="PLASTIC" title="Plástico (Tecla 1 ou Q)">
-            <span class="key-badge">1/Q</span>
+        <!-- As 4 Lixeiras CONAMA (1º Toque Estilo Hwei: Q, E, R, F) -->
+        <div class="conama-legend" aria-label="As 4 Lixeiras da Coleta Seletiva CONAMA">
+          <button type="button" class="conama-key-pill plastic" data-element="PLASTIC" title="Lixeira de Plástico (Q/1) • Garrafa PET • [E] Separar">
+            <span class="key-badge">Q / 1</span>
             <span class="elem-label">Plástico</span>
+            <span class="elem-sub">PET • Separa</span>
           </button>
-          <button type="button" class="conama-key-pill paper" data-element="PAPER" title="Papel (Tecla 2 ou E)">
-            <span class="key-badge">2/E</span>
+          <button type="button" class="conama-key-pill paper" data-element="PAPER" title="Lixeira de Papel (E/2) • Papelão • [E] Juntar">
+            <span class="key-badge">E / 2</span>
             <span class="elem-label">Papel</span>
+            <span class="elem-sub">Caixa • Junta</span>
           </button>
-          <button type="button" class="conama-key-pill glass" data-element="GLASS" title="Vidro (Tecla 3 ou R)">
-            <span class="key-badge">3/R</span>
+          <button type="button" class="conama-key-pill glass" data-element="GLASS" title="Lixeira de Vidro (R/3) • Garrafa • [E] Lentidão">
+            <span class="key-badge">R / 3</span>
             <span class="elem-label">Vidro</span>
+            <span class="elem-sub">Vidro • Slow</span>
           </button>
-          <button type="button" class="conama-key-pill metal" data-element="METAL" title="Metal (Tecla 4 ou F)">
-            <span class="key-badge">4/F</span>
+          <button type="button" class="conama-key-pill metal" data-element="METAL" title="Lixeira de Metal (F/4) • Porca de Metal • [E] Estunar">
+            <span class="key-badge">F / 4</span>
             <span class="elem-label">Metal</span>
+            <span class="elem-sub">Porca • Stun</span>
           </button>
         </div>
       </section>
@@ -126,7 +143,6 @@
 
     <!-- ÁREA PRINCIPAL DIREITA: VIEWPORT 3D ISOMÉTRICA + BARRA INFERIOR DE STAGE/SCORE -->
     <main id="main-stage-column">
-      <!-- Container da Arena Isométrica 3D (Three.js + UnrealBloomPass — E1-01, E1-02, E2-01, E3-01, E3-02) -->
       <div id="arena-viewport">
         <canvas id="three-canvas"></canvas>
 
@@ -136,17 +152,72 @@
         <!-- HUD Compacto de Controles no Topo da Arena -->
         <div class="arena-top-overlay">
           <div class="control-chip">
-            <kbd>WASD</kbd> Mover na Arena
+            <kbd>WASD</kbd> Mover
           </div>
           <div class="control-chip">
-            <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> ou <kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd> Combinar 2 Cores
+            1º Toque: <kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd> Abrir Lixeira do Item
           </div>
           <div class="control-chip">
-            <kbd>Mouse + LMB</kbd> Mirar e Disparar
+            2º Toque no Leque: <kbd>Q</kbd> Dano · <kbd>E</kbd> Controle · <kbd>R</kbd> Escudo · <kbd>F</kbd> Fechar
           </div>
           <button id="btn-toggle-audio" class="audio-btn" type="button" title="Alternar Áudio Sintetizado Web Audio API">
             🔊 SOM: ON
           </button>
+        </div>
+
+        <!-- MEDIDOR DE ESTILO DEVIL MAY CRY FLUTUANTE NA ARENA (Letra Gigante D-SSS + Multiplicador Destacado Embaixo! — E4-05) -->
+        <div id="dmc-arena-hud" class="dmc-arena-hud rank-c" aria-live="polite">
+          <div class="dmc-arena-top">
+            <div id="dmc-arena-letter" class="dmc-arena-letter">C</div>
+            <div class="dmc-arena-meta">
+              <div id="dmc-arena-title" class="dmc-arena-title">COLETOR</div>
+              <div id="dmc-arena-subtitle" class="dmc-arena-subtitle">Acerte a lixeira certa!</div>
+              <div class="dmc-arena-bar-bg">
+                <div id="dmc-arena-bar-fill" class="dmc-arena-bar-fill" style="width: 20%"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Multiplicador Gigante Embaixo do Rank (Exatamente como pedido!) -->
+          <div class="dmc-arena-multiplier-box">
+            <span class="dmc-arena-mult-tag">MULTIPLICADOR ATIVO</span>
+            <span id="dmc-arena-mult-val" class="dmc-arena-mult-val">⚡ 1.5x</span>
+          </div>
+        </div>
+
+        <!-- LEQUE DE OPÇÕES ESTILO HWEI (Abre na parte inferior da Arena ao pressionar Q, E, R ou F — E3-05 / E4-05) -->
+        <div id="hwei-arena-fan" class="hwei-arena-fan hidden" aria-live="polite">
+          <div id="hwei-fan-header" class="hwei-fan-header">
+            <span id="hwei-fan-bin-badge" class="hwei-fan-bin-badge">LIXEIRA VERMELHA — PLÁSTICO (GARRAFA PET)</span>
+          </div>
+          <div class="hwei-fan-cards-row">
+            <button type="button" class="hwei-fan-card mode-damage" data-hwei-mode="DAMAGE">
+              <span class="fan-key-pill">Q / 1</span>
+              <span class="fan-mode-icon">💥</span>
+              <span class="fan-mode-name">MAIS DANO</span>
+              <span id="fan-damage-desc" class="fan-mode-desc">Destruição direta no item da lixeira</span>
+            </button>
+
+            <button type="button" class="hwei-fan-card mode-control" data-hwei-mode="CONTROL">
+              <span class="fan-key-pill">E / 2</span>
+              <span id="fan-cc-icon" class="fan-mode-icon">🌀</span>
+              <span id="fan-cc-title" class="fan-mode-name">SEPARAR GRUPO</span>
+              <span id="fan-cc-desc" class="fan-mode-desc">Controle de grupo único da lixeira</span>
+            </button>
+
+            <button type="button" class="hwei-fan-card mode-shield" data-hwei-mode="SHIELD">
+              <span class="fan-key-pill">R / 3</span>
+              <span class="fan-mode-icon">🛡</span>
+              <span class="fan-mode-name">ESCUDO SELETIVO</span>
+              <span id="fan-shield-desc" class="fan-mode-desc">Bloqueia dano de aproximação deste item</span>
+            </button>
+
+            <button type="button" class="hwei-fan-card mode-cancel" data-hwei-mode="CANCEL">
+              <span class="fan-key-pill">F / RMB</span>
+              <span class="fan-mode-icon">✖</span>
+              <span class="fan-mode-name">FECHAR</span>
+              <span class="fan-mode-desc">Trocar de lixeira</span>
+            </button>
+          </div>
         </div>
 
         <!-- Overlay quando Pureza chega a 0% (RN11) -->
@@ -154,7 +225,7 @@
           <div class="arena-modal-card">
             <div class="modal-badge">PUREZA AMBIENTAL ESGOTADA (0%)</div>
             <h2>ARENA CONTAMINADA</h2>
-            <p id="gameover-summary-text">Os bichos da poluição dominaram a estação. Varie suas combinações para manter o multiplicador em 4.0x!</p>
+            <p id="gameover-summary-text">Use a Lixeira correta para cada item (Garrafa PET = Q, Papelão = E, Vidro = R, Porca de Metal = F) e combine Controle [E] + Escudo [R] + Dano [Q] para alcançar o Rank SSS!</p>
             <div class="modal-stats-grid">
               <div class="modal-stat-item">
                 <span class="stat-label">SCORE FINAL</span>
@@ -165,7 +236,7 @@
                 <span id="final-stage-val" class="stat-num">1</span>
               </div>
               <div class="modal-stat-item">
-                <span class="stat-label">BICHOS PURIFICADOS</span>
+                <span class="stat-label">ITENS RECICLADOS</span>
                 <span id="final-kills-val" class="stat-num">0</span>
               </div>
             </div>
@@ -181,12 +252,12 @@
         <div class="status-bar-side left">
           <span class="status-prefix">STAGE:</span>
           <span id="stage-counter" class="status-number">1</span>
-          <span id="enemies-alive-pill" class="enemies-pill">BICHOS NA ARENA: 0</span>
+          <span id="enemies-alive-pill" class="enemies-pill">ITENS NA ARENA: 0</span>
         </div>
 
         <!-- Recorte Central Trapezoidal estilo Capsule (@Docs/2d.webp) -->
         <div class="status-bar-center-notch">
-          <span id="last-combo-used-label">ÚLTIMO DISPARO: NENHUM</span>
+          <span id="last-combo-used-label">ÚLTIMO COMANDO: NENHUM</span>
         </div>
 
         <div class="status-bar-side right">

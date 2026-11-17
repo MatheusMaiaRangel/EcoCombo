@@ -1,32 +1,52 @@
-import * as THREE from 'three';
-import { CONAMA_ELEMENTS } from '../constants/recipes.js';
+import { CONAMA_ELEMENTS, resolveHweiSpell } from '../constants/recipes.js';
 
 /**
- * E4-01 — Controlador do Painel Lateral (HUD) e Barra Inferior (STAGE / SCORE)
+ * E4-01 e E4-05 — Controlador do Painel Lateral (HUD), Medidor de Estilo Devil May Cry (D-SSS + Multiplicador embaixo)
+ * e Leque de Opções estilo Hwei (Q = Dano, E = Controle Único da Lixeira, R = Escudo Protetivo)
  */
 export class HUDController {
   constructor(sidebarCharacter) {
     this.sidebarCharacter = sidebarCharacter;
 
-    // Elementos DOM do Painel Lateral
-    this.slotEls = [
-      document.getElementById('slot-0'),
-      document.getElementById('slot-1')
-    ];
     this.conjuredBadge = document.getElementById('conjured-floating-badge');
     this.conjuredBadgeText = document.getElementById('conjured-badge-text');
 
     this.portraitBezel = document.getElementById('portrait-bezel');
     this.portraitMoodTag = document.getElementById('portrait-mood-tag');
 
+    // Medidor Devil May Cry no Painel Lateral
     this.multiplierBox = document.getElementById('multiplier-box');
+    this.dmcRankLetter = document.getElementById('dmc-rank-letter');
+    this.dmcRankTitle = document.getElementById('dmc-rank-title');
+    this.dmcStyleBarFill = document.getElementById('dmc-style-bar-fill');
+    this.dmcSteps = Array.from(document.querySelectorAll('.dmc-step'));
     this.multiplierValue = document.getElementById('multiplier-value');
     this.repeatCounterTag = document.getElementById('repeat-counter-tag');
-    this.decaySteps = Array.from(document.querySelectorAll('.decay-step'));
 
+    // Medidor Devil May Cry em Destaque no Canto Superior Direito da Arena 3D
+    this.dmcArenaHud = document.getElementById('dmc-arena-hud');
+    this.dmcArenaLetter = document.getElementById('dmc-arena-letter');
+    this.dmcArenaTitle = document.getElementById('dmc-arena-title');
+    this.dmcArenaSubtitle = document.getElementById('dmc-arena-subtitle');
+    this.dmcArenaBarFill = document.getElementById('dmc-arena-bar-fill');
+    this.dmcArenaMultVal = document.getElementById('dmc-arena-mult-val');
+
+    // Grimório / Leque Hwei no Painel Lateral e na Arena
     this.recipeCard = document.getElementById('recipe-display-card');
+    this.recipeBinStatus = document.getElementById('recipe-bin-status');
     this.recipeName = document.getElementById('recipe-name');
     this.recipeDesc = document.getElementById('recipe-desc');
+    this.sidebarCcName = document.getElementById('sidebar-cc-name');
+
+    this.hweiArenaFan = document.getElementById('hwei-arena-fan');
+    this.hweiFanHeader = document.getElementById('hwei-fan-header');
+    this.hweiFanBinBadge = document.getElementById('hwei-fan-bin-badge');
+    this.fanDamageDesc = document.getElementById('fan-damage-desc');
+    this.fanCcIcon = document.getElementById('fan-cc-icon');
+    this.fanCcTitle = document.getElementById('fan-cc-title');
+    this.fanCcDesc = document.getElementById('fan-cc-desc');
+    this.fanShieldDesc = document.getElementById('fan-shield-desc');
+
     this.staleAlert = document.getElementById('stale-combo-alert');
 
     this.purityValue = document.getElementById('purity-value');
@@ -47,124 +67,172 @@ export class HUDController {
   }
 
   /**
-   * Atualiza os 2 slots de elementos e a receita formada no painel lateral
+   * Atualiza apenas a barra de progresso do Style Meter DMC durante o decaimento contínuo
    */
-  updateComboHUD({ slots, recipe, displayMultiplier, displayRepeatCount, lastRecipe }) {
-    // 1. Atualiza os 2 slots
-    this.slotEls.forEach((slotEl, idx) => {
-      const elemId = slots[idx];
-      const iconSpan = slotEl.querySelector('.slot-icon');
-      const nameSpan = slotEl.querySelector('.slot-name');
+  updateStyleMeterBarOnly(styleState) {
+    if (!styleState) return;
+    const pct = `${Math.round(styleState.progressPercent)}%`;
+    if (this.dmcStyleBarFill) {
+      this.dmcStyleBarFill.style.width = pct;
+    }
+    if (this.dmcArenaBarFill) {
+      this.dmcArenaBarFill.style.width = pct;
+    }
+  }
 
-      if (elemId && CONAMA_ELEMENTS[elemId]) {
-        const el = CONAMA_ELEMENTS[elemId];
-        slotEl.classList.remove('empty');
-        slotEl.style.borderColor = el.hex;
-        iconSpan.style.background = el.hex;
-        iconSpan.style.color = elemId === 'METAL' ? '#191708' : '#ffffff';
-        iconSpan.textContent = el.keyDigit;
-        nameSpan.textContent = el.shortName || el.name;
-      } else {
-        slotEl.classList.add('empty');
-        slotEl.style.borderColor = 'rgba(255, 255, 255, 0.22)';
-        iconSpan.style.background = '#323048';
-        iconSpan.style.color = '#ffffff';
-        iconSpan.textContent = '?';
-        nameSpan.textContent = `SLOT ${idx + 1}`;
-      }
-    });
+  /**
+   * Atualiza o Grimório Hwei (Lixeira aberta + Leque de 3 modos) e o Style Meter Devil May Cry (D-SSS + Multiplicador embaixo)
+   */
+  updateComboHUD({
+    openBinId,
+    styleState,
+    displayMultiplier,
+    displayRepeatCount,
+    lastRecipe,
+    activeShieldBin
+  }) {
+    const binElem = openBinId ? CONAMA_ELEMENTS[openBinId] : null;
+    const isStale = displayRepeatCount >= 3;
 
-    // 2. Atualiza a Receita / Objeto formado
-    if (recipe) {
-      this.recipeName.textContent = recipe.name;
-      this.recipeName.style.color = recipe.primaryHex;
-      this.recipeDesc.textContent = `${recipe.recipeLabel} (${recipe.colorsLabel}) — ${recipe.effectDesc}`;
-      this.recipeCard.style.borderColor = recipe.primaryHex;
+    // 1. Atualiza o Leque Hwei (no Painel Lateral e na Arena)
+    if (binElem) {
+      const dmgSpell = resolveHweiSpell(openBinId, 'DAMAGE');
+      const ccSpell = resolveHweiSpell(openBinId, 'CONTROL');
+      const shieldSpell = resolveHweiSpell(openBinId, 'SHIELD');
 
-      this.conjuredBadge.classList.remove('empty');
-      this.conjuredBadge.style.borderColor = recipe.primaryHex;
-      this.conjuredBadge.style.color = recipe.secondaryHex;
-      this.conjuredBadgeText.textContent = `⚡ ${recipe.name.toUpperCase()}`;
-    } else if (slots.length === 1) {
-      const firstEl = CONAMA_ELEMENTS[slots[0]];
-      this.recipeName.textContent = `${firstEl.name} carregado (Escolha a 2ª cor...)`;
-      this.recipeName.style.color = firstEl.hex;
-      this.recipeDesc.textContent = `Pressione 1/Q, 2/E, 3/R ou 4/F para fundir com ${firstEl.name}.`;
-      this.recipeCard.style.borderColor = firstEl.hex;
+      this.recipeBinStatus.textContent = `LIXEIRA ABERTA: [${binElem.keyAlt}] ${binElem.shortName.toUpperCase()}`;
+      this.recipeName.textContent = `${binElem.name} (${binElem.enemyItemName})`;
+      this.recipeName.style.color = binElem.hex;
+      this.recipeDesc.textContent = `Escolha no Leque: [Q] Mais Dano • [E] ${binElem.ccShort} • [R] Escudo Protetivo`;
+      this.recipeCard.style.borderColor = binElem.hex;
+      this.sidebarCcName.textContent = binElem.ccShort;
 
       this.conjuredBadge.classList.remove('empty');
-      this.conjuredBadge.style.borderColor = firstEl.hex;
-      this.conjuredBadge.style.color = firstEl.hex;
-      this.conjuredBadgeText.textContent = `${firstEl.name.toUpperCase()} + [ ? ]`;
+      this.conjuredBadge.style.borderColor = binElem.hex;
+      this.conjuredBadge.style.color = binElem.hex;
+      this.conjuredBadgeText.textContent = `🗑 [${binElem.keyAlt}] ${binElem.shortName.toUpperCase()} → Q / E / R`;
+
+      // Mostra o Leque Visual na Arena
+      this.hweiArenaFan.classList.remove('hidden');
+      this.hweiArenaFan.style.borderColor = binElem.hex;
+      this.hweiFanHeader.style.background = binElem.hex;
+      this.hweiFanHeader.style.color = openBinId === 'METAL' ? '#191708' : '#ffffff';
+      this.hweiFanBinBadge.textContent = `LIXEIRA [${binElem.keyAlt}] ${binElem.shortName.toUpperCase()} — ALVO: ${binElem.enemyItemName.toUpperCase()}`;
+
+      this.fanDamageDesc.textContent = `Dano máximo em ${binElem.enemyItemName}`;
+      this.fanCcIcon.textContent =
+        openBinId === 'PLASTIC'
+          ? '↔'
+          : openBinId === 'PAPER'
+            ? '🌀'
+            : openBinId === 'GLASS'
+              ? '❄'
+              : '⚡';
+      this.fanCcTitle.textContent = binElem.ccLabel;
+      this.fanCcDesc.textContent = ccSpell ? ccSpell.effectDesc : '';
+      this.fanShieldDesc.textContent = shieldSpell ? shieldSpell.effectDesc : '';
     } else {
-      this.recipeName.textContent = 'Pronto para Sintetizar Combo';
+      this.recipeBinStatus.textContent = 'PASSO 1: ABRA A LIXEIRA DO ITEM';
+      this.recipeName.textContent = 'Grimório Seletivo (Q, E, R, F)';
       this.recipeName.style.color = '#ffffff';
       this.recipeDesc.textContent =
-        'Combine 2 cores (1/Q Plástico, 2/E Papel, 3/R Vidro, 4/F Metal) e clique no bicho!';
+        'Olhe o item vindo: [Q] Garrafa PET • [E] Papelão • [R] Vidro • [F] Porca de Metal';
       this.recipeCard.style.borderColor = '#3c352d';
+      this.sidebarCcName.textContent = 'CONTROLE';
 
-      this.conjuredBadge.classList.add('empty');
-      this.conjuredBadge.style.borderColor = 'rgba(255,255,255,0.35)';
-      this.conjuredBadge.style.color = '#dcd6f7';
-      this.conjuredBadgeText.textContent = 'CANALIZE 2 CORES (1-4 / QERF)';
+      if (activeShieldBin && CONAMA_ELEMENTS[activeShieldBin]) {
+        const shElem = CONAMA_ELEMENTS[activeShieldBin];
+        this.conjuredBadge.classList.remove('empty');
+        this.conjuredBadge.style.borderColor = shElem.hex;
+        this.conjuredBadge.style.color = shElem.hex;
+        this.conjuredBadgeText.textContent = `🛡 ESCUDO ${shElem.shortName.toUpperCase()} ATIVO`;
+      } else {
+        this.conjuredBadge.classList.add('empty');
+        this.conjuredBadge.style.borderColor = 'rgba(255,255,255,0.35)';
+        this.conjuredBadge.style.color = '#dcd6f7';
+        this.conjuredBadgeText.textContent = 'ABRA UMA LIXEIRA (Q, E, R, F)';
+      }
+
+      // Esconde o Leque da Arena enquanto nenhuma lixeira está aberta
+      this.hweiArenaFan.classList.add('hidden');
     }
 
-    // 3. Atualiza o Multiplicador Decrescente (RN04 / E3-02 / E4-01)
-    const isStale = displayMultiplier <= 1.0 && displayRepeatCount >= 3;
+    // 2. Atualiza o Medidor de Estilo Devil May Cry (Ranks D, C, B, A, S, SS, SSS + Multiplicador Destacado Embaixo)
+    if (styleState) {
+      const rankClasses = [
+        'rank-d',
+        'rank-c',
+        'rank-b',
+        'rank-a',
+        'rank-s',
+        'rank-ss',
+        'rank-sss',
+        'state-stale'
+      ];
+      this.multiplierBox.classList.remove(...rankClasses);
+      this.dmcArenaHud.classList.remove(...rankClasses);
+      this.multiplierBox.classList.add(styleState.stateClass);
+      this.dmcArenaHud.classList.add(styleState.stateClass);
+
+      this.dmcRankLetter.textContent = styleState.rank;
+      this.dmcRankLetter.style.color = styleState.color;
+      this.dmcRankTitle.textContent = styleState.title;
+      this.dmcRankTitle.style.color = styleState.color;
+      this.dmcStyleBarFill.style.width = `${Math.round(styleState.progressPercent)}%`;
+      this.dmcStyleBarFill.style.background = styleState.color;
+
+      this.dmcArenaLetter.textContent = styleState.rank;
+      this.dmcArenaLetter.style.color = styleState.color;
+      this.dmcArenaTitle.textContent = styleState.title;
+      this.dmcArenaTitle.style.color = styleState.color;
+      this.dmcArenaSubtitle.textContent = styleState.subtitle;
+      this.dmcArenaBarFill.style.width = `${Math.round(styleState.progressPercent)}%`;
+      this.dmcArenaBarFill.style.background = styleState.color;
+
+      // Escada de letras D -> C -> B -> A -> S -> SS -> SSS
+      this.dmcSteps.forEach((stepEl) => {
+        stepEl.classList.toggle('active', stepEl.getAttribute('data-rank') === styleState.rank);
+      });
+    }
+
+    // MULTIPLICADOR GIGANTE EMBAIXO DO RANK
     this.multiplierValue.textContent = `${displayMultiplier.toFixed(1)}x`;
-
-    if (displayRepeatCount <= 0) {
-      this.repeatCounterTag.textContent = 'VARIADO (R=0)';
-    } else if (displayRepeatCount >= 3) {
-      this.repeatCounterTag.textContent = `SATURADO (R=${displayRepeatCount})`;
-    } else {
-      this.repeatCounterTag.textContent = `REPETIÇÃO (R=${displayRepeatCount})`;
-    }
-
-    // Classes de cor do Multiplicador
-    this.multiplierBox.classList.remove('state-max', 'state-mid', 'state-low', 'state-stale');
-    this.portraitBezel.classList.remove('state-stale');
+    this.dmcArenaMultVal.textContent = `⚡ ${displayMultiplier.toFixed(1)}x`;
 
     if (isStale) {
+      this.repeatCounterTag.textContent = `REPETIDO (R=${displayRepeatCount})`;
       this.multiplierBox.classList.add('state-stale');
       this.portraitBezel.classList.add('state-stale');
       this.staleAlert.classList.remove('hidden');
-      this.portraitMoodTag.textContent = '1x REPETIDO!';
+      this.portraitMoodTag.textContent = 'VARIE O MODO!';
       this.portraitMoodTag.style.color = '#ff4d6d';
     } else {
+      this.portraitBezel.classList.remove('state-stale');
       this.staleAlert.classList.add('hidden');
+      this.repeatCounterTag.textContent =
+        displayRepeatCount === 0 ? 'ESTILO LIVRE!' : `R=${displayRepeatCount}`;
+
       if (displayMultiplier >= 4.0) {
-        this.multiplierBox.classList.add('state-max');
-        this.portraitMoodTag.textContent = '4x MÁXIMO!';
+        this.portraitMoodTag.textContent = `RANK ${styleState?.rank || 'S'}!`;
         this.portraitMoodTag.style.color = '#00f5d4';
-      } else if (displayMultiplier >= 2.5) {
-        this.multiplierBox.classList.add('state-mid');
-        this.portraitMoodTag.textContent = '2.5x FOCO';
+      } else if (displayMultiplier >= 2.0) {
+        this.portraitMoodTag.textContent = `RANK ${styleState?.rank || 'B'}`;
         this.portraitMoodTag.style.color = '#ffd166';
       } else {
-        this.multiplierBox.classList.add('state-low');
-        this.portraitMoodTag.textContent = '1.5x QUEDA';
-        this.portraitMoodTag.style.color = '#f8961e';
+        this.portraitMoodTag.textContent = `RANK ${styleState?.rank || 'C'}`;
+        this.portraitMoodTag.style.color = '#4cc9f0';
       }
     }
 
-    // Atualiza a trilha visual de degraus (4x -> 2.5x -> 1.5x -> 1x)
-    const stepIdx = Math.min(3, Math.max(0, displayRepeatCount));
-    this.decaySteps.forEach((stepEl, i) => {
-      stepEl.classList.toggle('active', i === stepIdx);
-    });
-
-    // Atualiza o indicador central da barra inferior
     if (lastRecipe) {
-      this.lastComboUsedLabel.textContent = `ÚLTIMO: ${lastRecipe.name.toUpperCase()} (${displayMultiplier.toFixed(1)}x)`;
+      this.lastComboUsedLabel.textContent = `ÚLTIMO: [${lastRecipe.comboKeys}] ${lastRecipe.name.toUpperCase()} (${displayMultiplier.toFixed(1)}x)`;
     } else {
-      this.lastComboUsedLabel.textContent = 'ÚLTIMO DISPARO: NENHUM (4.0x PRONTO)';
+      this.lastComboUsedLabel.textContent = 'ABRA UMA LIXEIRA [Q, E, R, F] E ESCOLHA [Q=DANO | E=CONTROLE | R=ESCUDO]';
     }
 
-    // Sincroniza estado com o retratista pixel art
     this.sidebarCharacter.updateState({
-      slots: [...slots],
-      recipe,
+      slots: openBinId ? [openBinId] : [],
+      recipe: openBinId ? resolveHweiSpell(openBinId, 'DAMAGE') : lastRecipe,
       multiplier: displayMultiplier,
       repeatCount: displayRepeatCount,
       isStale
@@ -189,18 +257,19 @@ export class HUDController {
   }
 
   /**
-   * Atualiza STAGE, SCORE e contagem de bichos na barra inferior
+   * Atualiza STAGE, SCORE e contagem de itens recicláveis na barra inferior
    */
   updateStageAndScore(stage, score, enemiesAlive) {
     this.stageCounter.textContent = String(stage);
     this.scoreCounter.textContent = String(score);
-    this.enemiesAlivePill.textContent = `BICHOS NA ARENA: ${enemiesAlive}`;
+    this.enemiesAlivePill.textContent = `ITENS NA ARENA: ${enemiesAlive}`;
   }
 
   /**
-   * Exibe texto flutuante projetado da coordenada 3D para a tela 2D (E3-02)
+   * Exibe texto flutuante projetado da coordenada 3D para a tela 2D
    */
   spawnFloatingText(worldPos, camera, viewportEl, text, color = '#ffd166') {
+    if (!camera || !viewportEl) return;
     const projected = worldPos.clone().project(camera);
     const rect = viewportEl.getBoundingClientRect();
     const x = (projected.x * 0.5 + 0.5) * rect.width;
@@ -216,7 +285,7 @@ export class HUDController {
     this.floatingLayer.appendChild(el);
     setTimeout(() => {
       el.remove();
-    }, 950);
+    }, 1050);
   }
 
   showPurityDepletedModal({ score, stage, kills }) {

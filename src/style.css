@@ -802,6 +802,371 @@ html, body {
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25);
 }
 
+/* ==========================================================================
+   DEVIL MAY CRY STYLE METER (D, C, B, A, S, SS, SSS + MULTIPLICADOR EMBAIXO — E4-05)
+   ========================================================================== */
+.dmc-sidebar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 8px;
+}
+
+.dmc-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dmc-rank-letter-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 4px 5px;
+  background: #14121f;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+}
+
+.dmc-rank-caption {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  color: #9e9ab8;
+  margin-bottom: 2px;
+}
+
+.dmc-rank-letter {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.25rem;
+  color: #4cc9f0;
+  text-shadow: 2px 2px 0 #000, 0 0 10px currentColor;
+  line-height: 1.1;
+}
+
+.dmc-rank-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dmc-rank-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  color: #4cc9f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dmc-style-bar-track {
+  width: 100%;
+  height: 7px;
+  background: #12111a;
+  border: 1px solid #45415e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dmc-style-bar-fill {
+  height: 100%;
+  background: #4cc9f0;
+  transition: width 0.12s linear, background 0.15s ease;
+}
+
+.dmc-ladder-steps {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'VT323', monospace;
+  font-size: 0.85rem;
+  color: #6c6884;
+}
+
+.dmc-step {
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.dmc-step.active {
+  background: #ffd166;
+  color: #161422;
+  font-weight: 700;
+}
+
+/* MULTIPLICADOR EMBAIXO SUPER DESTACADO NO PAINEL LATERAL */
+.dmc-multiplier-under-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #151324 0%, #2b2440 50%, #151324 100%);
+  border: 2px solid #ffd166;
+  border-radius: 5px;
+  padding: 5px 8px;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.28);
+}
+
+.under-mult-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  color: #ffd166;
+}
+
+.under-mult-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.15rem;
+  color: #00f5d4;
+  text-shadow: 2px 2px 0 #000, 0 0 12px rgba(0, 245, 212, 0.85);
+}
+
+/* MEDIDOR DEVIL MAY CRY FLUTUANTE NO CANTO DIREITO DA ARENA 3D */
+.dmc-arena-hud {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  width: 225px;
+  background: rgba(18, 16, 30, 0.9);
+  border: 3px solid #4cc9f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  pointer-events: none;
+  z-index: 14;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.dmc-arena-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dmc-arena-letter {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 2.1rem;
+  color: #4cc9f0;
+  text-shadow:
+    3px 3px 0 #000,
+    -2px -2px 0 #000,
+    0 0 18px currentColor;
+  min-width: 56px;
+  text-align: center;
+}
+
+.dmc-arena-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.dmc-arena-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.66rem;
+  color: #4cc9f0;
+  margin-bottom: 3px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.dmc-arena-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 0.96rem;
+  color: #dcd6f7;
+  margin-bottom: 5px;
+}
+
+.dmc-arena-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: #100e1a;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dmc-arena-bar-fill {
+  height: 100%;
+  background: #4cc9f0;
+  transition: width 0.12s linear;
+}
+
+/* MULTIPLICADOR EMBAIXO DA LETRA DO RANK NA ARENA (DESTAQUE MÁXIMO!) */
+.dmc-arena-multiplier-box {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(90deg, #1b162e 0%, #342654 50%, #1b162e 100%);
+  border: 2px solid #ffd166;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.35);
+}
+
+.dmc-arena-mult-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  color: #ffe8a3;
+}
+
+.dmc-arena-mult-val {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.2rem;
+  color: #00f5d4;
+  text-shadow: 2px 2px 0 #000, 0 0 14px rgba(0, 245, 212, 0.9);
+}
+
+.dmc-arena-hud.rank-s,
+.dmc-arena-hud.rank-ss,
+.dmc-arena-hud.rank-sss {
+  border-color: #ffbe0b;
+  box-shadow: 0 0 24px rgba(255, 190, 11, 0.45);
+}
+
+/* ==========================================================================
+   LEQUE DE OPÇÕES ESTILO HWEI (3 MODOS: Q=DANO, E=CONTROLE, R=ESCUDO + F=FECHAR — E3-05)
+   ========================================================================== */
+.sidebar-hwei-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.hwei-mini-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 4px;
+  background: #2b2940;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.12s ease;
+}
+
+.hwei-mini-btn:hover {
+  border-color: #ffd166;
+  transform: translateY(-1px);
+}
+
+.hwei-key {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  background: #ffd166;
+  color: #181624;
+  padding: 2px 5px;
+  border-radius: 2px;
+}
+
+.hwei-mode-title {
+  font-family: 'VT323', monospace;
+  font-size: 0.92rem;
+  color: #f8f5f0;
+}
+
+/* Leque Visual Hwei na parte inferior da Arena 3D */
+.hwei-arena-fan {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, 94%);
+  background: rgba(19, 17, 32, 0.95);
+  border: 3px solid #ff3b30;
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 18;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.8);
+  animation: popFanUp 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popFanUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.hwei-fan-header {
+  padding: 6px 12px;
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.6px;
+}
+
+.hwei-fan-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr 0.65fr;
+  gap: 8px;
+  padding: 10px;
+}
+
+.hwei-fan-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 8px 6px;
+  background: #27253d;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 7px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.hwei-fan-card:hover {
+  transform: translateY(-3px);
+  border-color: #00f5d4;
+  background: #333052;
+}
+
+.fan-key-pill {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  background: #ffd166;
+  color: #161424;
+  padding: 3px 6px;
+  border-radius: 3px;
+}
+
+.fan-mode-icon {
+  font-size: 1.25rem;
+}
+
+.fan-mode-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.54rem;
+  color: #00f5d4;
+  line-height: 1.3;
+}
+
+.fan-mode-desc {
+  font-size: 0.72rem;
+  color: #d8d4ec;
+  line-height: 1.2;
+}
+
+.conama-key-pill.active-bin {
+  outline: 3px solid #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.75);
+}
+
+.elem-sub {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
 @media (max-width: 960px) {
   :root {
     --panel-width: 300px;
