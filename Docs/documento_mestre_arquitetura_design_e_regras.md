@@ -86,9 +86,24 @@ Para incentivar o jogador a dominar e variar todas as combinações das 4 cores 
    * Se um inimigo encostar no protagonista, a **Barra de Pureza/Integridade Ambiental** (que inicia em $100\%$) perde $15\%$ e o inimigo recua.
    * Derrotar inimigos com combos variados ($M \ge 2.5\times$) recupera $+2\%$ de Pureza Ambiental (até $100\%$).
 
+### 3.4. Evolução Tática 2.0: Combos *Devil May Cry* + Comandos *Hwei (LoL)* + Inimigos Recicláveis
+> Detalhamento completo em [`Docs/planejamento_combos_dmc_e_comandos_hwei.md`](./planejamento_combos_dmc_e_comandos_hwei.md).
+
+Para elevar a profundidade tática e evitar que o jogador aperte combinações aleatórias sem analisar a arena, o combate evolui em três frentes integradas:
+1. **Inimigos como Itens Recicláveis Específicos (`RN16`):** Os inimigos representam resíduos reais das 4 cores CONAMA — ex.: **Garrafa PET** (Plástico/Vermelho `Q`), **Caixa de Papelão** (Papel/Azul `E`), **Garrafa de Vidro** (Vidro/Verde `R`) e **Porca de Metal** (Metal/Amarelo `F`). O jogador precisa selecionar a **Lixeira da cor certa** para o item que está vindo.
+2. **Sistema de Lixeiras e Leque de Modos Estilo *Hwei* — *League of Legends* (`RN17`):**
+   * **1º Comando (`Q`, `E`, `R` ou `F`):** Abre a **Lixeira CONAMA** correspondente e exibe um **Leque Visual de Opções** daquela cor.
+   * **2º Comando (Modo Tático no Leque):** Escolhe a ação ideal para o momento:
+     * **Modo 1 (`Q` — Mais Dano):** Disparo focado de alto impacto para abater o item;
+     * **Modo 2 (`E` — Controle de Grupo / Juntar & Expandir):** Puxa/agrupa itens espalhados ou expande em área;
+     * **Modo 3 (`R` — Estunar / Paralisar):** Paralisa (*stun*) o item reciclável no lugar;
+     * **Modo 4 (`F` — Protetivo / Escudo Seletivo):** Ativa um escudo da cor da lixeira que reduz drasticamente o dano recebido quando aquele tipo de item tenta encostar no protagonista.
+3. **Medidor de Estilo *Devil May Cry* (`D` a `SSS`) com Multiplicador Destacado Abaixo (`RN18`):**
+   * O HUD exibe a letra gigante do **Rank de Estilo (`D`, `C`, `B`, `A`, `S`, `SS`, `SSS`)** e, **logo abaixo em grande destaque**, o **Multiplicador ativo (`1.0x` até `6.0x`)**, recompensando acertos na lixeira certa com variedade de modos táticos.
+
 ---
 
-## 4. Regras de Negócio do Sistema (`RN01` a `RN15`)
+## 4. Regras de Negócio do Sistema (`RN01` a `RN18`)
 
 * **RN01 (Padrão de 4 Cores CONAMA):** Os elementos de reciclagem seguem as $4\text{ cores}$ oficiais: Vermelho/Plástico (`1`/`Q`), Azul/Papel (`2`/`E`), Verde/Vidro (`3`/`R`) e Amarelo/Metal (`4`/`F`).
 * **RN02 (Movimentação Isométrica e Mira):** O protagonista se move livremente pela arena 3D com câmera isométrica usando `WASD` e mira na direção do cursor do mouse (`Raycaster` + Clique Esquerdo).
@@ -105,6 +120,9 @@ Para incentivar o jogador a dominar e variar todas as combinações das 4 cores 
 * **RN13 (Privacidade e LGPD no Ranking Local):** Recordes locais em `localStorage` restritos a apelido curto ($3\text{ a }12\text{ caracteres}$), sem dados sensíveis e com limpeza total pelo usuário.
 * **RN14 (Catálogo de Receitas e Educação Ambiental):** Exibição das receitas de fusão dos materiais recicláveis e seu impacto ambiental.
 * **RN15 (Sincronização Obrigatória com GitHub Projects):** Sempre que uma nova funcionalidade/estória for solicitada, iniciada, concluída ou cancelada durante o desenvolvimento, as Issues e o quadro do GitHub Projects (`MatheusMaiaRangel/EcoCombo`) devem ser atualizados imediatamente (`Status`, `Sprint`, `Estimativa`, `Prioridade` e vínculo de sub-issue ao épico).
+* **RN16 (Inimigos como Itens Recicláveis por Lixeira):** Os inimigos instanciados na arena representam resíduos recicláveis específicos das 4 categorias CONAMA (ex.: Garrafa PET = Plástico/Vermelho, Caixa de Papelão = Papel/Azul, Garrafa de Vidro = Vidro/Verde, Porca de Metal = Metal/Amarelo), exigindo o uso da Lixeira correspondente para reciclagem eficiente.
+* **RN17 (Comandos de Lixeiras e Leque de Modos Táticos estilo *Hwei*):** As 4 teclas (`Q`, `E`, `R`, `F` ou `1`, `2`, `3`, `4`) abrem as respectivas Lixeiras CONAMA e exibem um Leque de Modos Táticos (Mais Dano, Controle de Grupo/Juntar/Expandir, Stun/Paralisar e Escudo Protetivo que mitiga o dano de aproximação daquele item).
+* **RN18 (Rank de Estilo *Devil May Cry* + Multiplicador em Destaque Abaixo):** O sistema de combo exibe Ranks progressivos (`D`, `C`, `B`, `A`, `S`, `SS`, `SSS`) acompanhados de um Multiplicador em grande destaque logo abaixo, que sobe ao acertar a lixeira correta variando os modos táticos e cai ao errar a lixeira, repetir sempre o mesmo ataque ou sofrer dano sem escudo.
 
 ---
 

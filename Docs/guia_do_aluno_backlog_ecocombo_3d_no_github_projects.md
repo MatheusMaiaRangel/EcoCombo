@@ -39,21 +39,24 @@ Este guia segue rigorosamente todos os critérios de avaliação do documento or
 | E1-02 | Movimentar protagonista no `WASD` com 4 orbes em órbita e mira no Mouse | 3 | Alta | Sprint 1 |
 | E1-03 | Adicionar obstáculos 3D na arena que bloqueiam projéteis e inimigos | 3 | Média | |
 | E1-04 | Alterar atmosfera e iluminação da arena conforme o nível de pureza | 2 | Baixa | |
-| **E2** | **Inimigos da Poluição ("Bichos") e IA de Arena** | **10** | | |
+| **E2** | **Inimigos da Poluição ("Bichos" / Itens Recicláveis) e IA de Arena** | **13** | | |
 | E2-01 | Instanciar inimigos da poluição na arena isométrica que perseguem o jogador | 3 | Alta | Sprint 1 |
 | E2-02 | Causar perda de pureza ambiental quando o inimigo encosta no protagonista | 3 | Alta | |
 | E2-03 | Escalonar velocidade e vida dos inimigos a cada estágio (onda) | 2 | Média | |
 | E2-04 | Instanciar inimigos resistentes a uma cor específica de reciclável | 2 | Baixa | |
-| **E3** | **Combinação de Recicláveis, Objetos/Energias e Multiplicador Decrescente** | **13** | | |
+| E2-05 | Instanciar inimigos como itens recicláveis (Garrafa PET, Porca de Metal, Papelão e Vidro) por lixeira | 3 | Alta | Sprint 1 |
+| **E3** | **Combinação de Recicláveis, Grimório *Hwei* e Multiplicador** | **18** | | |
 | E3-01 | Combinar as 4 cores de recicláveis para formar um objeto/energia e disparar com o Mouse | 5 | Alta | Sprint 1 |
 | E3-02 | Reduzir o multiplicador ao repetir o mesmo combo até ficar em $1\times$ (*Stale Decay*) | 3 | Alta | Sprint 1 |
 | E3-03 | Aplicar efeitos elementais secundários (ricochete, empurrão, lentidão) por receita | 3 | Média | |
 | E3-04 | Conceder bônus de Maestria Elemental ao alternar 4 combos inéditos seguidos | 2 | Baixa | |
-| **E4** | **Painel Lateral do Personagem (HUD) e Feedback Audiovisual** | **12** | | |
+| E3-05 | Implementar comandos de Lixeiras e Leque de Modos Táticos estilo *Hwei* (Dano, Controle por Lixeira e Escudo) | 5 | Alta | Sprint 1 |
+| **E4** | **Painel Lateral do Personagem (HUD), Rank *Devil May Cry* e Feedback Audiovisual** | **15** | | |
 | E4-01 | Exibir painel lateral com retrato reativo do personagem, receita do combo e multiplicador | 3 | Alta | Sprint 1 |
 | E4-02 | Atualizar expressão do personagem na lateral ao repetir combo ($1\times$) ou sofrer dano | 3 | Média | |
 | E4-03 | Emitir partículas 3D e áudio sintetizado progressivo ao conjurar e atingir inimigos | 3 | Média | |
 | E4-04 | Exibir tela de Game Over com resumo da partida e botão de reinício | 3 | Alta | |
+| E4-05 | Exibir Rank de Estilo *Devil May Cry* (`D` a `SSS`) com Multiplicador destacado embaixo e Leque Visual | 3 | Alta | Sprint 1 |
 | **E5** | **Chefões da Poluição e Eventos de Arena** | **13** | | |
 | E5-01 | Instanciar Chefão Colosso de Entulho ao final do estágio | 5 | Alta | |
 | E5-02 | Exigir combos variados ($M \ge 2.5\times$) para quebrar o escudo do chefão | 3 | Alta | |
