@@ -13,7 +13,7 @@ export function applyNearestPixelFilter(texture) {
 }
 
 /**
- * E1-01 — Textura Pixel Art do Chão em Grid Urbano/Estação (Inspirada em Until Then @Docs/until-then-2.webp)
+ * E1-01 — Textura Pixel Art do Chão da Praça Ecológica Ensolarada (Mapa de Dia Alegre e Colorido!)
  */
 export function createArenaGridTexture() {
   const size = 64;
@@ -23,63 +23,125 @@ export function createArenaGridTexture() {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  // Base de ladrilho cinza-azulado quente (estilo piso de estação de metrô de Until Then)
-  ctx.fillStyle = '#383b4e';
+  // Base de ladrilho solar creme-areia super alegre e iluminado
+  ctx.fillStyle = '#fdf3d0';
   ctx.fillRect(0, 0, size, size);
 
-  // Sub-blocos internos (2x2 ladrilhos dentro de 64x64)
   const half = size / 2;
+  const mosaicAccents = ['#ff6b6b', '#38bdf8', '#34c759', '#f59e0b'];
+
   for (let gy = 0; gy < 2; gy++) {
     for (let gx = 0; gx < 2; gx++) {
       const ox = gx * half;
       const oy = gy * half;
+      const idx = gy * 2 + gx;
 
-      // Variação sutil de tom entre ladrilhos
-      ctx.fillStyle = (gx + gy) % 2 === 0 ? '#3d4054' : '#35384a';
+      // Variação alegre entre ladrilhos de praça ensolarada
+      ctx.fillStyle = (gx + gy) % 2 === 0 ? '#fff9e6' : '#faecc0';
       ctx.fillRect(ox + 2, oy + 2, half - 4, half - 4);
 
-      // Borda iluminada superior/esquerda (chanfro pixelado)
-      ctx.fillStyle = '#4c5068';
-      ctx.fillRect(ox + 2, oy + 2, half - 4, 1);
-      ctx.fillRect(ox + 2, oy + 2, 1, half - 4);
+      // Borda iluminada pelo sol (branco-quente)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(ox + 2, oy + 2, half - 4, 2);
+      ctx.fillRect(ox + 2, oy + 2, 2, half - 4);
 
-      // Sombra inferior/direita do ladrilho
-      ctx.fillStyle = '#262836';
+      // Sombra suave dourada inferior/direita do ladrilho
+      ctx.fillStyle = '#e5cf94';
       ctx.fillRect(ox + 2, oy + half - 3, half - 4, 1);
       ctx.fillRect(ox + half - 3, oy + 2, 1, half - 4);
 
-      // Pontos de textura terrazzo (granilite pixel art)
-      ctx.fillStyle = '#484c63';
-      ctx.fillRect(ox + 8, oy + 10, 2, 2);
-      ctx.fillRect(ox + 21, oy + 18, 2, 2);
-      ctx.fillStyle = '#2d3040';
-      ctx.fillRect(ox + 14, oy + 23, 2, 2);
-      ctx.fillRect(ox + 24, oy + 7, 1, 1);
+      // Pedrinhas coloridas de granilite alegre (nas 4 cores CONAMA)
+      ctx.fillStyle = mosaicAccents[idx];
+      ctx.fillRect(ox + 9, oy + 10, 2, 2);
+      ctx.fillStyle = mosaicAccents[(idx + 1) % 4];
+      ctx.fillRect(ox + 21, oy + 19, 2, 2);
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(ox + 15, oy + 23, 2, 2);
     }
   }
 
-  // Rejunte escuro principal do grid
-  ctx.fillStyle = '#1e202c';
+  // Rejunte com graminha viva crescendo entre as pedras da praça
+  ctx.fillStyle = '#d9c282';
   ctx.fillRect(0, 0, size, 2);
   ctx.fillRect(0, 0, 2, size);
   ctx.fillRect(0, half - 1, size, 2);
   ctx.fillRect(half - 1, 0, 2, size);
 
-  // Marcadores táteis amarelos/âmbar discretos nas interseções (assinatura urbana de Until Then)
-  ctx.fillStyle = '#d49a45';
+  // Tufinhos de grama verde e florzinhas nos cruzamentos dos ladrilhos
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(0, 0, 4, 4);
+  ctx.fillRect(half - 1, half - 1, 4, 4);
+  ctx.fillStyle = '#facc15';
   ctx.fillRect(1, 1, 2, 2);
+  ctx.fillStyle = '#f472b6';
   ctx.fillRect(half, half, 2, 2);
 
   const texture = new THREE.CanvasTexture(canvas);
   applyNearestPixelFilter(texture);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(18, 18);
+  texture.repeat.set(14, 14);
   return texture;
 }
 
 /**
- * E1-01 — Textura Pixel Art para as Bordas / Muretas da Estação (Faixa de Segurança Amarela/Preta)
+ * Textura Pixel Art de Gramado Verde Florido para o Parque ao redor da Arena
+ */
+export function createParkGrassTexture() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // Grama verde vibrante de dia ensolarado
+  ctx.fillStyle = '#4ade80';
+  ctx.fillRect(0, 0, size, size);
+
+  // Manchas de luz solar na grama
+  ctx.fillStyle = '#86efac';
+  ctx.fillRect(4, 6, 18, 14);
+  ctx.fillRect(36, 34, 20, 16);
+
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(26, 10, 14, 14);
+  ctx.fillRect(8, 40, 16, 14);
+
+  // Folhinhas de grama pixel art
+  const blades = [
+    [10, 12], [22, 28], [44, 16], [52, 48], [16, 52], [34, 42], [48, 26], [6, 30]
+  ];
+  ctx.fillStyle = '#16a34a';
+  blades.forEach(([bx, by]) => {
+    ctx.fillRect(bx, by, 2, 3);
+    ctx.fillRect(bx + 2, by + 1, 1, 2);
+  });
+
+  // Florzinhas silvestres coloridas espalhadas pelo gramado
+  const flowers = [
+    { x: 14, y: 18, c: '#ffffff' },
+    { x: 46, y: 12, c: '#facc15' },
+    { x: 28, y: 48, c: '#f472b6' },
+    { x: 54, y: 36, c: '#38bdf8' }
+  ];
+  flowers.forEach(({ x, y, c }) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, 3, 3);
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(x + 1, y + 1, 1, 1);
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  applyNearestPixelFilter(texture);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(28, 28);
+  return texture;
+}
+
+/**
+ * E1-01 — Textura Pixel Art para as Muretas do Parque (Colorida com as 4 cores alegres da reciclagem CONAMA)
  */
 export function createArenaBorderTexture() {
   const canvas = document.createElement('canvas');
@@ -88,29 +150,28 @@ export function createArenaBorderTexture() {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  ctx.fillStyle = '#252636';
+  // Base branca/creme limpa de mureta de parque
+  ctx.fillStyle = '#fffbeb';
   ctx.fillRect(0, 0, 64, 16);
 
-  // Listras diagonais de plataforma urbana
-  for (let x = -16; x < 64; x += 16) {
-    ctx.fillStyle = '#e09f3e';
-    for (let y = 0; y < 6; y++) {
-      ctx.fillRect(x + y, y, 8, 1);
-    }
-    ctx.fillStyle = '#181924';
-    for (let y = 0; y < 6; y++) {
-      ctx.fillRect(x + 8 + y, y, 8, 1);
-    }
+  // Blocos alegres nas 4 cores CONAMA (Vermelho, Azul, Verde, Amarelo)
+  const conamaColors = ['#ff3b30', '#007aff', '#34c759', '#ffcc00'];
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = conamaColors[i];
+    ctx.fillRect(i * 16 + 1, 2, 14, 7);
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillRect(i * 16 + 2, 2, 12, 2);
   }
 
-  ctx.fillStyle = '#40435c';
-  ctx.fillRect(0, 7, 64, 2);
+  // Rodapé verde-grama
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(0, 11, 64, 5);
 
   const texture = new THREE.CanvasTexture(canvas);
   applyNearestPixelFilter(texture);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.repeat.set(16, 1);
+  texture.repeat.set(12, 1);
   return texture;
 }
 
@@ -390,8 +451,19 @@ export function createReticleTexture() {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  // Cantoneiras externas pixel art
-  ctx.fillStyle = '#ffd166';
+  // Contorno externo escuro para contraste perfeito no chão claro de dia
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(1, 1, 9, 4);
+  ctx.fillRect(1, 1, 4, 9);
+  ctx.fillRect(22, 1, 9, 4);
+  ctx.fillRect(27, 1, 4, 9);
+  ctx.fillRect(1, 27, 9, 4);
+  ctx.fillRect(1, 22, 4, 9);
+  ctx.fillRect(22, 27, 9, 4);
+  ctx.fillRect(27, 22, 4, 9);
+
+  // Cantoneiras externas vibrantes
+  ctx.fillStyle = '#ff3b30';
   // Topo-Esquerda
   ctx.fillRect(2, 2, 7, 2);
   ctx.fillRect(2, 2, 2, 7);
@@ -406,12 +478,14 @@ export function createReticleTexture() {
   ctx.fillRect(28, 23, 2, 7);
 
   // Anel interno e mira central
-  ctx.fillStyle = '#00f5d4';
-  ctx.fillRect(15, 6, 2, 4);
-  ctx.fillRect(15, 22, 2, 4);
-  ctx.fillRect(6, 15, 4, 2);
-  ctx.fillRect(22, 15, 4, 2);
+  ctx.fillStyle = '#0284c7';
+  ctx.fillRect(14, 5, 4, 6);
+  ctx.fillRect(14, 21, 4, 6);
+  ctx.fillRect(5, 14, 6, 4);
+  ctx.fillRect(21, 14, 6, 4);
 
+  ctx.fillStyle = '#facc15';
+  ctx.fillRect(13, 13, 6, 6);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(14, 14, 4, 4);
 

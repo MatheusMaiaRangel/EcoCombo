@@ -225,16 +225,34 @@
           </div>
         </div>
 
-        <!-- MENU INICIAL DO JOGO (E4-06 — Aparece ao abrir o jogo antes de iniciar a gameplay) -->
+        <!-- MENU INICIAL DO JOGO (E4-06 — Layout Translúcido que deixa a Praça 3D Ensolarada e o Protagonista 100% visíveis ao fundo!) -->
         <div id="start-menu-overlay" class="arena-modal-overlay start-menu-overlay" role="dialog" aria-modal="true" aria-labelledby="start-menu-title">
-          <div class="arena-modal-card start-menu-card">
-            <div class="modal-badge start-badge">ARENA ISOMÉTRICA 2.5D // COLETA SELETIVA CONAMA</div>
+          <!-- Topo Flutuante: Logo & Subtítulo sem tampar o meio da Arena 3D -->
+          <div class="start-menu-top-banner">
+            <div class="modal-badge start-badge">☀ PARQUE ECOLÓGICO 2.5D // COLETA SELETIVA CONAMA</div>
             <h1 id="start-menu-title" class="start-menu-logo">ECOCOMBO 3D</h1>
             <p class="start-menu-subtitle">
               COMBOS DEVIL MAY CRY (<span class="highlight-cyan">D → SSS</span>) &amp; GRIMÓRIO SELETIVO <span class="highlight-gold">HWEI</span>
             </p>
+          </div>
 
-            <!-- Cards das 4 Lixeiras CONAMA no Menu Inicial -->
+          <!-- Centro Livre (O protagonista e o parque 3D ficam totalmente visíveis aqui! O Guia só abre se clicar em "COMO JOGAR") -->
+          <div class="start-menu-center-slot">
+            <div id="start-howto-box" class="start-howto-box hidden">
+              <div class="howto-step">
+                <strong>1. MOVA E MIRE:</strong> Ande com <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> pelo parque 2.5D e aponte o cursor do <strong>Mouse</strong> para os resíduos.
+              </div>
+              <div class="howto-step">
+                <strong>2. ABRA A LIXEIRA CERTA:</strong> Veja qual item está vindo e pressione <kbd>Q</kbd>, <kbd>E</kbd>, <kbd>R</kbd> ou <kbd>F</kbd> para abrir o leque daquela cor.
+              </div>
+              <div class="howto-step">
+                <strong>3. ESCOLHA O MODO NO LEQUE:</strong> <kbd>Q</kbd> <strong>Mais Dano</strong> · <kbd>E</kbd> <strong>Controle de Grupo</strong> · <kbd>R</kbd> <strong>Escudo Seletivo</strong> · <kbd>ESC</kbd> <strong>Pausar / Opções</strong>.
+              </div>
+            </div>
+          </div>
+
+          <!-- Base Flutuante Translúcida: As 4 Lixeiras CONAMA + Botões de Iniciar e Opções -->
+          <div class="arena-modal-card start-menu-bottom-dock">
             <div class="start-bins-grid">
               <div class="start-bin-chip bin-plastic">
                 <span class="bin-chip-key">Q / 1</span>
@@ -258,32 +276,16 @@
               </div>
             </div>
 
-            <!-- Guia Rápido Colapsável de Como Jogar -->
-            <div id="start-howto-box" class="start-howto-box">
-              <div class="howto-step">
-                <strong>1. MOVA E MIRE:</strong> Ande com <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> pela arena 2.5D e aponte o cursor do <strong>Mouse</strong> para os resíduos.
-              </div>
-              <div class="howto-step">
-                <strong>2. ABRA A LIXEIRA CERTA:</strong> Veja qual item está vindo e pressione <kbd>Q</kbd>, <kbd>E</kbd>, <kbd>R</kbd> ou <kbd>F</kbd> para abrir o leque daquela cor.
-              </div>
-              <div class="howto-step">
-                <strong>3. ESCOLHA O MODO NO LEQUE:</strong> <kbd>Q</kbd> <strong>Mais Dano</strong> · <kbd>E</kbd> <strong>Controle de Grupo</strong> · <kbd>R</kbd> <strong>Escudo Seletivo</strong> · <kbd>ESC</kbd> <strong>Pausar / Opções</strong>.
-              </div>
-            </div>
-
-            <!-- Botões de Ação do Menu Inicial -->
-            <div class="menu-actions-stack">
+            <div class="start-dock-buttons-row">
               <button id="btn-start-play" type="button" class="btn-primary-retro btn-play-hero">
-                ▶ INICIAR PARTIDA (TECLA ENTER)
+                ▶ JOGAR AGORA (ENTER)
               </button>
-              <div class="menu-secondary-row">
-                <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
-                  ⚙ OPÇÕES DE JOGO
-                </button>
-                <button id="btn-start-toggle-guide" type="button" class="btn-secondary-retro">
-                  📖 COMO JOGAR
-                </button>
-              </div>
+              <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
+                ⚙ OPÇÕES
+              </button>
+              <button id="btn-start-toggle-guide" type="button" class="btn-secondary-retro">
+                📖 COMO JOGAR
+              </button>
             </div>
           </div>
         </div>

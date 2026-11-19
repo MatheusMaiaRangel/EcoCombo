@@ -55,25 +55,25 @@ html, body {
   justify-content: space-between;
   width: var(--panel-width);
   height: 100vh;
-  border-right: 4px solid #2b232a;
-  /* Fundo em grade diagonal isométrica inspirado diretamente em @Docs/2d.webp */
-  background-color: #c28d7c;
+  border-right: 4px solid #1e3a5f;
+  /* Fundo alegre de dia em grade diagonal isométrica (Céu Azul & Sol inspirado na estrutura de @Docs/2d.webp) */
+  background-color: #7dd3fc;
   background-image:
-    linear-gradient(30deg, transparent 46%, var(--capsule-grid-line) 47%, var(--capsule-grid-line) 53%, transparent 54%),
-    linear-gradient(150deg, transparent 46%, var(--capsule-grid-line) 47%, var(--capsule-grid-line) 53%, transparent 54%),
-    linear-gradient(180deg, rgba(25, 22, 38, 0.18) 0%, rgba(20, 18, 30, 0.55) 100%);
+    linear-gradient(30deg, transparent 46%, rgba(255, 255, 255, 0.38) 47%, rgba(255, 255, 255, 0.38) 53%, transparent 54%),
+    linear-gradient(150deg, transparent 46%, rgba(255, 255, 255, 0.38) 47%, rgba(255, 255, 255, 0.38) 53%, transparent 54%),
+    linear-gradient(180deg, rgba(56, 189, 248, 0.45) 0%, rgba(134, 239, 172, 0.55) 100%);
   background-size: 36px 21px, 36px 21px, 100% 100%;
   position: relative;
   z-index: 20;
-  box-shadow: 6px 0 24px rgba(0, 0, 0, 0.55);
+  box-shadow: 6px 0 24px rgba(15, 23, 42, 0.25);
 }
 
 .sidebar-brand {
-  background: linear-gradient(180deg, #d86c58 0%, #b85240 100%);
-  border-bottom: 4px solid #3d2224;
+  background: linear-gradient(180deg, #ff7b00 0%, #ea580c 100%);
+  border-bottom: 4px solid #7c2d12;
   padding: 10px 12px 8px;
   text-align: center;
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45);
 }
 
 .brand-title {
@@ -138,15 +138,15 @@ html, body {
   color: #dcd6f7;
 }
 
-/* Console Metálico Inferior (Inspirado no bloco de baixo de @Docs/2d.webp) */
+/* Console Inferior Alegre (Inspirado no bloco de baixo de @Docs/2d.webp) */
 .sidebar-hud-console {
-  background: linear-gradient(180deg, #b8ae99 0%, #998f7a 100%);
-  border-top: 4px solid #3c352d;
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+  border-top: 4px solid #b45309;
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: inset 0 3px 0 #e6decb;
+  box-shadow: inset 0 3px 0 #ffffff;
 }
 
 .console-top-row {
@@ -549,7 +549,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #13111c;
+  background: #67e8f9;
   cursor: crosshair;
 }
 
@@ -744,18 +744,18 @@ html, body {
   filter: brightness(1.1);
 }
 
-/* Barra Inferior de STAGE e SCORE (Inspirada diretamente em @Docs/2d.webp — E4-01) */
+/* Barra Inferior de STAGE e SCORE Colorida e Alegre (E4-01) */
 #bottom-status-bar {
   height: var(--bottom-bar-height);
-  background: #483848;
-  border-top: 4px solid #2b212b;
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 50%, #0284c7 100%);
+  border-top: 4px solid #0c4a6e;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 22px;
   position: relative;
   z-index: 20;
-  box-shadow: inset 0 3px 0 #705b6d;
+  box-shadow: inset 0 3px 0 #38bdf8;
 }
 
 .status-bar-side {
@@ -789,8 +789,8 @@ html, body {
 
 /* Recorte Central Trapezoidal idêntico à barra inferior de Capsule (@Docs/2d.webp) */
 .status-bar-center-notch {
-  background: #705b6d;
-  border: 3px solid #2b212b;
+  background: #16a34a;
+  border: 3px solid #0c4a6e;
   border-bottom: none;
   padding: 6px 18px;
   border-radius: 8px 8px 0 0;
@@ -798,8 +798,8 @@ html, body {
   font-family: 'VT323', monospace;
   font-size: 1.1rem;
   letter-spacing: 1px;
-  color: #fff3b0;
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  color: #fef08a;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
 }
 
 /* ==========================================================================
@@ -1168,7 +1168,7 @@ html, body {
 }
 
 /* ==========================================================================
-   MENU INICIAL & MENU DE PAUSA COM OPÇÕES NA TECLA ESC (E4-06)
+   MENU INICIAL TRANSLÚCIDO (COM VISÃO LIVRE DO PARQUE 3D ATRÁS) & MENU ESC (E4-06)
    ========================================================================== */
 .top-overlay-actions {
   display: flex;
@@ -1187,143 +1187,196 @@ html, body {
   color: #161422;
 }
 
-.start-menu-overlay,
-.pause-menu-overlay {
+/* Menu Inicial: 100% SEM blur na tela inteira e com o centro aberto para ver o protagonista e o Parque 3D! */
+.start-menu-overlay {
   z-index: 40;
-  background: radial-gradient(circle at center, rgba(22, 19, 36, 0.78) 0%, rgba(11, 9, 20, 0.92) 100%);
-  backdrop-filter: blur(7px);
-  padding: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 116, 144, 0.18) 0%,
+    rgba(255, 255, 255, 0.0) 35%,
+    rgba(255, 255, 255, 0.0) 65%,
+    rgba(14, 116, 144, 0.22) 100%
+  );
+  backdrop-filter: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 58px 18px 16px;
+  pointer-events: none;
 }
 
-.start-menu-card {
+.start-menu-top-banner {
+  pointer-events: auto;
+  text-align: center;
+  background: rgba(15, 38, 66, 0.68);
+  backdrop-filter: blur(5px);
+  border: 3px solid #fde047;
+  border-radius: 12px;
+  padding: 12px 24px 10px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.35);
   max-width: 620px;
   width: 94%;
-  border-color: #00f5d4;
-  background: linear-gradient(180deg, #252238 0%, #191728 100%);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.85),
-    0 0 32px rgba(0, 245, 212, 0.22);
-  padding: 24px 26px;
+}
+
+.start-menu-center-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+.start-menu-bottom-dock {
+  pointer-events: auto;
+  max-width: 680px;
+  width: 95%;
+  border: 3px solid #ffffff;
+  border-radius: 12px;
+  background: rgba(15, 38, 66, 0.72);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.45);
+  padding: 12px 16px;
+}
+
+.start-dock-buttons-row {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* Menu de Pausa (ESC): Fundo transparente sem blur geral para continuar vendo a partida 3D atrás! */
+.pause-menu-overlay {
+  z-index: 40;
+  background: rgba(12, 74, 110, 0.22);
+  backdrop-filter: none;
+  padding: 16px;
 }
 
 .pause-menu-card {
   max-width: 580px;
   width: 94%;
-  border-color: #ffd166;
-  background: linear-gradient(180deg, #252238 0%, #191728 100%);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.85),
-    0 0 28px rgba(255, 209, 102, 0.22);
-  padding: 22px 24px;
+  border: 3px solid #fde047;
+  background: rgba(15, 38, 66, 0.78);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.55);
+  padding: 20px 24px;
 }
 
 .start-badge {
-  background: #00f5d4;
-  color: #12101d;
+  background: #fde047;
+  color: #0f172a;
   font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .pause-badge {
-  background: #ffd166;
-  color: #161422;
+  background: #fde047;
+  color: #0f172a;
 }
 
 .start-menu-logo {
   font-family: 'Press Start 2P', monospace;
-  font-size: 1.85rem;
-  color: #ffd166;
+  font-size: 1.75rem;
+  color: #ffffff;
   text-shadow:
-    4px 4px 0 #12101d,
-    0 0 22px rgba(255, 209, 102, 0.65);
-  margin: 4px 0 10px;
+    3px 3px 0 #0284c7,
+    -2px -2px 0 #16a34a,
+    0 0 18px rgba(253, 224, 71, 0.75);
+  margin: 2px 0 6px;
   letter-spacing: 2px;
 }
 
 .start-menu-subtitle {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  color: #e2dff0;
-  margin-bottom: 16px;
-  line-height: 1.6;
+  font-size: 0.58rem;
+  color: #f0f9ff;
+  margin-bottom: 0;
+  line-height: 1.5;
 }
 
 .highlight-cyan {
-  color: #00f5d4;
+  color: #38bdf8;
 }
 
 .highlight-gold {
-  color: #ffd166;
+  color: #fde047;
 }
 
-/* Grid das 4 Lixeiras CONAMA no Menu Inicial */
+/* Grid das 4 Lixeiras CONAMA no Dock Inferior do Menu Inicial */
 .start-bins-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .start-bin-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 9px 6px;
-  border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  gap: 3px;
+  padding: 7px 5px;
+  border-radius: 7px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
   color: #ffffff;
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.65);
 }
 
 .start-bin-chip.bin-plastic {
-  background: linear-gradient(180deg, rgba(255, 59, 48, 0.9) 0%, rgba(168, 25, 17, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(255, 59, 48, 0.92) 0%, rgba(196, 28, 19, 0.92) 100%);
 }
 
 .start-bin-chip.bin-paper {
-  background: linear-gradient(180deg, rgba(0, 122, 255, 0.9) 0%, rgba(0, 68, 150, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(0, 122, 255, 0.92) 0%, rgba(0, 81, 181, 0.92) 100%);
 }
 
 .start-bin-chip.bin-glass {
-  background: linear-gradient(180deg, rgba(52, 199, 89, 0.9) 0%, rgba(22, 128, 49, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(52, 199, 89, 0.92) 0%, rgba(24, 148, 57, 0.92) 100%);
 }
 
 .start-bin-chip.bin-metal {
-  background: linear-gradient(180deg, rgba(255, 204, 0, 0.95) 0%, rgba(184, 141, 0, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(255, 204, 0, 0.95) 0%, rgba(201, 154, 0, 0.95) 100%);
   color: #191608;
   text-shadow: none;
 }
 
 .bin-chip-key {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.52rem;
+  font-size: 0.48rem;
   background: rgba(0, 0, 0, 0.35);
   color: #ffffff;
-  padding: 3px 6px;
+  padding: 2px 5px;
   border-radius: 3px;
 }
 
 .bin-chip-name {
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.56rem;
+  font-size: 0.52rem;
 }
 
 .bin-chip-target {
   font-family: 'VT323', monospace;
-  font-size: 0.95rem;
-  line-height: 1.1;
+  font-size: 0.92rem;
+  line-height: 1.05;
 }
 
-/* Caixa de instruções rápidas no Menu Inicial */
+/* Caixa de instruções rápidas no Menu Inicial (Abre ao clicar em COMO JOGAR) */
 .start-howto-box {
-  background: rgba(17, 15, 28, 0.85);
-  border: 2px solid #3c3756;
-  border-radius: 6px;
-  padding: 11px 14px;
-  margin-bottom: 18px;
+  pointer-events: auto;
+  max-width: 580px;
+  width: 94%;
+  background: rgba(15, 38, 66, 0.82);
+  backdrop-filter: blur(5px);
+  border: 2px solid #38bdf8;
+  border-radius: 8px;
+  padding: 12px 16px;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 7px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 .howto-step {

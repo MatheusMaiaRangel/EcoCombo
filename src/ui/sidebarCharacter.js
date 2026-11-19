@@ -149,14 +149,17 @@ export class SidebarCharacterRenderer {
       px(36, 13, 3, 1, '#1c1518');
       px(31, 17, 4, 1, '#8c584c');
     } else {
-      // Olhar determinado/energizado
+      // Olhar determinado/feliz e sorriso alegre
       px(27, 11, 4, 1, '#2b1912');
       px(35, 11, 4, 1, '#2b1912');
       px(28, 12, 3, 2, '#1c1518');
       px(36, 12, 3, 2, '#1c1518');
       px(28, 12, 1, 1, '#ffffff');
       px(36, 12, 1, 1, '#ffffff');
-      px(31, 17, 4, 1, '#9e6252');
+      // Sorriso simpático
+      px(31, 17, 4, 1, '#b55645');
+      px(30, 16, 1, 1, '#b55645');
+      px(35, 16, 1, 1, '#b55645');
     }
 
     // 5. Braços e Mãos erguidas na frente do peito (Canalizando a cápsula/objeto igual @Docs/2d.webp!)
@@ -242,22 +245,37 @@ export class SidebarCharacterRenderer {
 
     const { multiplier, isStale, hurtTimer } = this.state;
 
-    // Fundo reativo ao estado do multiplicador
+    // Fundo ensolarado e alegre reativo ao estado do multiplicador
     if (hurtTimer > 0) {
-      ctx.fillStyle = '#6b111b';
+      ctx.fillStyle = '#ef4444';
     } else if (isStale) {
-      ctx.fillStyle = '#471521';
+      ctx.fillStyle = '#fb923c';
     } else if (multiplier >= 4.0) {
-      ctx.fillStyle = '#1b3448';
+      ctx.fillStyle = '#06b6d4';
     } else {
-      ctx.fillStyle = '#252438';
+      ctx.fillStyle = '#38bdf8';
     }
     ctx.fillRect(0, 0, W, H);
 
-    // Linhas de fundo estilo Until Then / estação
-    ctx.fillStyle = isStale ? '#781d2d' : '#324a5e';
-    ctx.fillRect(0, 4, W, 2);
-    ctx.fillRect(0, 22, W, 2);
+    // Solzinho dourado, nuvem branca e colina verde no fundo do retrato
+    if (hurtTimer <= 0 && !isStale) {
+      // Sol dourado no canto superior esquerdo
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(2, 2, 4, 4);
+      // Nuvem branca fofinha no topo direito
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(19, 3, 7, 3);
+      ctx.fillRect(21, 2, 4, 2);
+      // Gramado verde alegre na base do retrato
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(0, 19, W, 9);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 22, W, 6);
+    } else {
+      ctx.fillStyle = isStale ? '#ea580c' : '#b91c1c';
+      ctx.fillRect(0, 4, W, 2);
+      ctx.fillRect(0, 22, W, 2);
+    }
 
     // Ombros da camisa branca + alças azuis da mochila
     ctx.fillStyle = '#e8ecf2';

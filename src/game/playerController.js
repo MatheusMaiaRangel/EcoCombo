@@ -548,18 +548,20 @@ export class PlayerController {
   }
 
   /**
-   * Mantém os 4 orbes CONAMA orbitando em 3D quando o jogo está no Menu Inicial
+   * Mantém o protagonista vivo e os 4 orbes CONAMA orbitando em 3D quando o jogo está no Menu Inicial
    */
   updateIdleOrbsOnly(elapsedTime) {
-    const orbitRadius = 1.38;
+    const orbitRadius = 1.45;
     const orbitSpeed = 2.4;
     this.orbs.forEach((orb) => {
       const angle = orb.baseAngle + elapsedTime * orbitSpeed;
       const ox = Math.cos(angle) * orbitRadius;
       const oz = Math.sin(angle) * orbitRadius;
-      const oy = Math.sin(elapsedTime * 3.8 + orb.index * 1.5) * 0.16;
+      const oy = Math.sin(elapsedTime * 3.8 + orb.index * 1.5) * 0.18;
       orb.mesh.position.set(ox, oy, oz);
     });
+    const frameIdx = Math.floor(elapsedTime * 3.2) % 3;
+    this.spriteMat.map = this.textures[frameIdx];
     this.reticleMesh.rotation.z = elapsedTime * 1.8;
   }
 
