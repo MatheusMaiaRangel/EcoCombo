@@ -179,8 +179,8 @@ export class PlayerController {
   buildProtagonistSprite() {
     this.textures = createProtagonistTextures();
 
-    // Plano 2.5D vertical com cores 100% puras e vivas (toneMapped: false, sem lavar pela luz/neblina!)
-    const geo = new THREE.PlaneGeometry(1.85, 2.75);
+    // Plano 2.5D vertical com o modelo original do protagonista e cores 100% vivas (toneMapped: false)
+    const geo = new THREE.PlaneGeometry(1.75, 2.65);
     this.spriteMat = new THREE.MeshBasicMaterial({
       map: this.textures[0],
       transparent: true,
@@ -191,37 +191,24 @@ export class PlayerController {
     });
 
     this.spriteMesh = new THREE.Mesh(geo, this.spriteMat);
-    this.spriteMesh.position.y = 1.36;
+    this.spriteMesh.position.y = 1.32;
     this.spriteMesh.castShadow = true;
     // Orienta o plano 2.5D de frente para a câmera isométrica (45 graus)
     this.spriteMesh.rotation.y = Math.PI / 4;
     this.rootGroup.add(this.spriteMesh);
 
-    // Anel escuro de contraste + Halo colorido vivo sob os pés do protagonista
-    const darkBaseGeo = new THREE.RingGeometry(0.46, 0.8, 24);
-    const darkBaseMat = new THREE.MeshBasicMaterial({
-      color: 0x120d1a,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.85,
-      toneMapped: false
-    });
-    const darkFootRing = new THREE.Mesh(darkBaseGeo, darkBaseMat);
-    darkFootRing.rotation.x = -Math.PI / 2;
-    darkFootRing.position.y = 0.025;
-    this.rootGroup.add(darkFootRing);
-
-    const baseRingGeo = new THREE.RingGeometry(0.52, 0.74, 24);
+    // Halo de seleção sob os pés do protagonista
+    const baseRingGeo = new THREE.RingGeometry(0.52, 0.72, 24);
     const baseRingMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
+      color: 0x00f5d4,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.9,
       toneMapped: false
     });
     this.footRing = new THREE.Mesh(baseRingGeo, baseRingMat);
     this.footRing.rotation.x = -Math.PI / 2;
-    this.footRing.position.y = 0.032;
+    this.footRing.position.y = 0.03;
     this.rootGroup.add(this.footRing);
 
     // Luz pontual dinâmica do protagonista
@@ -240,7 +227,7 @@ export class PlayerController {
 
     this.orbs = ELEMENT_ORDER.map((elemKey, idx) => {
       const elem = CONAMA_ELEMENTS[elemKey];
-      const orbGeo = new THREE.SphereGeometry(0.24, 14, 14);
+      const orbGeo = new THREE.SphereGeometry(0.22, 14, 14);
       const orbMat = new THREE.MeshBasicMaterial({
         color: elem.hexNumber,
         toneMapped: false,
@@ -249,16 +236,18 @@ export class PlayerController {
       const mesh = new THREE.Mesh(orbGeo, orbMat);
       mesh.castShadow = true;
 
-      // Contorno escuro externo + anel branco para o orbe saltar da tela com cor 100% saturada
-      const outlineGeo = new THREE.RingGeometry(0.23, 0.34, 16);
-      const outlineMat = new THREE.MeshBasicMaterial({
-        color: 0x120d1a,
+      // Anel externo branco em cada orbe (igual os orbes em órbita de @Docs/2d.webp)
+      const haloGeo = new THREE.RingGeometry(0.26, 0.34, 16);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
         side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85,
         toneMapped: false
       });
-      const outlineRing = new THREE.Mesh(outlineGeo, outlineMat);
-      outlineRing.rotation.y = Math.PI / 4;
-      mesh.add(outlineRing);
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+      halo.rotation.y = Math.PI / 4;
+      mesh.add(halo);
 
       this.orbitGroup.add(mesh);
       return {

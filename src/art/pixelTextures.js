@@ -481,7 +481,7 @@ export function createPixelCloudTexture() {
 }
 
 /**
- * E1-02 — Sprite Pixel Art 2.5D do Protagonista com CONTORNO PIXELADO FORTE e CORES VIVAS!
+ * E1-02 — Sprite Pixel Art 2.5D do Protagonista (Modelo original Until Then com cores vivas!)
  */
 export function createProtagonistTextures() {
   const frames = [0, 1, 2].map((stepFrame) => {
@@ -500,74 +500,79 @@ export function createProtagonistTextures() {
       ctx.fillRect(x, y + bobY, w, h);
     };
 
-    // ==================== CONTORNO EXTERNO PRETO PIXEL ART (#120d1a) ====================
-    // Faz o personagem saltar do chão claro com nitidez máxima!
-    px(9, 1, 14, 3, '#120d1a');
-    px(6, 3, 20, 9, '#120d1a');
-    px(8, 11, 16, 7, '#120d1a');
-    px(5, 17, 21, 15, '#120d1a');
-    ctx.fillStyle = '#120d1a';
-    ctx.fillRect(8, 30, 16, 17 + Math.max(leftLegOffset, rightLegOffset));
+    // Mochila azul nas costas (lado esquerdo do sprite, igual @Docs/until-then-2.webp)
+    px(6, 18, 5, 13, '#0b4fd9');
+    px(7, 19, 3, 11, '#2678ff');
+    px(8, 16, 3, 2, '#ffcc00'); // Chaveiro amarelo na mochila
 
-    // Mochila azul-royal super viva nas costas
-    px(6, 18, 4, 12, '#0044cc');
-    px(7, 19, 3, 10, '#0077ff');
-    px(7, 16, 3, 2, '#ffcc00'); // Chaveiro amarelo vivo
+    // Cabelo castanho bagunçado (Modelo original Until Then protagonist)
+    px(10, 3, 12, 3, '#3b2016');
+    px(8, 5, 16, 5, '#5c3222');
+    px(7, 7, 18, 4, '#75412c');
+    // Mechas soltas no topo e laterais
+    px(9, 2, 3, 2, '#5c3222');
+    px(15, 1, 4, 2, '#75412c');
+    px(22, 4, 3, 2, '#5c3222');
+    px(6, 9, 2, 3, '#3b2016');
+    px(24, 8, 2, 3, '#3b2016');
 
-    // Cabelo castanho-avermelhado rico e contrastado
-    px(10, 2, 12, 3, '#3b170e');
-    px(8, 4, 16, 5, '#592516');
-    px(7, 6, 18, 4, '#7a3420');
-    px(11, 3, 8, 2, '#9e472c'); // Brilho solar no cabelo
-
-    // Rosto / Cabeça com cor de pele viva
-    px(10, 9, 12, 8, '#ffbf94');
-    px(10, 15, 12, 2, '#eb9f70');
-    // Franja
-    px(10, 8, 12, 2, '#3b170e');
-    px(11, 10, 3, 1, '#592516');
-    px(17, 10, 4, 1, '#592516');
-    // Olhos nítidos com brilho branco
-    px(12, 12, 2, 3, '#120d1a');
-    px(19, 12, 2, 3, '#120d1a');
-    px(12, 12, 1, 1, '#ffffff');
-    px(19, 12, 1, 1, '#ffffff');
+    // Rosto / Cabeça
+    px(10, 9, 12, 8, '#f5ba94');
+    px(10, 15, 12, 2, '#de9c73');
+    // Franja sobre a testa
+    px(10, 8, 12, 2, '#4a281b');
+    px(11, 10, 3, 1, '#5c3222');
+    px(17, 10, 4, 1, '#5c3222');
+    // Sobrancelhas e olhos expressivos pixelados
+    px(12, 11, 3, 1, '#2b160e');
+    px(18, 11, 3, 1, '#2b160e');
+    px(13, 12, 2, 2, '#140f14');
+    px(19, 12, 2, 2, '#140f14');
     // Pescoço
-    px(14, 17, 4, 2, '#e09365');
+    px(14, 17, 4, 2, '#d4916a');
 
-    // Camisa branca brilhante com gravata verde-esmeralda viva e alças azuis
-    px(9, 18, 14, 13, '#ffffff');
+    // Camisa escolar branca com gola e gravata (Until Then)
+    px(9, 18, 14, 13, '#e2e8f0');
+    px(10, 19, 12, 11, '#ffffff');
+    // Sombras de dobra da camisa
     px(11, 24, 2, 6, '#cbd5e1');
     px(19, 22, 2, 8, '#cbd5e1');
-    // Gravata verde-esmeralda viva
-    px(15, 19, 2, 7, '#00c853');
-    // Alças azuis vivas da mochila
-    px(10, 18, 2, 11, '#0066ff');
-    px(20, 18, 2, 11, '#0066ff');
+    // Gola e gravata verde-acinzentada
+    px(13, 18, 6, 2, '#BAC6D8');
+    px(15, 19, 2, 6, '#3b6e63');
 
-    // Braços e braceletes elementais vibrantes
-    px(7, 19, 2, 5, '#ffffff');
-    px(22, 19, 3, 5, '#ffffff');
-    px(7, 24, 2, 5, '#ffbf94');
-    px(22, 24, 3, 5, '#ffbf94');
-    px(7, 27, 2, 2, '#ff2a2a');
-    px(22, 27, 3, 2, '#00e5ff');
+    // Alças azuis da mochila sobre os ombros
+    px(10, 18, 2, 10, '#0f5ee6');
+    px(20, 18, 2, 10, '#0f5ee6');
 
-    // Calça verde-floresta viva
-    ctx.fillStyle = '#15803d';
+    // Braços (mangas curtas brancas + antebraços)
+    px(7, 19, 3, 5, '#dbe4f0');
+    px(22, 19, 3, 5, '#dbe4f0');
+    px(7, 24, 3, 5, '#eda982');
+    px(22, 24, 3, 5, '#eda982');
+    // Luva/pulso canalizador energético
+    px(7, 27, 3, 2, '#ffcc00');
+    px(22, 27, 3, 2, '#00f5d4');
+
+    // Calça verde-oliva viva (exatamente o modelo original de @Docs/until-then-2.webp)
+    ctx.fillStyle = '#2f5e35';
     ctx.fillRect(10, 31, 6, 12 + leftLegOffset);
     ctx.fillRect(16, 31, 6, 12 + rightLegOffset);
-    ctx.fillStyle = '#22c55e';
+
+    // Luz e dobra da calça verde
+    ctx.fillStyle = '#43804a';
     ctx.fillRect(11, 32, 3, 10 + leftLegOffset);
     ctx.fillRect(17, 32, 3, 10 + rightLegOffset);
+    ctx.fillStyle = '#1f4224';
+    ctx.fillRect(15, 33, 1, 9);
 
-    // Tênis vermelhos/brancos vibrantes
-    ctx.fillStyle = '#d90429';
+    // Sapatos marrom-escuros originais
+    ctx.fillStyle = '#2e1b13';
     ctx.fillRect(9, 43 + leftLegOffset, 7, 3);
     ctx.fillRect(16, 43 + rightLegOffset, 7, 3);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(10, 45 + leftLegOffset, 6, 1);
-    ctx.fillRect(17, 45 + rightLegOffset, 6, 1);
+    ctx.fillStyle = '#523224';
+    ctx.fillRect(10, 43 + leftLegOffset, 4, 2);
+    ctx.fillRect(17, 43 + rightLegOffset, 4, 2);
 
     const tex = new THREE.CanvasTexture(canvas);
     return applyNearestPixelFilter(tex);
