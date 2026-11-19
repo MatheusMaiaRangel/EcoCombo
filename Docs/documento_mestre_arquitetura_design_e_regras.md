@@ -103,7 +103,7 @@ Para elevar a profundidade tática e evitar que o jogador aperte combinações a
 
 ---
 
-## 4. Regras de Negócio do Sistema (`RN01` a `RN18`)
+## 4. Regras de Negócio do Sistema (`RN01` a `RN19`)
 
 * **RN01 (Padrão de 4 Cores CONAMA):** Os elementos de reciclagem seguem as $4\text{ cores}$ oficiais: Vermelho/Plástico (`1`/`Q`), Azul/Papel (`2`/`E`), Verde/Vidro (`3`/`R`) e Amarelo/Metal (`4`/`F`).
 * **RN02 (Movimentação Isométrica e Mira):** O protagonista se move livremente pela arena 3D com câmera isométrica usando `WASD` e mira na direção do cursor do mouse (`Raycaster` + Clique Esquerdo).
@@ -123,6 +123,7 @@ Para elevar a profundidade tática e evitar que o jogador aperte combinações a
 * **RN16 (Inimigos como Itens Recicláveis por Lixeira):** Os inimigos instanciados na arena representam resíduos recicláveis específicos das 4 categorias CONAMA (ex.: Garrafa PET = Plástico/Vermelho, Caixa de Papelão = Papel/Azul, Garrafa de Vidro = Vidro/Verde, Porca de Metal = Metal/Amarelo), exigindo o uso da Lixeira correspondente para reciclagem eficiente.
 * **RN17 (Comandos de Lixeiras e Leque de Modos Táticos estilo *Hwei*):** As 4 teclas (`Q`, `E`, `R`, `F` ou `1`, `2`, `3`, `4`) abrem as respectivas Lixeiras CONAMA e exibem um Leque de Modos Táticos (Mais Dano, Controle de Grupo/Juntar/Expandir, Stun/Paralisar e Escudo Protetivo que mitiga o dano de aproximação daquele item).
 * **RN18 (Rank de Estilo *Devil May Cry* + Multiplicador em Destaque Abaixo):** O sistema de combo exibe Ranks progressivos (`D`, `C`, `B`, `A`, `S`, `SS`, `SSS`) acompanhados de um Multiplicador em grande destaque logo abaixo, que sobe ao acertar a lixeira correta variando os modos táticos e cai ao errar a lixeira, repetir sempre o mesmo ataque ou sofrer dano sem escudo.
+* **RN19 (Menu Inicial e Menu de Pausa com Opções na Tecla `ESC`):** O jogo inicia em uma tela de Menu Inicial com visão panorâmica da arena 3D, resumo das 4 lixeiras CONAMA, guia de controles e botão de início de partida. Durante a gameplay ativa, pressionar a tecla `ESC` pausa o loop de combate e abre o Menu de Pausa e Opções (permitindo configurar áudio sintetizado, volume mestre, ritmo/dificuldade da arena, brilho neon Bloom 3D e textos de dano flutuantes, além de continuar, reiniciar ou voltar ao menu inicial).
 
 ---
 

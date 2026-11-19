@@ -4,6 +4,9 @@ Jogo web *action-arcade* isométrico em 2.5D/3D sobre reciclagem e coleta seleti
 
 ## Mecânicas e Controles (Grimório *Hwei* + Ranks *Devil May Cry*)
 
+- **Menu Inicial e Menu de Pausa com Opções (`ESC`):**
+  - Ao abrir o jogo, o **Menu Inicial** apresenta as 4 lixeiras CONAMA, o guia rápido e as opções antes de iniciar a partida (**`Enter`** ou clique em **Iniciar Partida**).
+  - No meio da gameplay, pressionar **`ESC`** pausa o jogo imediatamente e abre o **Menu de Pausa & Opções** (permitindo ajustar Áudio Sintetizado, Volume de `0%` a `100%`, Ritmo/Dificuldade da Arena, Brilho Neon Bloom 3D e Textos Flutuantes de Dano, além de Continuar, Reiniciar ou Voltar ao Menu Inicial).
 - **Movimentação (`W`, `A`, `S`, `D` ou Setas) e Mira (`Mouse`):** Deslocamento livre em 8 direções pela arena isométrica 2.5D com mira projetada no chão via `THREE.Raycaster`.
 - **1º Toque — Abrir a Lixeira do Item (`Q`, `E`, `R`, `F` ou `1`, `2`, `3`, `4`):**
   - **`Q` (`1`) — Lixeira Vermelha (Plástico):** Ideal contra **Garrafa PET**

@@ -51,12 +51,13 @@ Este guia segue rigorosamente todos os critérios de avaliação do documento or
 | E3-03 | Aplicar efeitos elementais secundários (ricochete, empurrão, lentidão) por receita | 3 | Média | |
 | E3-04 | Conceder bônus de Maestria Elemental ao alternar 4 combos inéditos seguidos | 2 | Baixa | |
 | E3-05 | Implementar comandos de Lixeiras e Leque de Modos Táticos estilo *Hwei* (Dano, Controle por Lixeira e Escudo) | 5 | Alta | Sprint 1 |
-| **E4** | **Painel Lateral do Personagem (HUD), Rank *Devil May Cry* e Feedback Audiovisual** | **15** | | |
+| **E4** | **Painel Lateral do Personagem (HUD), Rank *Devil May Cry* e Feedback Audiovisual** | **18** | | |
 | E4-01 | Exibir painel lateral com retrato reativo do personagem, receita do combo e multiplicador | 3 | Alta | Sprint 1 |
 | E4-02 | Atualizar expressão do personagem na lateral ao repetir combo ($1\times$) ou sofrer dano | 3 | Média | |
 | E4-03 | Emitir partículas 3D e áudio sintetizado progressivo ao conjurar e atingir inimigos | 3 | Média | |
 | E4-04 | Exibir tela de Game Over com resumo da partida e botão de reinício | 3 | Alta | |
 | E4-05 | Exibir Rank de Estilo *Devil May Cry* (`D` a `SSS`) com Multiplicador destacado embaixo e Leque Visual | 3 | Alta | Sprint 1 |
+| E4-06 | Exibir Menu Inicial antes da partida e Menu de Pausa com Opções na tecla `ESC` durante a gameplay | 3 | Alta | Sprint 1 |
 | **E5** | **Chefões da Poluição e Eventos de Arena** | **13** | | |
 | E5-01 | Instanciar Chefão Colosso de Entulho ao final do estágio | 5 | Alta | |
 | E5-02 | Exigir combos variados ($M \ge 2.5\times$) para quebrar o escudo do chefão | 3 | Alta | |
@@ -475,6 +476,26 @@ Abra cada épico, clique em **Create sub-issue**, cole o título e o corpo e adi
 ### Critérios de aceite
 - **Dado** que a pureza chegou a 0%, **quando** a partida encerra, **então** exibe o modal de Fim de Partida com Pontuação Final, Inimigos Derrotados e botão "Jogar Novamente".
 - **Dado** o modal aberto, **quando** o jogador clica em "Jogar Novamente", **então** a arena é limpa, os status voltam ao estado inicial e uma nova partida começa.
+```
+
+#### E4-06 Exibir Menu Inicial antes da partida e Menu de Pausa com Opções na tecla `ESC` durante a gameplay
+* **Título:** `E4-06 Exibir Menu Inicial antes da partida e Menu de Pausa com Opções na tecla ESC durante a gameplay`
+* **Ficha:** label `estória` · pai `E4` · Estimativa `3` · Prioridade `Alta` · Sprint `Sprint 1` · Status `Concluído`
+```markdown
+**Como** jogador, **quero** visualizar um Menu Inicial ao abrir o jogo antes da partida começar e poder pressionar a tecla `ESC` no meio da gameplay para pausar e abrir o Menu de Opções, **para** iniciar a partida apenas quando estiver pronto e configurar som, volume, ritmo da arena e efeitos visuais a qualquer momento.
+
+**Regras:** RN07, RN12, RN19
+
+### Critérios de aceite
+- **Dado** que o jogador abre o jogo no navegador, **quando** a aplicação carrega, **então** exibe o Menu Inicial sobre a arena 3D panorâmica com resumo das 4 lixeiras CONAMA, botão "Iniciar Partida" (`Enter`), "Opções de Jogo" e "Como Jogar", mantendo o spawn e perseguição de inimigos aguardando o início da partida.
+- **Dado** que o jogador está no meio da gameplay ativa, **quando** pressiona a tecla `ESC` (ou clica no botão `⚙ MENU [ESC]`), **então** a partida é pausada imediatamente (congelando movimentação, inimigos, projéteis e decaimento do Rank DMC) e o Menu de Pausa com Opções é aberto.
+- **Dado** que o Menu de Opções está aberto, **quando** o jogador altera Áudio Sintetizado (Ligado/Desligado), Volume do Som (0% a 100%), Ritmo da Arena (Calmo, Normal, Intenso), Brilho Neon Bloom 3D ou Textos Flutuantes de Dano, **então** as configurações são aplicadas em tempo real e salvas localmente (`localStorage`), podendo continuar a partida (`ESC`), reiniciar ou voltar ao Menu Inicial.
+
+### Tarefas
+- [x] Implementar máquina de estados de fluxo do jogo (`MENU`, `PLAYING`, `PAUSED`, `GAMEOVER`) com panorâmica 3D no Menu Inicial
+- [x] Construir a interface do Menu Inicial com cards das 4 lixeiras CONAMA, guia rápido e botões de Iniciar Partida e Opções
+- [x] Implementar o Menu de Pausa e Opções acionado pela tecla `ESC` durante a gameplay com congelamento do loop de combate
+- [x] Integrar controles em tempo real e persistência local (`localStorage`) de Volume Mestre Web Audio, Som ON/OFF, Ritmo da Arena, Bloom 3D e Textos de Dano
 ```
 
 ---
