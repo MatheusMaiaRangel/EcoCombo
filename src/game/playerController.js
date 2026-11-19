@@ -15,18 +15,20 @@ export function buildRecipeObjectMesh(recipe, scale = 1.0) {
   const matPrimary = new THREE.MeshStandardMaterial({
     color: recipe.colorA,
     emissive: recipe.colorA,
-    emissiveIntensity: 1.4,
+    emissiveIntensity: 0.45,
     roughness: 0.25,
-    metalness: 0.35
+    metalness: 0.2,
+    toneMapped: false
   });
 
   const matSecondary = new THREE.MeshStandardMaterial({
     color: recipe.colorB,
     emissive: recipe.colorB,
-    emissiveIntensity: 1.1,
+    emissiveIntensity: 0.35,
     roughness: 0.3,
-    metalness: 0.4,
-    wireframe: false
+    metalness: 0.25,
+    wireframe: false,
+    toneMapped: false
   });
 
   switch (recipe.shape) {
@@ -177,46 +179,59 @@ export class PlayerController {
   buildProtagonistSprite() {
     this.textures = createProtagonistTextures();
 
-    // Plano 2.5D vertical com textura pixel art (THREE.NearestFilter) que projeta sombra real no chão!
-    const geo = new THREE.PlaneGeometry(1.75, 2.65);
-    this.spriteMat = new THREE.MeshStandardMaterial({
+    // Plano 2.5D vertical com cores 100% puras e vivas (toneMapped: false, sem lavar pela luz/neblina!)
+    const geo = new THREE.PlaneGeometry(1.85, 2.75);
+    this.spriteMat = new THREE.MeshBasicMaterial({
       map: this.textures[0],
       transparent: true,
       alphaTest: 0.45,
-      roughness: 0.65,
-      metalness: 0.05,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      fog: false
     });
 
     this.spriteMesh = new THREE.Mesh(geo, this.spriteMat);
-    this.spriteMesh.position.y = 1.32;
+    this.spriteMesh.position.y = 1.36;
     this.spriteMesh.castShadow = true;
-    this.spriteMesh.receiveShadow = true;
     // Orienta o plano 2.5D de frente para a câmera isométrica (45 graus)
     this.spriteMesh.rotation.y = Math.PI / 4;
     this.rootGroup.add(this.spriteMesh);
 
-    // Sombra circular/halo de seleção sob os pés do protagonista
-    const baseRingGeo = new THREE.RingGeometry(0.52, 0.72, 24);
-    const baseRingMat = new THREE.MeshBasicMaterial({
-      color: 0x00f5d4,
+    // Anel escuro de contraste + Halo colorido vivo sob os pés do protagonista
+    const darkBaseGeo = new THREE.RingGeometry(0.46, 0.8, 24);
+    const darkBaseMat = new THREE.MeshBasicMaterial({
+      color: 0x120d1a,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.65
+      opacity: 0.85,
+      toneMapped: false
+    });
+    const darkFootRing = new THREE.Mesh(darkBaseGeo, darkBaseMat);
+    darkFootRing.rotation.x = -Math.PI / 2;
+    darkFootRing.position.y = 0.025;
+    this.rootGroup.add(darkFootRing);
+
+    const baseRingGeo = new THREE.RingGeometry(0.52, 0.74, 24);
+    const baseRingMat = new THREE.MeshBasicMaterial({
+      color: 0x00e5ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.95,
+      toneMapped: false
     });
     this.footRing = new THREE.Mesh(baseRingGeo, baseRingMat);
     this.footRing.rotation.x = -Math.PI / 2;
-    this.footRing.position.y = 0.03;
+    this.footRing.position.y = 0.032;
     this.rootGroup.add(this.footRing);
 
-    // Luz pontual dinâmica do protagonista (muda conforme o combo canalizado)
-    this.playerLight = new THREE.PointLight(0xffd166, 1.4, 6.5);
+    // Luz pontual dinâmica do protagonista
+    this.playerLight = new THREE.PointLight(0xffd166, 0.8, 5.5);
     this.playerLight.position.set(0, 1.8, 0);
     this.rootGroup.add(this.playerLight);
   }
 
   /**
-   * RN08 / E1-02 — 4 Orbes Elementais em Órbita 3D Trigonométrica (sin/cos) nas 4 cores CONAMA
+   * RN08 / E1-02 — 4 Orbes Elementais em Órbita 3D Trigonométrica (sin/cos) nas 4 cores CONAMA super vivas
    */
   buildOrbitingOrbs() {
     this.orbitGroup = new THREE.Group();
@@ -225,28 +240,25 @@ export class PlayerController {
 
     this.orbs = ELEMENT_ORDER.map((elemKey, idx) => {
       const elem = CONAMA_ELEMENTS[elemKey];
-      const orbGeo = new THREE.SphereGeometry(0.22, 14, 14);
-      const orbMat = new THREE.MeshStandardMaterial({
+      const orbGeo = new THREE.SphereGeometry(0.24, 14, 14);
+      const orbMat = new THREE.MeshBasicMaterial({
         color: elem.hexNumber,
-        emissive: elem.emissiveHex,
-        emissiveIntensity: 2.0,
-        roughness: 0.15,
-        metalness: 0.2
+        toneMapped: false,
+        fog: false
       });
       const mesh = new THREE.Mesh(orbGeo, orbMat);
       mesh.castShadow = true;
 
-      // Anel externo sutil em cada orbe (igual os orbes em órbita de @Docs/2d.webp)
-      const haloGeo = new THREE.RingGeometry(0.26, 0.34, 16);
-      const haloMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+      // Contorno escuro externo + anel branco para o orbe saltar da tela com cor 100% saturada
+      const outlineGeo = new THREE.RingGeometry(0.23, 0.34, 16);
+      const outlineMat = new THREE.MeshBasicMaterial({
+        color: 0x120d1a,
         side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.65
+        toneMapped: false
       });
-      const halo = new THREE.Mesh(haloGeo, haloMat);
-      halo.rotation.y = Math.PI / 4;
-      mesh.add(halo);
+      const outlineRing = new THREE.Mesh(outlineGeo, outlineMat);
+      outlineRing.rotation.y = Math.PI / 4;
+      mesh.add(outlineRing);
 
       this.orbitGroup.add(mesh);
       return {
@@ -327,7 +339,9 @@ export class PlayerController {
     const reticleMat = new THREE.MeshBasicMaterial({
       map: reticleTex,
       transparent: true,
-      depthWrite: false
+      depthWrite: false,
+      toneMapped: false,
+      fog: false
     });
 
     this.reticleMesh = new THREE.Mesh(reticleGeo, reticleMat);
@@ -390,11 +404,9 @@ export class PlayerController {
     this.orbs.forEach((orb) => {
       const countInSlots = activeSlots.filter((s) => s === orb.id).length;
       if (countInSlots > 0) {
-        orb.mesh.scale.setScalar(1.38 + countInSlots * 0.15);
-        orb.mat.emissiveIntensity = 3.2;
+        orb.mesh.scale.setScalar(1.42 + countInSlots * 0.15);
       } else {
         orb.mesh.scale.setScalar(1.0);
-        orb.mat.emissiveIntensity = 1.8;
       }
     });
   }

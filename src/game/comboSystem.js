@@ -320,7 +320,8 @@ export class ComboSystem {
       color: colorHex,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.95,
+      toneMapped: false
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
     ringMesh.rotation.x = -Math.PI / 2;
@@ -358,7 +359,8 @@ export class ComboSystem {
       const mat = new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 1
+        opacity: 1,
+        toneMapped: false
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.copy(position);

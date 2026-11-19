@@ -84,45 +84,64 @@ export class EnemyManager {
     const group = new THREE.Group();
     group.position.set(sx, 0, sz);
 
-    // Sprite 2.5D Pixel Art do Item Reciclável (Garrafa PET, Papelão, Vidro, Porca de Metal)
-    const spriteGeo = new THREE.PlaneGeometry(1.65, 1.85);
-    const spriteMat = new THREE.MeshStandardMaterial({
+    // Sprite 2.5D Pixel Art do Item Reciclável com cores 100% puras e vivas (sem lavar pela iluminação/neblina!)
+    const spriteGeo = new THREE.PlaneGeometry(1.75, 1.95);
+    const spriteMat = new THREE.MeshBasicMaterial({
       map: texFrames[0],
       transparent: true,
       alphaTest: 0.45,
-      roughness: 0.55,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      fog: false
     });
 
     const spriteMesh = new THREE.Mesh(spriteGeo, spriteMat);
-    spriteMesh.position.y = 0.92;
+    spriteMesh.position.y = 0.96;
     spriteMesh.rotation.y = Math.PI / 4;
     spriteMesh.castShadow = true;
-    spriteMesh.receiveShadow = true;
     group.add(spriteMesh);
 
-    // Anel no chão na cor CONAMA exata da Lixeira correspondente ao item!
+    // Anel escuro de contorno + Anel colorido vivo no chão na cor CONAMA exata da Lixeira correspondente!
+    const darkShadowRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.38, 0.74, 20),
+      new THREE.MeshBasicMaterial({
+        color: 0x120d1a,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    darkShadowRing.rotation.x = -Math.PI / 2;
+    darkShadowRing.position.y = 0.025;
+    group.add(darkShadowRing);
+
     const shadowRing = new THREE.Mesh(
-      new THREE.RingGeometry(0.42, 0.68, 20),
+      new THREE.RingGeometry(0.43, 0.68, 20),
       new THREE.MeshBasicMaterial({
         color: binElem.hexNumber,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.72
+        opacity: 0.96,
+        toneMapped: false,
+        fog: false
       })
     );
     shadowRing.rotation.x = -Math.PI / 2;
-    shadowRing.position.y = 0.03;
+    shadowRing.position.y = 0.032;
     group.add(shadowRing);
 
     // Halo de Status (visível quando Estunado ou Desacelerado/Fragilizado)
     const statusRing = new THREE.Mesh(
-      new THREE.RingGeometry(0.72, 0.88, 16),
+      new THREE.RingGeometry(0.75, 0.92, 16),
       new THREE.MeshBasicMaterial({
         color: 0xffcc00,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.0
+        opacity: 0.0,
+        toneMapped: false,
+        fog: false
       })
     );
     statusRing.rotation.x = -Math.PI / 2;
@@ -131,28 +150,37 @@ export class EnemyManager {
 
     // Barra de Vida (HP) + Etiqueta da Lixeira ([Q] GARRAFA PET, [F] PORCA DE METAL, etc.)
     const hpGroup = new THREE.Group();
-    hpGroup.position.set(0, 2.02, 0);
+    hpGroup.position.set(0, 2.08, 0);
     hpGroup.rotation.y = Math.PI / 4;
 
     const badgeMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.85, 0.37),
+      new THREE.PlaneGeometry(1.92, 0.4),
       new THREE.MeshBasicMaterial({
         map: this.binBadgeTextures[binCategory],
         transparent: true,
         side: THREE.DoubleSide,
-        depthWrite: false
+        depthWrite: false,
+        toneMapped: false,
+        fog: false
       })
     );
-    badgeMesh.position.y = 0.32;
+    badgeMesh.position.y = 0.34;
 
     const hpBg = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.36, 0.19),
-      new THREE.MeshBasicMaterial({ color: 0x161420, side: THREE.DoubleSide })
+      new THREE.PlaneGeometry(1.42, 0.22),
+      new THREE.MeshBasicMaterial({
+        color: 0x0f172a,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+        fog: false
+      })
     );
-    const hpFillGeo = new THREE.PlaneGeometry(1.28, 0.12);
+    const hpFillGeo = new THREE.PlaneGeometry(1.32, 0.14);
     const hpFillMat = new THREE.MeshBasicMaterial({
       color: binElem.hexNumber,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      fog: false
     });
     const hpFill = new THREE.Mesh(hpFillGeo, hpFillMat);
     hpFill.position.z = 0.01;
@@ -382,14 +410,11 @@ export class EnemyManager {
 
       if (enemy.hitFlashTimer > 0) {
         enemy.hitFlashTimer -= dt;
-        enemy.spriteMat.emissive.setHex(0xffffff);
-        enemy.spriteMat.emissiveIntensity = 0.85;
+        enemy.spriteMat.color.setHex(0xff9999);
       } else if (enemy.stunTimer > 0) {
-        enemy.spriteMat.emissive.setHex(0xffcc00);
-        enemy.spriteMat.emissiveIntensity = 0.35;
+        enemy.spriteMat.color.setHex(0xffee55);
       } else {
-        enemy.spriteMat.emissive.setHex(0x000000);
-        enemy.spriteMat.emissiveIntensity = 0;
+        enemy.spriteMat.color.setHex(0xffffff);
       }
 
       // Puxão de Vórtice (Papel [E] -> [E]: JUNTAR)
