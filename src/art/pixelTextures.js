@@ -75,92 +75,161 @@ export function createPixelSkyBackdropTexture() {
 }
 
 /**
- * E1-01 — Textura 2D Pixel Art do Chão da Praça (Cores Vivas, Alto Contraste e Detalhes Pixelados)
- * Evita tons brancos estourados para que o protagonista, inimigos e orbes se destaquem com cores super vivas!
+ * E1-01 — Mapa 2D Pixel Art Completo do Chão de Parque / Praça (512x512, repeat 1x1)
+ * Desenha uma Praça Pública real em Pixel Art com:
+ * - Grande Pátio Circular Central em pedra de calçada portuguesa / paralelepípedo
+ * - 4 Alamedas de Pedra (Norte, Sul, Leste, Oeste) + Passeio de Pedra Perimetral
+ * - 4 Grandes Canteiros de Gramado de Parque com meio-fio de pedra, tufos de grama e flores nos cantos
  */
 export function createArenaGridTexture() {
-  const size = 64;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  // Base do rejunte em pedra quente escura para dar contraste nítido de pixel art
-  ctx.fillStyle = '#6b4c35';
-  ctx.fillRect(0, 0, size, size);
+  const cx = size / 2;
+  const cy = size / 2;
 
-  const half = size / 2;
-  const conamaDots = ['#ff2a2a', '#0077ff', '#00c853', '#ffb700'];
+  // 1. Preenche a base inteira com Gramado de Parque em Pixel Art (#338a44)
+  const tileSize = 16;
+  for (let ty = 0; ty < size; ty += tileSize) {
+    for (let tx = 0; tx < size; tx += tileSize) {
+      const checker = ((tx / tileSize) + (ty / tileSize)) % 2 === 0;
+      ctx.fillStyle = checker ? '#358f47' : '#2e803e';
+      ctx.fillRect(tx, ty, tileSize, tileSize);
 
-  for (let gy = 0; gy < 2; gy++) {
-    for (let gx = 0; gx < 2; gx++) {
-      const ox = gx * half;
-      const oy = gy * half;
-      const idx = gy * 2 + gx;
-
-      // Ladrilho de pedra ocre/terracota claro estilo praça 16-bit (quente, alegre e sem estourar luz!)
-      const tileBase = (gx + gy) % 2 === 0 ? '#e6be8a' : '#dbadf7' === '' ? '#d9b07c' : '#d9b07c';
-      ctx.fillStyle = tileBase;
-      ctx.fillRect(ox + 2, oy + 2, half - 4, half - 4);
-
-      // Miolo interno do ladrilho
-      ctx.fillStyle = (gx + gy) % 2 === 0 ? '#edd0a3' : '#e2be8f';
-      ctx.fillRect(ox + 4, oy + 4, half - 8, half - 8);
-
-      // Borda iluminada superior/esquerda (chanfro pixel art crocante)
-      ctx.fillStyle = '#fae5c3';
-      ctx.fillRect(ox + 2, oy + 2, half - 4, 2);
-      ctx.fillRect(ox + 2, oy + 2, 2, half - 4);
-
-      // Sombra inferior/direita bem marcada em pixel art
-      ctx.fillStyle = '#9c7350';
-      ctx.fillRect(ox + 2, oy + half - 4, half - 4, 2);
-      ctx.fillRect(ox + half - 4, oy + 2, 2, half - 4);
-
-      // Mosaico colorido pixelado no centro de cada ladrilho (cores vivas CONAMA)
-      ctx.fillStyle = '#7c583c';
-      ctx.fillRect(ox + 13, oy + 13, 6, 6);
-      ctx.fillStyle = conamaDots[idx];
-      ctx.fillRect(ox + 14, oy + 14, 4, 4);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(ox + 14, oy + 14, 1, 1);
-
-      // Detalhes de textura pixel art na pedra
-      ctx.fillStyle = '#c49866';
-      ctx.fillRect(ox + 7, oy + 8, 2, 2);
-      ctx.fillRect(ox + 22, oy + 20, 2, 2);
-      ctx.fillStyle = '#f5deb8';
-      ctx.fillRect(ox + 20, oy + 7, 2, 2);
-      ctx.fillRect(ox + 8, oy + 21, 2, 2);
+      // Textura de graminha pixel art dentro do bloco
+      ctx.fillStyle = '#43a656';
+      ctx.fillRect(tx + 3, ty + 4, 2, 2);
+      ctx.fillRect(tx + 11, ty + 10, 2, 2);
+      ctx.fillStyle = '#236630';
+      ctx.fillRect(tx + 4, ty + 6, 2, 1);
+      ctx.fillRect(tx + 10, ty + 12, 2, 1);
     }
   }
 
-  // Tufos de grama verde-viva e florzinhas pixel art nos cruzamentos dos ladrilhos
-  const drawGrassTuft = (tx, ty, flowerColor) => {
-    ctx.fillStyle = '#0f5223';
-    ctx.fillRect(tx - 2, ty - 2, 6, 6);
-    ctx.fillStyle = '#16a34a';
-    ctx.fillRect(tx - 1, ty - 1, 4, 4);
-    ctx.fillStyle = '#4ade80';
-    ctx.fillRect(tx - 1, ty - 1, 2, 2);
-    ctx.fillStyle = flowerColor;
-    ctx.fillRect(tx, ty, 2, 2);
+  // Função auxiliar que determina se uma coordenada (x, y) pertence à calçada de pedra da praça
+  const isStoneWalkway = (x, y) => {
+    const dx = x - cx;
+    const dy = y - cy;
+    const distCenter = Math.hypot(dx, dy);
+
+    // Passeio de pedra na borda externa da praça
+    const borderMargin = 36;
+    if (
+      x < borderMargin ||
+      x >= size - borderMargin ||
+      y < borderMargin ||
+      y >= size - borderMargin
+    ) {
+      return true;
+    }
+
+    // Pátio circular central da praça
+    if (distCenter <= 104) {
+      return true;
+    }
+
+    // 4 Alamedas largas em cruz ligando o centro às 4 entradas da praça
+    const pathHalfWidth = 44;
+    if (Math.abs(dx) <= pathHalfWidth || Math.abs(dy) <= pathHalfWidth) {
+      return true;
+    }
+
+    return false;
   };
 
-  drawGrassTuft(1, 1, '#ffdd00');
-  drawGrassTuft(half, half, '#ff3b77');
+  // 2. Desenha os Ladrilhos de Pedra / Calçada da Praça (blocos 16x16 de pedra natural)
+  for (let ty = 0; ty < size; ty += 8) {
+    for (let tx = 0; tx < size; tx += 8) {
+      const sampleX = tx + 4;
+      const sampleY = ty + 4;
+
+      if (isStoneWalkway(sampleX, sampleY)) {
+        const dx = sampleX - cx;
+        const dy = sampleY - cy;
+        const distCenter = Math.hypot(dx, dy);
+
+        // Verifica se é borda/meio-fio (vizinho imediato é grama)
+        const isEdge =
+          !isStoneWalkway(sampleX - 8, sampleY) ||
+          !isStoneWalkway(sampleX + 8, sampleY) ||
+          !isStoneWalkway(sampleX, sampleY - 8) ||
+          !isStoneWalkway(sampleX, sampleY + 8);
+
+        if (isEdge) {
+          // Meio-fio de pedra clara entre a calçada e o canteiro de grama
+          ctx.fillStyle = '#706558';
+          ctx.fillRect(tx, ty, 8, 8);
+          ctx.fillStyle = '#dfd6c7';
+          ctx.fillRect(tx + 1, ty + 1, 6, 6);
+          ctx.fillStyle = '#f2ece1';
+          ctx.fillRect(tx + 1, ty + 1, 6, 2);
+        } else if (distCenter <= 94 && distCenter >= 82) {
+          // Anel decorativo de pedra terracota ao redor do pátio central da praça
+          ctx.fillStyle = '#7a523b';
+          ctx.fillRect(tx, ty, 8, 8);
+          ctx.fillStyle = '#c4835f';
+          ctx.fillRect(tx + 1, ty + 1, 6, 6);
+          ctx.fillStyle = '#dba07d';
+          ctx.fillRect(tx + 1, ty + 1, 6, 1);
+        } else if (distCenter <= 34) {
+          // Rosácea / Coreto central de pedra da praça
+          const innerRing = distCenter >= 24;
+          ctx.fillStyle = '#6e6357';
+          ctx.fillRect(tx, ty, 8, 8);
+          ctx.fillStyle = innerRing ? '#c99e67' : '#d8cfc0';
+          ctx.fillRect(tx + 1, ty + 1, 6, 6);
+        } else {
+          // Calçamento de pedra de praça (paralelepípedo / lajota serrada)
+          const brickAlt = ((tx / 8) + (ty / 8)) % 2 === 0;
+          ctx.fillStyle = '#8a7e70'; // rejunte de pedra
+          ctx.fillRect(tx, ty, 8, 8);
+
+          ctx.fillStyle = brickAlt ? '#cfc4b4' : '#c4b8a6';
+          ctx.fillRect(tx + 1, ty + 1, 6, 6);
+
+          // Luz e sombra sutil da pedra em pixel art
+          ctx.fillStyle = '#ded5c8';
+          ctx.fillRect(tx + 1, ty + 1, 6, 1);
+          ctx.fillRect(tx + 1, ty + 1, 1, 6);
+          ctx.fillStyle = '#aba090';
+          ctx.fillRect(tx + 1, ty + 6, 6, 1);
+          ctx.fillRect(tx + 6, ty + 1, 1, 6);
+        }
+      } else {
+        // Dentro dos 4 Canteiros de Grama da Praça: adiciona detalhes de jardim (tufos e florzinhas)
+        const hash = ((tx * 37) ^ (ty * 73)) & 31;
+        if (hash === 0) {
+          // Tufo de grama alta pixel art
+          ctx.fillStyle = '#1d5728';
+          ctx.fillRect(tx + 2, ty + 4, 4, 2);
+          ctx.fillStyle = '#52bf66';
+          ctx.fillRect(tx + 2, ty + 2, 1, 3);
+          ctx.fillRect(tx + 4, ty + 1, 1, 3);
+        } else if (hash === 1) {
+          // Florzinha de jardim discreta no canteiro
+          ctx.fillStyle = '#1d5728';
+          ctx.fillRect(tx + 2, ty + 2, 4, 4);
+          ctx.fillStyle = (tx + ty) % 3 === 0 ? '#ffd166' : '#f4effa';
+          ctx.fillRect(tx + 3, ty + 3, 2, 2);
+        }
+      }
+    }
+  }
 
   const texture = new THREE.CanvasTexture(canvas);
   applyNearestPixelFilter(texture);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(14, 14);
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.repeat.set(1, 1);
   return texture;
 }
 
 /**
- * Fundo/Background 2D Pixelado do Parque ao redor da Arena (Grama 16-bit com flores, arbustos e ladrilhos pixel art)
+ * Fundo/Background 2D Pixelado do Parque ao redor da Praça (Gramado natural de parque em Pixel Art)
  */
 export function createParkGrassTexture() {
   const size = 64;
@@ -170,50 +239,42 @@ export function createParkGrassTexture() {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  // Base de grama verde rica e saturada (estilo RPG/Arcade 16-bit)
-  ctx.fillStyle = '#22c55e';
+  // Base de grama natural de parque
+  ctx.fillStyle = '#2e803e';
   ctx.fillRect(0, 0, size, size);
 
-  // Padrão de blocos/xadrez sutil em pixel art
   const half = size / 2;
-  ctx.fillStyle = '#16a34a';
+  ctx.fillStyle = '#358f47';
   ctx.fillRect(0, 0, half, half);
   ctx.fillRect(half, half, half, half);
 
-  // Textura de tufos de grama pixelados (V-shapes e hastes)
+  // Tufos de grama pixelados
   const tufts = [
-    [6, 8], [18, 14], [10, 24], [24, 6],
-    [38, 10], [50, 20], [42, 26], [56, 8],
-    [8, 40], [22, 48], [14, 56], [26, 38],
-    [36, 42], [48, 52], [54, 38], [40, 58]
+    [8, 10], [22, 16], [12, 26],
+    [40, 12], [52, 22], [44, 28],
+    [10, 42], [24, 50], [16, 56],
+    [38, 44], [50, 54], [54, 40]
   ];
   tufts.forEach(([gx, gy], i) => {
-    ctx.fillStyle = '#0f5223';
-    ctx.fillRect(gx, gy + 2, 4, 2);
-    ctx.fillStyle = i % 2 === 0 ? '#4ade80' : '#86efac';
-    ctx.fillRect(gx, gy, 1, 3);
-    ctx.fillRect(gx + 2, gy - 1, 1, 3);
-    ctx.fillRect(gx + 4, gy, 1, 3);
+    ctx.fillStyle = '#1f5c2b';
+    ctx.fillRect(gx, gy + 2, 4, 1);
+    ctx.fillStyle = i % 2 === 0 ? '#47ad5b' : '#58bf6c';
+    ctx.fillRect(gx, gy, 1, 2);
+    ctx.fillRect(gx + 2, gy - 1, 1, 2);
   });
 
-  // Flores 2D pixel art super coloridas com contorno escuro
+  // Pequenas margaridas/flores naturais discretas de parque
   const flowers = [
-    { x: 12, y: 12, petal: '#ff2a55', core: '#ffe600' },
-    { x: 44, y: 14, petal: '#ffcc00', core: '#d90429' },
-    { x: 18, y: 44, petal: '#ffffff', core: '#ffb700' },
-    { x: 48, y: 46, petal: '#38bdf8', core: '#ffffff' }
+    { x: 16, y: 14, petal: '#fffbeb', core: '#f59e0b' },
+    { x: 46, y: 46, petal: '#fde047', core: '#b45309' }
   ];
   flowers.forEach(({ x, y, petal, core }) => {
-    // Contorno pixelado
-    ctx.fillStyle = '#0f3818';
-    ctx.fillRect(x - 1, y - 1, 7, 7);
-    // Pétalas em cruz pixel art
+    ctx.fillStyle = '#1f5c2b';
+    ctx.fillRect(x, y + 1, 3, 3);
     ctx.fillStyle = petal;
-    ctx.fillRect(x + 1, y, 3, 5);
-    ctx.fillRect(x, y + 1, 5, 3);
-    // Miolo
+    ctx.fillRect(x, y, 3, 3);
     ctx.fillStyle = core;
-    ctx.fillRect(x + 2, y + 2, 1, 1);
+    ctx.fillRect(x + 1, y + 1, 1, 1);
   });
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -225,7 +286,7 @@ export function createParkGrassTexture() {
 }
 
 /**
- * E1-01 — Textura 2D Pixel Art para as Muretas da Arena (Blocos CONAMA com contorno pixelado forte)
+ * E1-01 — Textura 2D Pixel Art para as Muretas da Praça (Mureta de Pedra e Sebe Viva de Parque)
  */
 export function createArenaBorderTexture() {
   const canvas = document.createElement('canvas');
@@ -234,41 +295,106 @@ export function createArenaBorderTexture() {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  // Contorno escuro superior e inferior
-  ctx.fillStyle = '#181425';
-  ctx.fillRect(0, 0, 64, 16);
-
-  // Blocos vibrantes nas 4 cores CONAMA
-  const conamaColors = [
-    { main: '#ff2a2a', light: '#ff8080', dark: '#b30000' }, // Plástico
-    { main: '#0066ff', light: '#66a3ff', dark: '#003d99' }, // Papel
-    { main: '#00c853', light: '#69f0ae', dark: '#007a33' }, // Vidro
-    { main: '#ffb700', light: '#ffe066', dark: '#b38000' }  // Metal
-  ];
-
-  for (let i = 0; i < 4; i++) {
-    const ox = i * 16;
-    const c = conamaColors[i];
-    ctx.fillStyle = c.main;
-    ctx.fillRect(ox + 1, 2, 14, 10);
-    ctx.fillStyle = c.light;
-    ctx.fillRect(ox + 2, 2, 12, 2);
-    ctx.fillRect(ox + 2, 2, 2, 8);
-    ctx.fillStyle = c.dark;
-    ctx.fillRect(ox + 2, 10, 12, 2);
-    ctx.fillRect(ox + 13, 2, 2, 10);
+  // Topo em sebe viva (arbusto podado de praça) + base de tijolo de pedra
+  ctx.fillStyle = '#1b4d24';
+  ctx.fillRect(0, 0, 64, 8);
+  ctx.fillStyle = '#2b7a39';
+  ctx.fillRect(0, 1, 64, 5);
+  ctx.fillStyle = '#3da14f';
+  for (let x = 2; x < 64; x += 8) {
+    ctx.fillRect(x, 1, 5, 2);
   }
 
-  // Base de grama pixelada
-  ctx.fillStyle = '#15803d';
-  ctx.fillRect(0, 13, 64, 3);
+  // Base de blocos de pedra de praça
+  ctx.fillStyle = '#5c5248';
+  ctx.fillRect(0, 8, 64, 8);
+  for (let i = 0; i < 4; i++) {
+    const ox = i * 16;
+    ctx.fillStyle = '#c4b8a6';
+    ctx.fillRect(ox + 1, 9, 14, 6);
+    ctx.fillStyle = '#ded5c8';
+    ctx.fillRect(ox + 1, 9, 14, 2);
+  }
 
   const texture = new THREE.CanvasTexture(canvas);
   applyNearestPixelFilter(texture);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.repeat.set(12, 1);
+  texture.repeat.set(14, 1);
   return texture;
+}
+
+/**
+ * Banco de Praça de Madeira e Ferro em 2D Pixel Art
+ */
+export function createPixelParkBenchTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 36;
+  canvas.height = 24;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const px = (x, y, w, h, c) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, w, h);
+  };
+
+  // Sombra no chão
+  px(4, 21, 28, 2, 'rgba(15, 23, 42, 0.35)');
+
+  // Estrutura de ferro fundido preto (#1e293b)
+  px(6, 7, 3, 15, '#1e293b');
+  px(27, 7, 3, 15, '#1e293b');
+  px(4, 13, 3, 4, '#1e293b');
+  px(29, 13, 3, 4, '#1e293b');
+
+  // Ripas de madeira envernizada do encosto
+  px(5, 8, 26, 3, '#451a03');
+  px(6, 8, 24, 2, '#b45309');
+  px(6, 8, 24, 1, '#d97706');
+
+  px(5, 11, 26, 3, '#451a03');
+  px(6, 11, 24, 2, '#92400e');
+
+  // Assento de madeira
+  px(4, 15, 28, 3, '#451a03');
+  px(5, 15, 26, 2, '#d97706');
+
+  const tex = new THREE.CanvasTexture(canvas);
+  return applyNearestPixelFilter(tex);
+}
+
+/**
+ * Poste de Luz Clássico de Praça em 2D Pixel Art
+ */
+export function createPixelParkLampTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 24;
+  canvas.height = 48;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const px = (x, y, w, h, c) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x, y, w, h);
+  };
+
+  // Base e coluna de ferro verde-escuro/preto clássico de praça
+  px(8, 42, 8, 5, '#1e293b');
+  px(9, 38, 6, 4, '#334155');
+  px(11, 13, 2, 26, '#1e293b');
+  px(9, 13, 6, 2, '#334155');
+
+  // Luminária superior estilo praça
+  px(8, 6, 8, 7, '#1e293b');
+  px(9, 7, 6, 5, '#fef08a');
+  px(10, 8, 4, 3, '#ffffff');
+  // Chapéu do poste
+  px(7, 5, 10, 2, '#1e293b');
+  px(10, 3, 4, 2, '#1e293b');
+
+  const tex = new THREE.CanvasTexture(canvas);
+  return applyNearestPixelFilter(tex);
 }
 
 /**
