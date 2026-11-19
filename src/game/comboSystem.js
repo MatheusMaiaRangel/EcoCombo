@@ -14,7 +14,7 @@ import { ARENA_HALF_SIZE } from './arenaScene.js';
  * e Medidor de Estilo Devil May Cry (Ranks D, C, B, A, S, SS, SSS + Multiplicador Destacado Abaixo)
  */
 export class ComboSystem {
-  constructor({ scene, player, hud, sound, viewportEl, camera, onShotFired }) {
+  constructor({ scene, player, hud, sound, viewportEl, camera, onShotFired, isGameplayActive }) {
     this.scene = scene;
     this.player = player;
     this.hud = hud;
@@ -22,6 +22,7 @@ export class ComboSystem {
     this.viewportEl = viewportEl;
     this.camera = camera;
     this.onShotFired = onShotFired;
+    this.isGameplayActive = isGameplayActive || (() => true);
 
     // Estado do Grimório / Lixeira estilo Hwei
     // null = Nenhuma lixeira aberta (1º toque escolhe Q/E/R/F)
@@ -50,7 +51,7 @@ export class ComboSystem {
 
   bindInputs() {
     window.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
+      if (e.repeat || !this.isGameplayActive()) return;
 
       // Se nenhuma lixeira está aberta, Q/E/R/F (ou 1/2/3/4) abre a Lixeira correspondente (1º Toque Hwei)
       if (!this.openBinId) {
@@ -71,6 +72,7 @@ export class ComboSystem {
     // Clique Direito do Mouse cancela/fecha a lixeira aberta (igual ao Hwei no LoL)
     window.addEventListener('contextmenu', (e) => {
       e.preventDefault();
+      if (!this.isGameplayActive()) return;
       if (this.openBinId) {
         this.closeBin(true);
       }
@@ -80,6 +82,7 @@ export class ComboSystem {
     const pills = document.querySelectorAll('.conama-key-pill');
     pills.forEach((pill) => {
       pill.addEventListener('click', () => {
+        if (!this.isGameplayActive()) return;
         const binId = pill.getAttribute('data-element');
         if (!binId) return;
         if (this.openBinId === binId) {
@@ -95,6 +98,7 @@ export class ComboSystem {
     fanButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (!this.isGameplayActive()) return;
         const modeId = btn.getAttribute('data-hwei-mode');
         if (this.openBinId && modeId) {
           this.executeModeFromOpenBin(modeId);

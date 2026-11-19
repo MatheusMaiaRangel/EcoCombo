@@ -52,6 +52,7 @@ export class ArenaScene {
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
 
+    this.bloomEnabled = true;
     this.bloomPass = new UnrealBloomPass(
       new THREE.Vector2(width, height),
       0.52, // strength: brilho neon nos orbes, mira e projéteis
@@ -220,7 +221,15 @@ export class ArenaScene {
     this.scene.add(this.motes);
   }
 
-  update(elapsedTime, dt, playerPosition) {
+  setBloomEnabled(enabled) {
+    this.bloomEnabled = Boolean(enabled);
+    if (this.bloomPass) {
+      this.bloomPass.strength = this.bloomEnabled ? 0.52 : 0.0;
+    }
+    return this.bloomEnabled;
+  }
+
+  update(elapsedTime, dt, playerPosition, isMenuBackdrop = false) {
     // Rotação dos cristais CONAMA nos 4 cantos
     for (const crystal of this.cornerBeacons) {
       crystal.rotation.y = elapsedTime * 1.4;
@@ -230,6 +239,21 @@ export class ArenaScene {
     // Movimento suave das partículas de luz HD-2D
     if (this.motes) {
       this.motes.rotation.y = elapsedTime * 0.04;
+    }
+
+    if (isMenuBackdrop) {
+      // No Menu Inicial, faz uma panorâmica isométrica suave ao redor do protagonista no centro
+      const swayX = Math.sin(elapsedTime * 0.35) * 2.2;
+      const swayZ = Math.cos(elapsedTime * 0.35) * 2.2;
+      this.cameraTarget.x = THREE.MathUtils.lerp(this.cameraTarget.x, 0, dt * 3);
+      this.cameraTarget.z = THREE.MathUtils.lerp(this.cameraTarget.z, 0, dt * 3);
+      this.camera.position.set(
+        this.cameraOffset.x + swayX,
+        this.cameraOffset.y,
+        this.cameraOffset.z + swayZ
+      );
+      this.camera.lookAt(this.cameraTarget);
+      return;
     }
 
     // Câmera isométrica acompanha suavemente o protagonista mantendo o enquadramento da arena

@@ -60,10 +60,20 @@ export class HUDController {
 
     // Camada de Textos Flutuantes 3D->2D e Modal de Pureza 0%
     this.floatingLayer = document.getElementById('floating-texts-layer');
+    this.floatingTextEnabled = true;
+
     this.purityOverlay = document.getElementById('purity-depleted-overlay');
     this.finalScoreVal = document.getElementById('final-score-val');
     this.finalStageVal = document.getElementById('final-stage-val');
     this.finalKillsVal = document.getElementById('final-kills-val');
+
+    // Menu Inicial e Menu de Pausa com Opções (ESC — E4-06)
+    this.startMenuOverlay = document.getElementById('start-menu-overlay');
+    this.pauseMenuOverlay = document.getElementById('pause-menu-overlay');
+    this.pauseScoreVal = document.getElementById('pause-score-val');
+    this.pauseStageVal = document.getElementById('pause-stage-val');
+    this.pausePurityVal = document.getElementById('pause-purity-val');
+    this.pauseRankVal = document.getElementById('pause-rank-val');
   }
 
   /**
@@ -265,11 +275,19 @@ export class HUDController {
     this.enemiesAlivePill.textContent = `ITENS NA ARENA: ${enemiesAlive}`;
   }
 
+  setFloatingTextEnabled(enabled) {
+    this.floatingTextEnabled = Boolean(enabled);
+    if (!this.floatingTextEnabled && this.floatingLayer) {
+      this.floatingLayer.innerHTML = '';
+    }
+    return this.floatingTextEnabled;
+  }
+
   /**
    * Exibe texto flutuante projetado da coordenada 3D para a tela 2D
    */
   spawnFloatingText(worldPos, camera, viewportEl, text, color = '#ffd166') {
-    if (!camera || !viewportEl) return;
+    if (!this.floatingTextEnabled || !camera || !viewportEl) return;
     const projected = worldPos.clone().project(camera);
     const rect = viewportEl.getBoundingClientRect();
     const x = (projected.x * 0.5 + 0.5) * rect.width;
@@ -286,6 +304,34 @@ export class HUDController {
     setTimeout(() => {
       el.remove();
     }, 1050);
+  }
+
+  showStartMenu() {
+    if (this.startMenuOverlay) {
+      this.startMenuOverlay.classList.remove('hidden');
+    }
+  }
+
+  hideStartMenu() {
+    if (this.startMenuOverlay) {
+      this.startMenuOverlay.classList.add('hidden');
+    }
+  }
+
+  showPauseMenu({ score, stage, purity, rank }) {
+    if (this.pauseScoreVal) this.pauseScoreVal.textContent = String(score);
+    if (this.pauseStageVal) this.pauseStageVal.textContent = String(stage);
+    if (this.pausePurityVal) this.pausePurityVal.textContent = `${Math.round(purity)}%`;
+    if (this.pauseRankVal) this.pauseRankVal.textContent = rank || 'C';
+    if (this.pauseMenuOverlay) {
+      this.pauseMenuOverlay.classList.remove('hidden');
+    }
+  }
+
+  hidePauseMenu() {
+    if (this.pauseMenuOverlay) {
+      this.pauseMenuOverlay.classList.add('hidden');
+    }
   }
 
   showPurityDepletedModal({ score, stage, kills }) {

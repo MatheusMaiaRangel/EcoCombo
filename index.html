@@ -158,11 +158,16 @@
             1º Toque: <kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd> Abrir Lixeira do Item
           </div>
           <div class="control-chip">
-            2º Toque no Leque: <kbd>Q</kbd> Dano · <kbd>E</kbd> Controle · <kbd>R</kbd> Escudo · <kbd>F</kbd> Fechar
+            2º Toque: <kbd>Q</kbd> Dano · <kbd>E</kbd> Controle · <kbd>R</kbd> Escudo · <kbd>ESC</kbd> Menu
           </div>
-          <button id="btn-toggle-audio" class="audio-btn" type="button" title="Alternar Áudio Sintetizado Web Audio API">
-            🔊 SOM: ON
-          </button>
+          <div class="top-overlay-actions">
+            <button id="btn-open-pause-menu" class="audio-btn menu-esc-btn" type="button" title="Pausar e Abrir Menu de Opções (Tecla ESC)">
+              ⚙ MENU [ESC]
+            </button>
+            <button id="btn-toggle-audio" class="audio-btn" type="button" title="Alternar Áudio Sintetizado Web Audio API">
+              🔊 SOM: ON
+            </button>
+          </div>
         </div>
 
         <!-- MEDIDOR DE ESTILO DEVIL MAY CRY FLUTUANTE NA ARENA (Letra Gigante D-SSS + Multiplicador Destacado Embaixo! — E4-05) -->
@@ -220,6 +225,179 @@
           </div>
         </div>
 
+        <!-- MENU INICIAL DO JOGO (E4-06 — Aparece ao abrir o jogo antes de iniciar a gameplay) -->
+        <div id="start-menu-overlay" class="arena-modal-overlay start-menu-overlay" role="dialog" aria-modal="true" aria-labelledby="start-menu-title">
+          <div class="arena-modal-card start-menu-card">
+            <div class="modal-badge start-badge">ARENA ISOMÉTRICA 2.5D // COLETA SELETIVA CONAMA</div>
+            <h1 id="start-menu-title" class="start-menu-logo">ECOCOMBO 3D</h1>
+            <p class="start-menu-subtitle">
+              COMBOS DEVIL MAY CRY (<span class="highlight-cyan">D → SSS</span>) &amp; GRIMÓRIO SELETIVO <span class="highlight-gold">HWEI</span>
+            </p>
+
+            <!-- Cards das 4 Lixeiras CONAMA no Menu Inicial -->
+            <div class="start-bins-grid">
+              <div class="start-bin-chip bin-plastic">
+                <span class="bin-chip-key">Q / 1</span>
+                <span class="bin-chip-name">PLÁSTICO</span>
+                <span class="bin-chip-target">Garrafa PET • [E] Separar</span>
+              </div>
+              <div class="start-bin-chip bin-paper">
+                <span class="bin-chip-key">E / 2</span>
+                <span class="bin-chip-name">PAPEL</span>
+                <span class="bin-chip-target">Papelão • [E] Juntar</span>
+              </div>
+              <div class="start-bin-chip bin-glass">
+                <span class="bin-chip-key">R / 3</span>
+                <span class="bin-chip-name">VIDRO</span>
+                <span class="bin-chip-target">Garrafa • [E] Slow + Frágil</span>
+              </div>
+              <div class="start-bin-chip bin-metal">
+                <span class="bin-chip-key">F / 4</span>
+                <span class="bin-chip-name">METAL</span>
+                <span class="bin-chip-target">Porca • [E] Estunar</span>
+              </div>
+            </div>
+
+            <!-- Guia Rápido Colapsável de Como Jogar -->
+            <div id="start-howto-box" class="start-howto-box">
+              <div class="howto-step">
+                <strong>1. MOVA E MIRE:</strong> Ande com <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> pela arena 2.5D e aponte o cursor do <strong>Mouse</strong> para os resíduos.
+              </div>
+              <div class="howto-step">
+                <strong>2. ABRA A LIXEIRA CERTA:</strong> Veja qual item está vindo e pressione <kbd>Q</kbd>, <kbd>E</kbd>, <kbd>R</kbd> ou <kbd>F</kbd> para abrir o leque daquela cor.
+              </div>
+              <div class="howto-step">
+                <strong>3. ESCOLHA O MODO NO LEQUE:</strong> <kbd>Q</kbd> <strong>Mais Dano</strong> · <kbd>E</kbd> <strong>Controle de Grupo</strong> · <kbd>R</kbd> <strong>Escudo Seletivo</strong> · <kbd>ESC</kbd> <strong>Pausar / Opções</strong>.
+              </div>
+            </div>
+
+            <!-- Botões de Ação do Menu Inicial -->
+            <div class="menu-actions-stack">
+              <button id="btn-start-play" type="button" class="btn-primary-retro btn-play-hero">
+                ▶ INICIAR PARTIDA (TECLA ENTER)
+              </button>
+              <div class="menu-secondary-row">
+                <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
+                  ⚙ OPÇÕES DE JOGO
+                </button>
+                <button id="btn-start-toggle-guide" type="button" class="btn-secondary-retro">
+                  📖 COMO JOGAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MENU DE PAUSA E OPÇÕES NA TECLA ESC DURANTE A GAMEPLAY (E4-06) -->
+        <div id="pause-menu-overlay" class="arena-modal-overlay pause-menu-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pause-menu-title">
+          <div class="arena-modal-card pause-menu-card">
+            <div id="pause-menu-badge" class="modal-badge pause-badge">⏸ JOGO PAUSADO // TECLA ESC</div>
+            <h2 id="pause-menu-title">MENU &amp; OPÇÕES</h2>
+
+            <!-- Resumo da Partida Atual (Visível quando pausado no meio da gameplay) -->
+            <div id="pause-live-stats" class="modal-stats-grid pause-stats-grid">
+              <div class="modal-stat-item">
+                <span class="stat-label">STAGE</span>
+                <span id="pause-stage-val" class="stat-num">1</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">SCORE</span>
+                <span id="pause-score-val" class="stat-num">0</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">PUREZA</span>
+                <span id="pause-purity-val" class="stat-num">100%</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">RANK DMC</span>
+                <span id="pause-rank-val" class="stat-num">C</span>
+              </div>
+            </div>
+
+            <!-- Painel de Opções Configuráveis -->
+            <div class="options-panel-list">
+              <!-- Opção 1: Som ON / OFF -->
+              <div class="option-row">
+                <div class="option-info">
+                  <span class="option-title">🔊 ÁUDIO SINTETIZADO</span>
+                  <span class="option-desc">Efeitos sonoros procedurais Web Audio API</span>
+                </div>
+                <button id="opt-btn-sound-toggle" type="button" class="option-toggle-btn active">
+                  LIGADO
+                </button>
+              </div>
+
+              <!-- Opção 2: Volume Geral -->
+              <div class="option-row">
+                <div class="option-info">
+                  <span class="option-title">🎚 VOLUME DO SOM: <strong id="opt-volume-label">85%</strong></span>
+                  <span class="option-desc">Ajusta o ganho mestre dos disparos e combos</span>
+                </div>
+                <input
+                  id="opt-slider-volume"
+                  class="option-slider"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value="85"
+                  aria-label="Volume do Som"
+                />
+              </div>
+
+              <!-- Opção 3: Dificuldade / Ritmo da Arena -->
+              <div class="option-row">
+                <div class="option-info">
+                  <span class="option-title">⚔ RITMO DA ARENA</span>
+                  <span class="option-desc">Velocidade e frequência dos itens recicláveis</span>
+                </div>
+                <div class="option-segmented-group" role="group" aria-label="Dificuldade da Arena">
+                  <button type="button" class="opt-seg-btn" data-difficulty="CALM">CALMO</button>
+                  <button type="button" class="opt-seg-btn active" data-difficulty="NORMAL">NORMAL</button>
+                  <button type="button" class="opt-seg-btn" data-difficulty="INTENSE">INTENSO</button>
+                </div>
+              </div>
+
+              <!-- Opção 4: Brilho Neon 3D (UnrealBloomPass) -->
+              <div class="option-row">
+                <div class="option-info">
+                  <span class="option-title">✨ BRILHO NEON (BLOOM 3D)</span>
+                  <span class="option-desc">Pós-processamento luminoso nos orbes e projéteis</span>
+                </div>
+                <button id="opt-btn-bloom-toggle" type="button" class="option-toggle-btn active">
+                  LIGADO
+                </button>
+              </div>
+
+              <!-- Opção 5: Textos Flutuantes de Combate -->
+              <div class="option-row">
+                <div class="option-info">
+                  <span class="option-title">💬 TEXTOS DE DANO NA ARENA</span>
+                  <span class="option-desc">Números flutuantes de dano, pontos e alertas</span>
+                </div>
+                <button id="opt-btn-floating-toggle" type="button" class="option-toggle-btn active">
+                  VISÍVEL
+                </button>
+              </div>
+            </div>
+
+            <!-- Botões do Menu de Pausa -->
+            <div class="menu-actions-stack">
+              <button id="btn-pause-resume" type="button" class="btn-primary-retro">
+                ▶ CONTINUAR PARTIDA (ESC)
+              </button>
+              <div class="menu-secondary-row">
+                <button id="btn-pause-restart" type="button" class="btn-secondary-retro">
+                  🔄 REINICIAR PARTIDA
+                </button>
+                <button id="btn-pause-to-start" type="button" class="btn-secondary-retro btn-danger-outline">
+                  🏠 MENU INICIAL
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Overlay quando Pureza chega a 0% (RN11) -->
         <div id="purity-depleted-overlay" class="arena-modal-overlay hidden">
           <div class="arena-modal-card">
@@ -240,9 +418,14 @@
                 <span id="final-kills-val" class="stat-num">0</span>
               </div>
             </div>
-            <button id="btn-restart-match" type="button" class="btn-primary-retro">
-              REINICIAR PARTIDA (TECLA ENTER)
-            </button>
+            <div class="menu-actions-stack">
+              <button id="btn-restart-match" type="button" class="btn-primary-retro">
+                🔄 REINICIAR PARTIDA (TECLA ENTER)
+              </button>
+              <button id="btn-gameover-to-menu" type="button" class="btn-secondary-retro">
+                🏠 VOLTAR AO MENU INICIAL
+              </button>
+            </div>
           </div>
         </div>
       </div>

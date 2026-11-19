@@ -119,8 +119,7 @@ export const KEY_TO_HWEI_MODE = {
   KeyR: 'SHIELD',
   Digit4: 'CANCEL',
   Numpad4: 'CANCEL',
-  KeyF: 'CANCEL',
-  Escape: 'CANCEL'
+  KeyF: 'CANCEL'
 };
 
 /**

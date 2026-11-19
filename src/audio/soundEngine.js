@@ -6,7 +6,9 @@ import { CONAMA_ELEMENTS } from '../constants/recipes.js';
 export class SoundEngine {
   constructor() {
     this.ctx = null;
+    this.masterGain = null;
     this.enabled = true;
+    this.volumePercent = 85;
   }
 
   ensureContext() {
@@ -15,17 +17,92 @@ export class SoundEngine {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(this.volumePercent / 100, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
     }
+    if (this.ctx && this.masterGain) {
+      this.masterGain.gain.setValueAtTime(this.volumePercent / 100, this.ctx.currentTime);
+    }
     return this.ctx;
+  }
+
+  getOutput(ctx) {
+    return this.masterGain || ctx.destination;
   }
 
   toggle() {
     this.enabled = !this.enabled;
     return this.enabled;
+  }
+
+  setEnabled(enabled) {
+    this.enabled = Boolean(enabled);
+    return this.enabled;
+  }
+
+  setVolumePercent(percent) {
+    this.volumePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+    if (this.ctx && this.masterGain) {
+      this.masterGain.gain.setValueAtTime(this.volumePercent / 100, this.ctx.currentTime);
+    }
+    return this.volumePercent;
+  }
+
+  /**
+   * Som curto de clique/interação nos botões do Menu Inicial e Menu de Pausa (ESC)
+   */
+  playMenuClick(high = true) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    const baseFreq = high ? 587.33 : 440;
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, now + 0.065);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.11, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+
+    osc.connect(gain);
+    gain.connect(this.getOutput(ctx));
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+
+  /**
+   * Som ao abrir ou fechar o Menu de Pausa na tecla ESC
+   */
+  playPauseToggle(paused = true) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = paused ? [523.25, 392.0] : [392.0, 523.25];
+    notes.forEach((f, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, now + idx * 0.055);
+
+      gain.gain.setValueAtTime(0.001, now + idx * 0.055);
+      gain.gain.linearRampToValueAtTime(0.1, now + idx * 0.055 + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.055 + 0.11);
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(now + idx * 0.055);
+      osc.stop(now + idx * 0.055 + 0.12);
+    });
   }
 
   /**
@@ -52,7 +129,7 @@ export class SoundEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.getOutput(ctx));
 
     osc.start(now);
     osc.stop(now + 0.12);
@@ -80,7 +157,7 @@ export class SoundEngine {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.getOutput(ctx));
       osc.start(now);
       osc.stop(now + 0.2);
       return;
@@ -100,7 +177,7 @@ export class SoundEngine {
       gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.03 + 0.16);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.getOutput(ctx));
       osc.start(now + idx * 0.03);
       osc.stop(now + idx * 0.03 + 0.17);
     });
@@ -135,7 +212,7 @@ export class SoundEngine {
     }
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.getOutput(ctx));
     osc.start(now);
     osc.stop(now + 0.18);
   }
@@ -162,7 +239,7 @@ export class SoundEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, now + (defeated ? 0.24 : 0.1));
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.getOutput(ctx));
     osc.start(now);
     osc.stop(now + (defeated ? 0.25 : 0.11));
   }
@@ -186,7 +263,7 @@ export class SoundEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(this.getOutput(ctx));
     osc.start(now);
     osc.stop(now + 0.31);
   }

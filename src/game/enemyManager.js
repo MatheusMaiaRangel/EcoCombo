@@ -40,6 +40,9 @@ export class EnemyManager {
     this.spawnTimer = 1.0;
     this.spawnInterval = 2.6;
     this.maxConcurrentEnemies = 9;
+    this.difficultyMode = 'NORMAL';
+    this.difficultySpeedMult = 1.0;
+    this.difficultySpawnMult = 1.0;
 
     // Registra o callback de detonação de Controle de Grupo (Modo E) no ComboSystem
     this.comboSystem.onControlWaveDetonated = (centerPos, spell, multiplier) => {
@@ -318,12 +321,27 @@ export class EnemyManager {
     }
   }
 
+  setDifficulty(mode = 'NORMAL') {
+    this.difficultyMode = mode;
+    if (mode === 'CALM') {
+      this.difficultySpeedMult = 0.72;
+      this.difficultySpawnMult = 1.3;
+    } else if (mode === 'INTENSE') {
+      this.difficultySpeedMult = 1.28;
+      this.difficultySpawnMult = 0.78;
+    } else {
+      this.difficultySpeedMult = 1.0;
+      this.difficultySpawnMult = 1.0;
+    }
+  }
+
   update(elapsedTime, dt, stage) {
     // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-05)
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnEnemyAroundPerimeter(stage);
-      this.spawnTimer = Math.max(1.4, this.spawnInterval - (stage - 1) * 0.1);
+      const baseInterval = Math.max(1.4, this.spawnInterval - (stage - 1) * 0.1);
+      this.spawnTimer = baseInterval * this.difficultySpawnMult;
     }
 
     const playerPos = this.player.position;
@@ -399,7 +417,10 @@ export class EnemyManager {
         enemy.stunTimer > 0 ? 0.0 : enemy.slowTimer > 0 ? 0.3 : 1.0;
 
       if (enemy.pullTimer <= 0) {
-        enemy.group.position.addScaledVector(toPlayer, enemy.speed * speedFactor * dt);
+        enemy.group.position.addScaledVector(
+          toPlayer,
+          enemy.speed * this.difficultySpeedMult * speedFactor * dt
+        );
       }
 
       // Aplica recuo/separação (Plástico Q+E ou Knockback)
