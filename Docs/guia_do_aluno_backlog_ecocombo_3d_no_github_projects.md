@@ -39,12 +39,13 @@ Este guia segue rigorosamente todos os critérios de avaliação do documento or
 | E1-02 | Movimentar protagonista no `WASD` com 4 orbes em órbita e mira no Mouse | 3 | Alta | Sprint 1 |
 | E1-03 | Adicionar obstáculos 3D na arena que bloqueiam projéteis e inimigos | 3 | Média | |
 | E1-04 | Alterar atmosfera e iluminação da arena conforme o nível de pureza | 2 | Baixa | |
-| **E2** | **Inimigos da Poluição ("Bichos" / Itens Recicláveis) e IA de Arena** | **13** | | |
+| **E2** | **Inimigos da Poluição ("Bichos" / Itens Recicláveis) e IA de Arena** | **16** | | |
 | E2-01 | Instanciar inimigos da poluição na arena isométrica que perseguem o jogador | 3 | Alta | Sprint 1 |
 | E2-02 | Causar perda de pureza ambiental quando o inimigo encosta no protagonista | 3 | Alta | |
 | E2-03 | Escalonar velocidade e vida dos inimigos a cada estágio (onda) | 2 | Média | |
 | E2-04 | Instanciar inimigos resistentes a uma cor específica de reciclável | 2 | Baixa | |
 | E2-05 | Instanciar inimigos como itens recicláveis (Garrafa PET, Porca de Metal, Papelão e Vidro) por lixeira | 3 | Alta | Sprint 1 |
+| E2-06 | Expandir arena após 1m30s (Estágio 2) e acumular +1 novo inimigo reciclável por lixeira | 3 | Alta | Sprint 1 |
 | **E3** | **Combinação de Recicláveis, Grimório *Hwei* e Multiplicador** | **18** | | |
 | E3-01 | Combinar as 4 cores de recicláveis para formar um objeto/energia e disparar com o Mouse | 5 | Alta | Sprint 1 |
 | E3-02 | Reduzir o multiplicador ao repetir o mesmo combo até ficar em $1\times$ (*Stale Decay*) | 3 | Alta | Sprint 1 |
@@ -344,6 +345,26 @@ Abra cada épico, clique em **Create sub-issue**, cole o título e o corpo e adi
 ### Critérios de aceite
 - **Dado** um inimigo blindado em Plástico, **quando** atingido por um combo de Vidro + Metal, **então** recebe dano crítico dobrado.
 - **Dado** o mesmo inimigo, **quando** atingido por Plástico puro, **então** sofre apenas 50% do dano.
+```
+
+#### E2-06 Expandir arena após 1m30s (Estágio 2) e acumular +1 novo inimigo reciclável por lixeira
+* **Título:** `E2-06 Expandir arena após 1m30s (Estágio 2) e acumular +1 novo inimigo reciclável por lixeira`
+* **Ficha:** label `estória` · pai `E2` · Estimativa `3` · Prioridade `Alta` · Sprint `Sprint 1` · Status `Concluído`
+```markdown
+**Como** jogador, **quero** que após 1 minuto e 30 segundos de partida o mapa se expanda suavemente para o Estágio 2 e passe a acumular +1 novo tipo de inimigo reciclável por lixeira CONAMA (totalizando 8 variedades), **para** experimentar uma progressão clara de desafio e maior variedade visual e tática na arena.
+
+**Regras:** RN09, RN16, RN20
+
+### Critérios de aceite
+- **Dado** que o jogador está jogando no Estágio 1, **quando** o cronômetro de partida ativa atinge `01:30` (90 segundos), **então** o jogo transita automaticamente para o Estágio 2, expandindo suavemente a praça (chão, muretas, lixeiras de canto, bancos, postes, arbustos, árvores e limites de colisão/mira/spawn) e ajustando a câmera isométrica.
+- **Dado** que o Estágio 2 foi ativado, **quando** novos inimigos são instanciados nas bordas da arena expandida, **então** o gerenciador acumula os 4 itens recicláveis do Estágio 1 com +1 novo item por lixeira CONAMA (**Sacola Plástica** em Plástico `Q`, **Jornal Velho** em Papel `E`, **Pote de Vidro** em Vidro `R` e **Lata de Alumínio** em Metal `F`), cada um com sprite pixel art próprio, etiqueta legível e comportamento/atributos distintos.
+- **Dado** que o jogador reinicia a partida ou volta ao Menu Inicial, **quando** uma nova partida começa, **então** o cronômetro retorna para `00:00`, a arena volta imediatamente ao tamanho do Estágio 1 e o pool de inimigos reinicia nos 4 itens base.
+
+### Tarefas
+- [x] Adicionar cronômetro de partida ativa no loop principal (`PLAYING`) e exibição no HUD com marco de `01:30` para o Estágio 2
+- [x] Implementar expansão dinâmica e suave da arena 2.5D (`ArenaScene`) e sincronizar limites de movimento, mira, projéteis e spawn (`PlayerController`, `ComboSystem`, `EnemyManager`)
+- [x] Criar sprites 2D pixel art, etiquetas e catálogo dos +4 novos inimigos recicláveis do Estágio 2 (1 por lixeira CONAMA) acumulando com os 4 originais
+- [x] Adicionar feedback audiovisual de transição para o Estágio 2 (banner temporário no HUD + fanfarra sintetizada) e atualizar documentação (`RN20` / `E2-06`)
 ```
 
 ---
