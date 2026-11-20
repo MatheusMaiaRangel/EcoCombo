@@ -6,6 +6,7 @@ import { EnemyManager } from './game/enemyManager.js';
 import { SidebarCharacterRenderer } from './ui/sidebarCharacter.js';
 import { HUDController } from './ui/hudController.js';
 import { SoundEngine } from './audio/soundEngine.js';
+import { STAGE_2_UNLOCK_TIME_SEC } from './constants/recipes.js';
 
 const SETTINGS_STORAGE_KEY = 'ecocombo_settings_v1';
 
@@ -21,6 +22,7 @@ class EcoComboMVPApp {
 
     this.score = 0;
     this.stage = 1;
+    this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
     this.isGameOver = false;
@@ -36,15 +38,17 @@ class EcoComboMVPApp {
     this.sidebarCharacter = new SidebarCharacterRenderer(upperCanvas, portraitCanvas);
     this.hud = new HUDController(this.sidebarCharacter);
 
-    // 3. Cena 3D Isométrica 2.5D com Sombras e UnrealBloomPass (E1-01)
+    // 3. Cena 3D Isométrica 2.5D com Sombras, UnrealBloomPass e Expansão Dinâmica no Estágio 2 (E1-01 / E2-06)
     this.arena = new ArenaScene(this.canvas, this.viewportEl);
+    const getArenaHalfSize = () => this.arena.getHalfSize();
 
     // 4. Protagonista no WASD + 4 Orbes em Órbita + Mira com Raycaster (E1-02)
     this.player = new PlayerController(
       this.arena.scene,
       this.arena.camera,
       this.viewportEl,
-      this.arena.groundPlane
+      this.arena.groundPlane,
+      getArenaHalfSize
     );
 
     // 5. Sistema de Lixeiras e Leque Hwei (Q/E/R/F) + Medidor de Estilo Devil May Cry (E3-05 / E4-05)
@@ -55,13 +59,14 @@ class EcoComboMVPApp {
       sound: this.sound,
       viewportEl: this.viewportEl,
       camera: this.arena.camera,
+      getArenaHalfSize,
       isGameplayActive: () => this.gameState === 'PLAYING',
       onShotFired: () => {
         this.sidebarCharacter.triggerShootFlash();
       }
     });
 
-    // 6. Gerenciador dos Inimigos Recicláveis (Garrafa PET, Papelão, Vidro, Porca de Metal — E2-05)
+    // 6. Gerenciador dos Inimigos Recicláveis (Estágio 1: 4 itens • Estágio 2 aos 01:30: acumula +4 novos itens — E2-05 / E2-06)
     this.enemyManager = new EnemyManager({
       scene: this.arena.scene,
       player: this.player,
@@ -70,6 +75,7 @@ class EcoComboMVPApp {
       sound: this.sound,
       camera: this.arena.camera,
       viewportEl: this.viewportEl,
+      getArenaHalfSize,
       onPlayerTouch: (purityLoss) => this.handlePlayerHit(purityLoss),
       onEnemyKilled: (hitEvent) => this.handleEnemyHitOrKilled(hitEvent)
     });
@@ -79,7 +85,7 @@ class EcoComboMVPApp {
 
     // Inicia no Menu Inicial (E4-06): a partida só começa após o jogador clicar em "Iniciar Partida"
     this.hud.updatePurity(this.purity);
-    this.hud.updateStageAndScore(this.stage, this.score, 0);
+    this.hud.updateStageAndScore(this.stage, this.score, 0, this.matchElapsedSec);
     this.hud.showStartMenu();
 
     this.clock = new THREE.Clock();
@@ -365,14 +371,18 @@ class EcoComboMVPApp {
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
+    this.hud.hideStageTransitionBanner();
 
     this.score = 0;
     this.stage = 1;
+    this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
+    this.arena.setStageSize(1, true);
+    this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
     this.enemyManager.reset();
@@ -380,7 +390,12 @@ class EcoComboMVPApp {
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'METAL');
 
     this.hud.updatePurity(this.purity);
-    this.hud.updateStageAndScore(this.stage, this.score, this.enemyManager.enemies.length);
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec
+    );
   }
 
   /**
@@ -450,6 +465,7 @@ class EcoComboMVPApp {
     this.sound.playMenuClick(false);
     this.score = 0;
     this.stage = 1;
+    this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
     this.isGameOver = false;
@@ -457,13 +473,36 @@ class EcoComboMVPApp {
 
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
+    this.hud.hideStageTransitionBanner();
+    this.arena.setStageSize(1, true);
+    this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
     this.enemyManager.reset();
 
     this.hud.updatePurity(this.purity);
-    this.hud.updateStageAndScore(this.stage, this.score, 0);
+    this.hud.updateStageAndScore(this.stage, this.score, 0, this.matchElapsedSec);
     this.hud.showStartMenu();
+  }
+
+  /**
+   * E2-06 — Ativa o Estágio 2 aos 01:30: expande suavemente o mapa e acumula +1 novo inimigo por lixeira CONAMA
+   */
+  enterStage2() {
+    if (this.stage >= 2) return;
+    this.stage = 2;
+    this.arena.setStageSize(2, false);
+    this.hud.setCurrentStage(2);
+    this.hud.showStageTransitionBanner(5200);
+    this.sound.playStageTransition();
+    this.enemyManager.triggerStage2ArrivalWave();
+    this.comboSystem.syncHUD();
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec
+    );
   }
 
   handlePlayerHit(purityLoss = 15) {
@@ -507,20 +546,20 @@ class EcoComboMVPApp {
           '#34c759'
         );
       }
-
-      // Avança o indicador STAGE a cada 8 bichos purificados
-      const newStage = 1 + Math.floor(this.kills / 8);
-      if (newStage > this.stage) {
-        this.stage = newStage;
-      }
     }
 
-    this.hud.updateStageAndScore(this.stage, this.score, this.enemyManager.enemies.length);
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec
+    );
   }
 
   restartMatch() {
     this.score = 0;
     this.stage = 1;
+    this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
     this.isGameOver = false;
@@ -529,7 +568,10 @@ class EcoComboMVPApp {
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
+    this.hud.hideStageTransitionBanner();
 
+    this.arena.setStageSize(1, true);
+    this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
     this.enemyManager.reset();
@@ -537,7 +579,12 @@ class EcoComboMVPApp {
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'METAL');
 
     this.hud.updatePurity(this.purity);
-    this.hud.updateStageAndScore(this.stage, this.score, this.enemyManager.enemies.length);
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec
+    );
   }
 
   animate() {
@@ -547,13 +594,19 @@ class EcoComboMVPApp {
     const elapsedTime = this.clock.getElapsedTime();
 
     if (this.gameState === 'PLAYING') {
+      this.matchElapsedSec += dt;
+      if (this.stage === 1 && this.matchElapsedSec >= STAGE_2_UNLOCK_TIME_SEC) {
+        this.enterStage2();
+      }
+
       this.player.update(elapsedTime, dt);
       this.comboSystem.update(dt);
       this.enemyManager.update(elapsedTime, dt, this.stage);
       this.hud.updateStageAndScore(
         this.stage,
         this.score,
-        this.enemyManager.enemies.length
+        this.enemyManager.enemies.length,
+        this.matchElapsedSec
       );
       this.arena.update(elapsedTime, dt, this.player.position, false);
     } else if (this.gameState === 'MENU') {

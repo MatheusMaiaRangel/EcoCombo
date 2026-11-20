@@ -1556,6 +1556,128 @@ html, body {
   color: #161422;
 }
 
+/* ==========================================================================
+   CRONÔMETRO DE PARTIDA & BANNER DE TRANSIÇÃO DO ESTÁGIO 2 (01:30 — E2-06)
+   ========================================================================== */
+.match-timer-pill {
+  font-family: 'VT323', monospace;
+  font-size: 1.08rem;
+  letter-spacing: 0.6px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 2px solid #38bdf8;
+  color: #e0f2fe;
+  padding: 2px 9px;
+  border-radius: 4px;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.match-timer-pill.stage-soon {
+  border-color: #ffd166;
+  color: #ffd166;
+  background: rgba(120, 53, 15, 0.78);
+  animation: pulseStageSoon 0.75s infinite alternate;
+}
+
+.match-timer-pill.stage-expanded {
+  border-color: #00f5d4;
+  color: #00f5d4;
+  background: rgba(13, 45, 58, 0.85);
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.35);
+}
+
+@keyframes pulseStageSoon {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 209, 102, 0.2);
+  }
+  to {
+    transform: scale(1.04);
+    box-shadow: 0 0 12px rgba(255, 209, 102, 0.7);
+  }
+}
+
+.stage-transition-banner {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 16;
+  pointer-events: none;
+  background: rgba(18, 17, 30, 0.92);
+  border: 3px solid #00f5d4;
+  border-radius: 8px;
+  padding: 12px 18px;
+  text-align: center;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.65),
+    0 0 22px rgba(0, 245, 212, 0.35);
+  animation: stageBannerPop 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 92%;
+}
+
+.stage-banner-badge {
+  display: inline-block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.54rem;
+  color: #12101e;
+  background: #00f5d4;
+  padding: 4px 10px;
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+
+.stage-banner-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.84rem;
+  color: #ffd166;
+  text-shadow: 2px 2px 0 #120d1a;
+  margin-bottom: 10px;
+}
+
+.stage-banner-enemies {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.stage-enemy-chip {
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 2px solid currentColor;
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.stage-enemy-chip.plastic {
+  color: #ff6b6b;
+}
+
+.stage-enemy-chip.paper {
+  color: #60a5fa;
+}
+
+.stage-enemy-chip.glass {
+  color: #4ade80;
+}
+
+.stage-enemy-chip.metal {
+  color: #ffd166;
+}
+
+@keyframes stageBannerPop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 @media (max-width: 960px) {
   :root {
     --panel-width: 300px;

@@ -267,4 +267,35 @@ export class SoundEngine {
     osc.start(now);
     osc.stop(now + 0.31);
   }
+
+  /**
+   * E2-06 — Fanfarra ascendente sintetizada ao expandir o mapa e liberar o Estágio 2 (01:30)
+   */
+  playStageTransition() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.085;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = idx === notes.length - 1 ? 'triangle' : 'square';
+      osc.frequency.setValueAtTime(freq, t0);
+      if (idx === notes.length - 1) {
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.03, t0 + 0.32);
+      }
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(idx === notes.length - 1 ? 0.16 : 0.11, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (idx === notes.length - 1 ? 0.42 : 0.16));
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + (idx === notes.length - 1 ? 0.44 : 0.18));
+    });
+  }
 }

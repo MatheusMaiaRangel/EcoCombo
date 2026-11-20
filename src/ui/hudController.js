@@ -1,4 +1,16 @@
-import { CONAMA_ELEMENTS, resolveHweiSpell } from '../constants/recipes.js';
+import {
+  CONAMA_ELEMENTS,
+  STAGE_2_UNLOCK_TIME_SEC,
+  getBinItemNamesForStage,
+  resolveHweiSpell
+} from '../constants/recipes.js';
+
+function formatMatchTime(totalSeconds = 0) {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
 
 /**
  * E4-01 e E4-05 — Controlador do Painel Lateral (HUD), Medidor de Estilo Devil May Cry (D-SSS + Multiplicador embaixo)
@@ -60,11 +72,17 @@ export class HUDController {
     this.purityValue = document.getElementById('purity-value');
     this.purityFill = document.getElementById('purity-bar-fill');
 
-    // Barra Inferior (STAGE / SCORE)
+    // Barra Inferior (STAGE / TIMER / SCORE)
     this.stageCounter = document.getElementById('stage-counter');
+    this.matchTimerPill = document.getElementById('match-timer-pill');
     this.scoreCounter = document.getElementById('score-counter');
     this.enemiesAlivePill = document.getElementById('enemies-alive-pill');
     this.lastComboUsedLabel = document.getElementById('last-combo-used-label');
+
+    // Banner de transição do Estágio 2 (E2-06)
+    this.stageTransitionBanner = document.getElementById('stage-transition-banner');
+    this.stageBannerTimeout = null;
+    this.currentStage = 1;
 
     // Camada de Textos Flutuantes 3D->2D e Modal de Pureza 0%
     this.floatingLayer = document.getElementById('floating-texts-layer');
@@ -177,9 +195,10 @@ export class HUDController {
       const dmgSpell = resolveHweiSpell(openBinId, 'DAMAGE');
       const ccSpell = resolveHweiSpell(openBinId, 'CONTROL');
       const shieldSpell = resolveHweiSpell(openBinId, 'SHIELD');
+      const binItemsLabel = getBinItemNamesForStage(openBinId, this.currentStage).join(' + ');
 
       this.recipeBinStatus.textContent = `LIXEIRA ABERTA: [${binElem.keyAlt}] ${binElem.shortName.toUpperCase()}`;
-      this.recipeName.textContent = `${binElem.name} (${binElem.enemyItemName})`;
+      this.recipeName.textContent = `${binElem.name} (${binItemsLabel})`;
       this.recipeName.style.color = binElem.hex;
       this.recipeDesc.textContent = `Escolha no Leque: [Q] Mais Dano • [E] ${binElem.ccShort} • [R] Escudo Protetivo`;
       this.recipeCard.style.borderColor = binElem.hex;
@@ -195,9 +214,9 @@ export class HUDController {
       this.hweiArenaFan.style.borderColor = binElem.hex;
       this.hweiFanHeader.style.background = binElem.hex;
       this.hweiFanHeader.style.color = openBinId === 'METAL' ? '#191708' : '#ffffff';
-      this.hweiFanBinBadge.textContent = `LIXEIRA [${binElem.keyAlt}] ${binElem.shortName.toUpperCase()} — ALVO: ${binElem.enemyItemName.toUpperCase()}`;
+      this.hweiFanBinBadge.textContent = `LIXEIRA [${binElem.keyAlt}] ${binElem.shortName.toUpperCase()} — ALVOS: ${binItemsLabel.toUpperCase()}`;
 
-      this.fanDamageDesc.textContent = `Dano máximo em ${binElem.enemyItemName}`;
+      this.fanDamageDesc.textContent = `Dano máximo em ${binItemsLabel}`;
       this.fanCcIcon.textContent =
         openBinId === 'PLASTIC'
           ? '↔'
@@ -334,13 +353,55 @@ export class HUDController {
     }
   }
 
+  setCurrentStage(stage = 1) {
+    this.currentStage = stage;
+  }
+
+  showStageTransitionBanner(durationMs = 5200) {
+    if (!this.stageTransitionBanner) return;
+    if (this.stageBannerTimeout) {
+      clearTimeout(this.stageBannerTimeout);
+    }
+    this.stageTransitionBanner.classList.remove('hidden');
+    this.stageBannerTimeout = setTimeout(() => {
+      this.hideStageTransitionBanner();
+    }, durationMs);
+  }
+
+  hideStageTransitionBanner() {
+    if (this.stageBannerTimeout) {
+      clearTimeout(this.stageBannerTimeout);
+      this.stageBannerTimeout = null;
+    }
+    if (this.stageTransitionBanner) {
+      this.stageTransitionBanner.classList.add('hidden');
+    }
+  }
+
   /**
-   * Atualiza STAGE, SCORE e contagem de itens recicláveis na barra inferior
+   * Atualiza STAGE, cronômetro de partida, SCORE e contagem de itens recicláveis na barra inferior
    */
-  updateStageAndScore(stage, score, enemiesAlive) {
+  updateStageAndScore(stage, score, enemiesAlive, matchElapsedSec = 0) {
     this.stageCounter.textContent = String(stage);
     this.scoreCounter.textContent = String(score);
     this.enemiesAlivePill.textContent = `ITENS NA ARENA: ${enemiesAlive}`;
+
+    if (this.matchTimerPill) {
+      const timeStr = formatMatchTime(matchElapsedSec);
+      const targetStr = formatMatchTime(STAGE_2_UNLOCK_TIME_SEC);
+      if (stage >= 2) {
+        this.matchTimerPill.textContent = `⏱ ${timeStr} • EXPANDIDO`;
+        this.matchTimerPill.classList.remove('stage-soon');
+        this.matchTimerPill.classList.add('stage-expanded');
+      } else {
+        this.matchTimerPill.textContent = `⏱ ${timeStr} / ${targetStr}`;
+        this.matchTimerPill.classList.remove('stage-expanded');
+        this.matchTimerPill.classList.toggle(
+          'stage-soon',
+          matchElapsedSec >= STAGE_2_UNLOCK_TIME_SEC - 10
+        );
+      }
+    }
   }
 
   setFloatingTextEnabled(enabled) {

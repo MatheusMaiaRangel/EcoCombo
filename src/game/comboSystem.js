@@ -15,7 +15,17 @@ import { ARENA_HALF_SIZE } from './arenaScene.js';
  * e Medidor de Estilo Devil May Cry (Ranks D, C, B, A, S, SS, SSS + Multiplicador Destacado Abaixo)
  */
 export class ComboSystem {
-  constructor({ scene, player, hud, sound, viewportEl, camera, onShotFired, isGameplayActive }) {
+  constructor({
+    scene,
+    player,
+    hud,
+    sound,
+    viewportEl,
+    camera,
+    onShotFired,
+    isGameplayActive,
+    getArenaHalfSize
+  }) {
     this.scene = scene;
     this.player = player;
     this.hud = hud;
@@ -24,6 +34,7 @@ export class ComboSystem {
     this.camera = camera;
     this.onShotFired = onShotFired;
     this.isGameplayActive = isGameplayActive || (() => true);
+    this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
 
     // Estado do Grimório / Lixeira estilo Hwei
     // null = Nenhuma lixeira aberta (1º toque escolhe Q/E/R/F)
@@ -351,19 +362,23 @@ export class ComboSystem {
     this.scene.add(mesh);
 
     const distToTarget = origin.distanceTo(targetPoint);
+    const currentHalfSize = this.getArenaHalfSize();
 
     this.projectiles.push({
       mesh,
       recipe: spell,
       direction: direction.clone().normalize(),
       targetPoint: targetPoint.clone(),
-      maxTravelDist: spell.modeId === 'CONTROL' ? Math.max(2.5, Math.min(13.5, distToTarget)) : 99,
+      maxTravelDist:
+        spell.modeId === 'CONTROL'
+          ? Math.max(2.5, Math.min(currentHalfSize, distToTarget))
+          : 99,
       traveledDist: 0,
       speed: spell.speed,
       multiplier,
       castStyleMeta,
       radius: spell.radius,
-      life: 1.7,
+      life: 2.1,
       pierceLeft: spell.behavior === 'damage_glass' ? 2 : 0,
       ricochetLeft: spell.behavior === 'damage_plastic' ? 1 : 0,
       hitEnemyIds: new Set(),
@@ -537,8 +552,8 @@ export class ComboSystem {
       this.player.shieldMaxCharges
     );
 
-    // 2. Atualiza Projéteis em Trajetória na Arena
-    const limit = ARENA_HALF_SIZE + 0.5;
+    // 2. Atualiza Projéteis em Trajetória na Arena (respeitando expansão dinâmica do Estágio 2)
+    const limit = this.getArenaHalfSize() + 0.5;
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.life -= dt;

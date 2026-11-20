@@ -5,7 +5,10 @@ import {
 } from '../art/pixelTextures.js';
 import {
   CONAMA_ELEMENTS,
-  ELEMENT_ORDER,
+  ENEMY_VARIANTS,
+  ENEMY_VARIANT_LIST,
+  STAGE_2_NEW_VARIANT_IDS,
+  getUnlockedEnemyVariants,
   computeHitDamage,
   computeHitPoints
 } from '../constants/recipes.js';
@@ -14,11 +17,24 @@ import { ARENA_HALF_SIZE } from './arenaScene.js';
 let NEXT_ENEMY_ID = 1;
 
 /**
- * E2-01, E2-05 e E3-05 — Gerenciador dos Inimigos Recicláveis (Garrafa PET, Caixa de Papelão, Garrafa de Vidro, Porca de Metal)
+ * E2-01, E2-05, E2-06 e E3-05 — Gerenciador dos Inimigos Recicláveis
+ * Estágio 1: Garrafa PET, Caixa de Papelão, Garrafa de Vidro, Porca de Metal (1 por lixeira)
+ * Estágio 2 (01:30+): acumula +1 novo inimigo por lixeira (Sacola Plástica, Jornal Velho, Pote de Vidro, Lata de Alumínio)
  * com suporte aos 4 Controles de Grupo do Hwei (Separar, Juntar, Slow+Frágil, Estunar) e Escudo Protetivo Seletivo
  */
 export class EnemyManager {
-  constructor({ scene, player, comboSystem, hud, sound, camera, viewportEl, onPlayerTouch, onEnemyKilled }) {
+  constructor({
+    scene,
+    player,
+    comboSystem,
+    hud,
+    sound,
+    camera,
+    viewportEl,
+    onPlayerTouch,
+    onEnemyKilled,
+    getArenaHalfSize
+  }) {
     this.scene = scene;
     this.player = player;
     this.comboSystem = comboSystem;
@@ -28,18 +44,23 @@ export class EnemyManager {
     this.viewportEl = viewportEl;
     this.onPlayerTouch = onPlayerTouch;
     this.onEnemyKilled = onEnemyKilled;
+    this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
 
     this.enemyTextureSets = createEnemyTextures();
-    this.binBadgeTextures = {};
-    ELEMENT_ORDER.forEach((binId) => {
-      this.binBadgeTextures[binId] = createEnemyBinBadgeTexture(CONAMA_ELEMENTS[binId]);
+    this.variantBadgeTextures = {};
+    ENEMY_VARIANT_LIST.forEach((variant) => {
+      this.variantBadgeTextures[variant.id] = createEnemyBinBadgeTexture(
+        CONAMA_ELEMENTS[variant.binId],
+        variant.name
+      );
     });
 
     this.enemies = [];
 
     this.spawnTimer = 1.0;
     this.spawnInterval = 2.6;
-    this.maxConcurrentEnemies = 9;
+    this.maxConcurrentEnemiesStage1 = 9;
+    this.maxConcurrentEnemiesStage2 = 12;
     this.difficultyMode = 'NORMAL';
     this.difficultySpeedMult = 1.0;
     this.difficultySpawnMult = 1.0;
@@ -50,14 +71,34 @@ export class EnemyManager {
     };
   }
 
-  /**
-   * E2-05 — Instancia um Item Reciclável vivo nas bordas da arena (Garrafa PET, Papelão, Vidro ou Porca de Metal)
-   */
-  spawnEnemyAroundPerimeter(stage = 1, forcedCategory = null) {
-    if (this.enemies.length >= this.maxConcurrentEnemies) return;
+  getMaxConcurrentEnemies(stage = 1) {
+    return stage >= 2 ? this.maxConcurrentEnemiesStage2 : this.maxConcurrentEnemiesStage1;
+  }
 
-    const borderDist = ARENA_HALF_SIZE - 1.1;
-    const side = Math.floor(Math.random() * 4);
+  /**
+   * E2-06 — Ao entrar no Estágio 2 (01:30), introduz os 4 novos inimigos recicláveis nos 4 lados da praça expandida
+   */
+  triggerStage2ArrivalWave() {
+    STAGE_2_NEW_VARIANT_IDS.forEach((variantId, idx) => {
+      this.spawnEnemyAroundPerimeter(2, null, variantId, idx % 4, true);
+    });
+  }
+
+  /**
+   * E2-05 / E2-06 — Instancia um Item Reciclável vivo nas bordas da arena
+   * No Estágio 1 escolhe entre os 4 itens base; no Estágio 2 acumula os 8 itens (2 por lixeira CONAMA)
+   */
+  spawnEnemyAroundPerimeter(
+    stage = 1,
+    forcedCategory = null,
+    forcedVariantId = null,
+    forcedSide = null,
+    ignoreCap = false
+  ) {
+    if (!ignoreCap && this.enemies.length >= this.getMaxConcurrentEnemies(stage)) return;
+
+    const borderDist = this.getArenaHalfSize() - 1.1;
+    const side = forcedSide !== null ? forcedSide : Math.floor(Math.random() * 4);
     const randOffset = (Math.random() * 2 - 1) * borderDist;
 
     let sx = 0;
@@ -76,16 +117,24 @@ export class EnemyManager {
       sz = randOffset;
     }
 
-    const binCategory =
-      forcedCategory || ELEMENT_ORDER[Math.floor(Math.random() * ELEMENT_ORDER.length)];
+    let variant = null;
+    if (forcedVariantId && ENEMY_VARIANTS[forcedVariantId]) {
+      variant = ENEMY_VARIANTS[forcedVariantId];
+    } else {
+      const unlockedPool = getUnlockedEnemyVariants(stage, forcedCategory);
+      variant = unlockedPool[Math.floor(Math.random() * unlockedPool.length)] || ENEMY_VARIANTS.PLASTIC_PET;
+    }
+
+    const binCategory = variant.binId;
     const binElem = CONAMA_ELEMENTS[binCategory];
-    const texFrames = this.enemyTextureSets[binCategory];
+    const texFrames = this.enemyTextureSets[variant.id] || this.enemyTextureSets[binCategory];
+    const [spriteW, spriteH] = variant.spriteScale || [1.75, 1.95];
 
     const group = new THREE.Group();
     group.position.set(sx, 0, sz);
 
     // Sprite 2.5D Pixel Art do Item Reciclável com cores 100% puras e vivas (sem lavar pela iluminação/neblina!)
-    const spriteGeo = new THREE.PlaneGeometry(1.75, 1.95);
+    const spriteGeo = new THREE.PlaneGeometry(spriteW, spriteH);
     const spriteMat = new THREE.MeshBasicMaterial({
       map: texFrames[0],
       transparent: true,
@@ -96,7 +145,7 @@ export class EnemyManager {
     });
 
     const spriteMesh = new THREE.Mesh(spriteGeo, spriteMat);
-    spriteMesh.position.y = 0.96;
+    spriteMesh.position.y = spriteH * 0.49;
     spriteMesh.rotation.y = Math.PI / 4;
     spriteMesh.castShadow = true;
     group.add(spriteMesh);
@@ -148,15 +197,15 @@ export class EnemyManager {
     statusRing.position.y = 0.05;
     group.add(statusRing);
 
-    // Barra de Vida (HP) + Etiqueta da Lixeira ([Q] GARRAFA PET, [F] PORCA DE METAL, etc.)
+    // Barra de Vida (HP) + Etiqueta da Lixeira ([Q] GARRAFA PET, [Q] SACOLA PLÁSTICA, [F] LATA DE ALUMÍNIO, etc.)
     const hpGroup = new THREE.Group();
-    hpGroup.position.set(0, 2.08, 0);
+    hpGroup.position.set(0, 2.12, 0);
     hpGroup.rotation.y = Math.PI / 4;
 
     const badgeMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.92, 0.4),
+      new THREE.PlaneGeometry(2.12, 0.42),
       new THREE.MeshBasicMaterial({
-        map: this.binBadgeTextures[binCategory],
+        map: this.variantBadgeTextures[variant.id],
         transparent: true,
         side: THREE.DoubleSide,
         depthWrite: false,
@@ -164,7 +213,7 @@ export class EnemyManager {
         fog: false
       })
     );
-    badgeMesh.position.y = 0.34;
+    badgeMesh.position.y = 0.35;
 
     const hpBg = new THREE.Mesh(
       new THREE.PlaneGeometry(1.42, 0.22),
@@ -190,16 +239,18 @@ export class EnemyManager {
 
     this.scene.add(group);
 
-    // Atributos por tipo de item (ex: Porca de Metal tem mais vida, Garrafa PET é mais rápida)
-    const hpModifier = binCategory === 'METAL' ? 1.2 : binCategory === 'PAPER' ? 0.9 : 1.0;
-    const speedModifier = binCategory === 'PLASTIC' ? 1.14 : binCategory === 'METAL' ? 0.88 : 1.0;
-
-    const maxHp = Math.round((130 + (stage - 1) * 15) * hpModifier);
+    // Atributos específicos por variante (Stage 1 + Stage 2)
+    const maxHp = Math.round((130 + (stage - 1) * 20) * variant.hpModifier);
     const baseSpeed =
-      (3.05 + Math.random() * 0.7 + Math.min(1.4, (stage - 1) * 0.16)) * speedModifier;
+      (3.05 + Math.random() * 0.7 + Math.min(1.4, (stage - 1) * 0.24)) * variant.speedModifier;
 
     this.enemies.push({
       id: NEXT_ENEMY_ID++,
+      variantId: variant.id,
+      itemName: variant.name,
+      movementStyle: variant.movementStyle || 'direct',
+      knockbackResist: variant.knockbackResist ?? 1.0,
+      movePhase: Math.random() * Math.PI * 2,
       binCategory,
       binElem,
       group,
@@ -379,16 +430,16 @@ export class EnemyManager {
   }
 
   update(elapsedTime, dt, stage) {
-    // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-05)
+    // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-05 / E2-06)
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnEnemyAroundPerimeter(stage);
-      const baseInterval = Math.max(1.4, this.spawnInterval - (stage - 1) * 0.1);
+      const baseInterval = stage >= 2 ? 2.15 : this.spawnInterval;
       this.spawnTimer = baseInterval * this.difficultySpawnMult;
     }
 
     const playerPos = this.player.position;
-    const limit = ARENA_HALF_SIZE - 0.8;
+    const limit = this.getArenaHalfSize() - 0.8;
 
     // 2. Atualização dos Inimigos-Itens na Arena
     for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -459,11 +510,22 @@ export class EnemyManager {
       const speedFactor =
         enemy.stunTimer > 0 ? 0.0 : enemy.slowTimer > 0 ? 0.3 : 1.0;
 
-      if (enemy.pullTimer <= 0) {
-        enemy.group.position.addScaledVector(
-          toPlayer,
-          enemy.speed * this.difficultySpeedMult * speedFactor * dt
-        );
+      if (enemy.pullTimer <= 0 && speedFactor > 0) {
+        let stepSpeed = enemy.speed * this.difficultySpeedMult * speedFactor;
+        const moveDir = toPlayer.clone();
+
+        if (enemy.movementStyle === 'zigzag' && distToPlayer > 1.8) {
+          // Sacola Plástica: leve zigue-zague ao vento enquanto persegue o jogador
+          const perp = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x);
+          const sway = Math.sin(elapsedTime * 5.2 + enemy.movePhase) * 0.45;
+          moveDir.addScaledVector(perp, sway).normalize();
+        } else if (enemy.movementStyle === 'stride') {
+          // Jornal Velho: avanço ritmado em pequenos impulsos como folhas ao vento
+          const pulse = 0.78 + 0.44 * (0.5 + 0.5 * Math.sin(elapsedTime * 4.6 + enemy.movePhase));
+          stepSpeed *= pulse;
+        }
+
+        enemy.group.position.addScaledVector(moveDir, stepSpeed * dt);
       }
 
       // Aplica recuo/separação (Plástico Q+E ou Knockback)
@@ -665,11 +727,11 @@ export class EnemyManager {
           this.updateEnemyHpBar(enemy);
 
           const knockStrength =
-            proj.recipe.behavior === 'damage_metal'
+            (proj.recipe.behavior === 'damage_metal'
               ? 12.5
               : isMatchingBin
                 ? 5.8
-                : 2.0;
+                : 2.0) * (enemy.knockbackResist ?? 1.0);
           enemy.knockbackVel.copy(proj.direction).multiplyScalar(knockStrength);
 
           this.comboSystem.spawnImpactParticles(
@@ -693,7 +755,7 @@ export class EnemyManager {
               enemy.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
               this.camera,
               this.viewportEl,
-              `✗ LIXEIRA ERRADA! ${enemy.binElem.enemyItemName.toUpperCase()} = [${enemy.binElem.keyAlt}] ${enemy.binElem.shortName.toUpperCase()}!`,
+              `✗ LIXEIRA ERRADA! ${enemy.itemName.toUpperCase()} = [${enemy.binElem.keyAlt}] ${enemy.binElem.shortName.toUpperCase()}!`,
               '#ff4d6d'
             );
           }

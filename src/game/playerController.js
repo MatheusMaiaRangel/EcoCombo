@@ -131,11 +131,12 @@ export function buildRecipeObjectMesh(recipe, scale = 1.0) {
  * E1-02 — Controlador do Protagonista 2.5D, Movimentação WASD, 4 Orbes em Órbita e Mira no Mouse (Raycaster)
  */
 export class PlayerController {
-  constructor(scene, camera, viewportEl, groundPlane) {
+  constructor(scene, camera, viewportEl, groundPlane, getArenaHalfSize = () => ARENA_HALF_SIZE) {
     this.scene = scene;
     this.camera = camera;
     this.viewportEl = viewportEl;
     this.groundPlane = groundPlane;
+    this.getArenaHalfSize = getArenaHalfSize;
 
     this.position = new THREE.Vector3(0, 0, 0);
     this.moveSpeed = 8.4;
@@ -502,8 +503,8 @@ export class PlayerController {
 
       this.position.addScaledVector(moveVec, this.moveSpeed * dt);
 
-      // Respeita rigorosamente os limites da arena isométrica
-      const limit = ARENA_HALF_SIZE - 0.9;
+      // Respeita rigorosamente os limites dinâmicos da arena isométrica (Estágio 1 -> Estágio 2)
+      const limit = this.getArenaHalfSize() - 0.9;
       this.position.x = THREE.MathUtils.clamp(this.position.x, -limit, limit);
       this.position.z = THREE.MathUtils.clamp(this.position.z, -limit, limit);
 
@@ -531,7 +532,7 @@ export class PlayerController {
     const intersected = this.raycaster.ray.intersectPlane(this.groundPlane, hitPoint);
 
     if (intersected) {
-      const bound = ARENA_HALF_SIZE - 0.3;
+      const bound = this.getArenaHalfSize() - 0.3;
       hitPoint.x = THREE.MathUtils.clamp(hitPoint.x, -bound, bound);
       hitPoint.z = THREE.MathUtils.clamp(hitPoint.z, -bound, bound);
       this.aimPoint.copy(hitPoint);

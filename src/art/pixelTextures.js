@@ -708,18 +708,33 @@ export function createProtagonistTextures() {
 }
 
 /**
- * E2-01 / E2-05 — Sprites Pixel Art 2.5D dos Inimigos Recicláveis com CONTORNO PRETO FORTE e CORES ULTRA VIVAS!
- * - PLASTIC (Vermelho / Q): Garrafa PET Vermelha Rubi
- * - PAPER   (Azul / E):     Caixa de Papelão Dourada com Faixa Azul Elétrico
- * - GLASS   (Verde / R):    Garrafa de Vidro Verde Esmeralda
- * - METAL   (Amarelo / F):  Porca de Metal Ouro Vivo
+ * E2-01 / E2-05 / E2-06 — Sprites Pixel Art 2.5D dos Inimigos Recicláveis com CONTORNO PRETO FORTE e CORES ULTRA VIVAS!
+ * Estágio 1:
+ * - PLASTIC_PET     (Vermelho / Q): Garrafa PET Vermelha Rubi
+ * - PAPER_BOX       (Azul / E):     Caixa de Papelão Dourada com Faixa Azul Elétrico
+ * - GLASS_BOTTLE    (Verde / R):    Garrafa de Vidro Verde Esmeralda
+ * - METAL_NUT       (Amarelo / F):  Porca de Metal Ouro Vivo
+ * Estágio 2 (acumula com Estágio 1 aos 01:30):
+ * - PLASTIC_BAG     (Vermelho / Q): Sacola Plástica com Alças
+ * - PAPER_NEWSPAPER (Azul / E):     Jornal Velho Dobrado com Cabeçalho Azul
+ * - GLASS_JAR       (Verde / R):    Pote de Vidro com Tampa Metálica
+ * - METAL_CAN       (Amarelo / F):  Lata de Alumínio Dourada com Lacre
  */
 export function createEnemyTextures() {
-  const categories = ['PLASTIC', 'PAPER', 'GLASS', 'METAL'];
+  const variantIds = [
+    'PLASTIC_PET',
+    'PLASTIC_BAG',
+    'PAPER_BOX',
+    'PAPER_NEWSPAPER',
+    'GLASS_BOTTLE',
+    'GLASS_JAR',
+    'METAL_NUT',
+    'METAL_CAN'
+  ];
   const map = {};
 
-  categories.forEach((cat) => {
-    map[cat] = [0, 1].map((animFrame) => {
+  variantIds.forEach((variantId) => {
+    map[variantId] = [0, 1].map((animFrame) => {
       const canvas = document.createElement('canvas');
       canvas.width = 32;
       canvas.height = 36;
@@ -740,8 +755,8 @@ export function createEnemyTextures() {
       ctx.fillRect(9, 29 + legL, 5, 6);
       ctx.fillRect(18, 29 + legR, 5, 6);
 
-      if (cat === 'PLASTIC') {
-        // ==================== GARRAFA PET (VERMELHO VIVO — Q) ====================
+      if (variantId === 'PLASTIC_PET') {
+        // ==================== GARRAFA PET (VERMELHO VIVO — Q · ESTÁGIO 1) ====================
         // Contorno preto pixel art (#120d1a)
         px(11, 1, 10, 6, '#120d1a');
         px(10, 6, 12, 4, '#120d1a');
@@ -767,8 +782,44 @@ export function createEnemyTextures() {
         px(18, 17, 4, 4, '#ffffff');
         px(12, 18, 2, 3, '#120d1a');
         px(20, 18, 2, 3, '#120d1a');
-      } else if (cat === 'PAPER') {
-        // ==================== CAIXA DE PAPELÃO (AZUL ELÉTRICO + ÂMBAR — E) ====================
+      } else if (variantId === 'PLASTIC_BAG') {
+        // ==================== SACOLA PLÁSTICA (VERMELHO VIVO — Q · ESTÁGIO 2) ====================
+        // Contorno preto pixel art das 2 alças no topo e do corpo inflado da sacola
+        px(6, 2, 6, 9, '#120d1a');
+        px(20, 2, 6, 9, '#120d1a');
+        px(4, 9, 24, 21, '#120d1a');
+        px(6, 29, 20, 2, '#120d1a');
+
+        // Alças vermelhas com recorte interno vazado (alças icônicas de sacola!)
+        px(7, 3, 4, 7, '#ff2a2a');
+        px(8, 5, 2, 4, '#120d1a');
+        px(21, 3, 4, 7, '#ff2a2a');
+        px(22, 5, 2, 4, '#120d1a');
+        px(7, 3, 4, 1, '#ff9999');
+        px(21, 3, 4, 1, '#ff9999');
+
+        // Corpo vermelho-rubi com dobras plásticas e brilho especular
+        px(5, 10, 22, 19, '#b30000');
+        px(6, 11, 20, 17, '#ff1a1a');
+        px(7, 11, 6, 16, '#ff4d4d');
+        // Vincos/dobras de plástico amassado
+        px(8, 12, 2, 14, '#ffffff');
+        px(22, 13, 2, 12, '#cc0000');
+        px(14, 11, 4, 2, '#990000');
+        // Faixa branca/amarela estilizada de sacola de mercado
+        px(6, 23, 20, 3, '#ffffff');
+        px(6, 25, 20, 1, '#ff9999');
+        px(11, 24, 10, 1, '#ff1a1a');
+
+        // Olhos travessos inclinados
+        px(9, 15, 5, 5, '#ffffff');
+        px(18, 15, 5, 5, '#ffffff');
+        px(11, 17, 2, 3, '#120d1a');
+        px(20, 17, 2, 3, '#120d1a');
+        px(9, 14, 5, 1, '#120d1a');
+        px(18, 14, 5, 1, '#120d1a');
+      } else if (variantId === 'PAPER_BOX') {
+        // ==================== CAIXA DE PAPELÃO (AZUL ELÉTRICO + ÂMBAR — E · ESTÁGIO 1) ====================
         // Contorno preto pixel art (#120d1a)
         px(3, 5, 26, 6, '#120d1a');
         px(5, 9, 22, 22, '#120d1a');
@@ -793,8 +844,46 @@ export function createEnemyTextures() {
         px(19, 16, 4, 4, '#ffffff');
         px(11, 17, 2, 3, '#120d1a');
         px(21, 17, 2, 3, '#120d1a');
-      } else if (cat === 'GLASS') {
-        // ==================== GARRAFA DE VIDRO (VERDE ESMERALDA VIVO — R) ====================
+      } else if (variantId === 'PAPER_NEWSPAPER') {
+        // ==================== JORNAL VELHO DOBRADO (AZUL CONAMA + FOLHA CREME — E · ESTÁGIO 2) ====================
+        // Contorno preto pixel art da pilha dobrada de jornal com aba superior
+        px(4, 3, 24, 28, '#120d1a');
+        px(2, 7, 4, 22, '#120d1a');
+
+        // Folha traseira dobrada (dá volume de jornal aberto/dobrado)
+        px(3, 8, 3, 20, '#94a3b8');
+        px(4, 8, 2, 19, '#cbd5e1');
+
+        // Página frontal creme/branca de jornal
+        px(5, 4, 22, 26, '#e2e8f0');
+        px(6, 5, 20, 24, '#f8fafc');
+        // Sombra na borda inferior e direita
+        px(6, 27, 20, 2, '#cbd5e1');
+        px(24, 5, 2, 24, '#cbd5e1');
+
+        // Cabeçalho Azul CONAMA vibrante ("ECO NEWS")
+        px(6, 5, 20, 6, '#003399');
+        px(6, 6, 20, 4, '#0066ff');
+        px(7, 6, 18, 1, '#66b2ff');
+        // Manchete pixelada branca no cabeçalho
+        px(8, 7, 6, 2, '#ffffff');
+        px(16, 7, 8, 2, '#bae6fd');
+
+        // Colunas de texto de jornal abaixo dos olhos
+        px(7, 21, 8, 2, '#334155');
+        px(7, 24, 8, 1, '#64748b');
+        px(17, 21, 7, 5, '#0066ff');
+        px(18, 22, 5, 3, '#93c5fd');
+
+        // Olhos expressivos com sobrancelha azul
+        px(8, 13, 5, 5, '#120d1a');
+        px(19, 13, 5, 5, '#120d1a');
+        px(9, 14, 3, 3, '#ffffff');
+        px(20, 14, 3, 3, '#ffffff');
+        px(10, 15, 2, 2, '#0055ff');
+        px(21, 15, 2, 2, '#0055ff');
+      } else if (variantId === 'GLASS_BOTTLE') {
+        // ==================== GARRAFA DE VIDRO (VERDE ESMERALDA VIVO — R · ESTÁGIO 1) ====================
         // Contorno preto pixel art (#120d1a)
         px(12, 1, 8, 9, '#120d1a');
         px(8, 9, 16, 4, '#120d1a');
@@ -818,8 +907,40 @@ export function createEnemyTextures() {
         px(18, 17, 4, 4, '#ffff00');
         px(12, 18, 2, 3, '#120d1a');
         px(20, 18, 2, 3, '#120d1a');
-      } else {
-        // ==================== PORCA DE METAL (OURO / AMARELO VIVO — F) ====================
+      } else if (variantId === 'GLASS_JAR') {
+        // ==================== POTE DE VIDRO DE CONSERVA (VERDE ESMERALDA — R · ESTÁGIO 2) ====================
+        // Contorno preto pixel art: tampa larga metálica + corpo largo e robusto de pote
+        px(7, 3, 18, 6, '#120d1a');
+        px(4, 8, 24, 23, '#120d1a');
+
+        // Tampa rosqueada metálica prateada no topo
+        px(8, 4, 16, 4, '#94a3b8');
+        px(9, 4, 14, 2, '#e2e8f0');
+        px(10, 6, 2, 2, '#475569');
+        px(15, 6, 2, 2, '#475569');
+        px(20, 6, 2, 2, '#475569');
+
+        // Corpo largo de vidro verde-esmeralda espesso
+        px(5, 9, 22, 21, '#006b1b');
+        px(6, 10, 20, 19, '#00c853');
+        px(7, 11, 18, 17, '#00e676');
+
+        // Reflexos cristalinos grossos nas laterais do pote
+        px(7, 11, 3, 16, '#b9f6ca');
+        px(8, 11, 1, 15, '#ffffff');
+        px(23, 12, 2, 13, '#69f0ae');
+
+        // Faixa de rótulo escuro no centro com olhos amarelos ferozes
+        px(6, 15, 20, 8, '#004d1a');
+        px(6, 15, 20, 1, '#a7f3d0');
+        px(6, 22, 20, 1, '#a7f3d0');
+
+        px(9, 17, 5, 4, '#ffff00');
+        px(18, 17, 5, 4, '#ffff00');
+        px(11, 18, 2, 3, '#120d1a');
+        px(20, 18, 2, 3, '#120d1a');
+      } else if (variantId === 'METAL_NUT') {
+        // ==================== PORCA DE METAL (OURO / AMARELO VIVO — F · ESTÁGIO 1) ====================
         // Contorno preto octogonal forte (#120d1a)
         px(8, 4, 16, 26, '#120d1a');
         px(4, 8, 24, 18, '#120d1a');
@@ -840,6 +961,38 @@ export function createEnemyTextures() {
         px(18, 14, 4, 4, '#ffffff');
         px(12, 15, 2, 3, '#ff0033');
         px(20, 15, 2, 3, '#ff0033');
+      } else {
+        // ==================== LATA DE ALUMÍNIO (AMARELO OURO + LACRE PRATA — F · ESTÁGIO 2) ====================
+        // Contorno preto cilíndrico com lacre puxador no topo
+        px(13, 1, 7, 4, '#120d1a');
+        px(7, 4, 18, 27, '#120d1a');
+
+        // Lacre metálico de abrir no topo
+        px(14, 2, 5, 2, '#e2e8f0');
+        px(16, 2, 2, 1, '#475569');
+
+        // Tampa e base prateadas de alumínio
+        px(8, 5, 16, 3, '#cbd5e1');
+        px(9, 5, 14, 2, '#f8fafc');
+        px(8, 28, 16, 2, '#94a3b8');
+
+        // Cilindro metálico amarelo CONAMA super saturado
+        px(8, 8, 16, 20, '#b45309');
+        px(9, 8, 14, 20, '#ffcc00');
+        // Brilho vertical especular de alumínio
+        px(10, 8, 3, 20, '#fff799');
+        px(11, 8, 1, 20, '#ffffff');
+
+        // Faixa energética escura com raio/listra laranja
+        px(8, 14, 16, 9, '#1e293b');
+        px(8, 14, 16, 1, '#ff7b00');
+        px(8, 22, 16, 1, '#ff7b00');
+
+        // Olhos intensos na faixa central
+        px(9, 16, 5, 4, '#ffffff');
+        px(18, 16, 5, 4, '#ffffff');
+        px(11, 17, 2, 3, '#ff0033');
+        px(20, 17, 2, 3, '#ff0033');
       }
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -847,40 +1000,47 @@ export function createEnemyTextures() {
     });
   });
 
+  // Aliases de compatibilidade para a chave de categoria CONAMA
+  map.PLASTIC = map.PLASTIC_PET;
+  map.PAPER = map.PAPER_BOX;
+  map.GLASS = map.GLASS_BOTTLE;
+  map.METAL = map.METAL_NUT;
+
   return map;
 }
 
 /**
- * E2-05 — Cria etiqueta pixelada flutuante com alto contraste e cores vivas (ex: "[Q] GARRAFA PET")
+ * E2-05 / E2-06 — Cria etiqueta pixelada flutuante com alto contraste e cores vivas (ex: "[Q] SACOLA PLÁSTICA")
  */
-export function createEnemyBinBadgeTexture(binElement) {
+export function createEnemyBinBadgeTexture(binElement, itemNameOverride = null) {
   const canvas = document.createElement('canvas');
-  canvas.width = 160;
-  canvas.height = 34;
+  canvas.width = 188;
+  canvas.height = 36;
   const ctx = canvas.getContext('2d');
 
   // Fundo azul-noite sólido 100% opaco com borda grossa na cor CONAMA
   ctx.fillStyle = '#0f172a';
-  ctx.fillRect(1, 1, 158, 32);
+  ctx.fillRect(1, 1, 186, 34);
   ctx.lineWidth = 4;
   ctx.strokeStyle = binElement.hex;
-  ctx.strokeRect(2, 2, 156, 30);
+  ctx.strokeRect(2, 2, 184, 32);
 
   // Quadrado da Tecla da Lixeira à esquerda
   ctx.fillStyle = binElement.hex;
-  ctx.fillRect(4, 4, 30, 26);
+  ctx.fillRect(4, 4, 30, 28);
 
   ctx.fillStyle = binElement.id === 'METAL' ? '#0f172a' : '#ffffff';
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(binElement.keyAlt, 19, 17);
+  ctx.fillText(binElement.keyAlt, 19, 18);
 
-  // Nome do Item Reciclável bem branco e legível
+  // Nome do Item Reciclável bem branco e legível (com ajuste automático de largura máxima)
+  const displayName = (itemNameOverride || binElement.enemyItemName).toUpperCase();
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 13px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(binElement.enemyItemName.toUpperCase(), 40, 17);
+  ctx.fillText(displayName, 40, 18, 140);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

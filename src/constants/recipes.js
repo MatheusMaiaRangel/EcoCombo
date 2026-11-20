@@ -89,6 +89,134 @@ export const CONAMA_ELEMENTS = {
 
 export const ELEMENT_ORDER = ['PLASTIC', 'PAPER', 'GLASS', 'METAL'];
 
+/**
+ * E2-06 / RN20 — Tempo (em segundos de gameplay ativa) para ativar o Estágio 2:
+ * Aos 01:30 (90s), a arena se expande e acumula +1 novo inimigo reciclável por lixeira CONAMA.
+ */
+export const STAGE_2_UNLOCK_TIME_SEC = 90;
+
+/**
+ * E2-05 / E2-06 — Catálogo dos Inimigos Recicláveis por Lixeira CONAMA:
+ * - Estágio 1: 4 inimigos base (1 por lixeira)
+ * - Estágio 2 (01:30+): +4 novos inimigos (1 extra por lixeira), acumulando todos os 8!
+ */
+export const ENEMY_VARIANTS = {
+  // ==================== LIXEIRA Q: PLÁSTICO (VERMELHO) ====================
+  PLASTIC_PET: {
+    id: 'PLASTIC_PET',
+    binId: 'PLASTIC',
+    minStage: 1,
+    name: 'Garrafa PET',
+    hpModifier: 1.0,
+    speedModifier: 1.14,
+    knockbackResist: 1.0,
+    movementStyle: 'direct',
+    spriteScale: [1.75, 1.95]
+  },
+  PLASTIC_BAG: {
+    id: 'PLASTIC_BAG',
+    binId: 'PLASTIC',
+    minStage: 2,
+    name: 'Sacola Plástica',
+    hpModifier: 0.88,
+    speedModifier: 1.24,
+    knockbackResist: 1.15,
+    movementStyle: 'zigzag',
+    spriteScale: [1.85, 1.98]
+  },
+
+  // ==================== LIXEIRA E: PAPEL (AZUL) ====================
+  PAPER_BOX: {
+    id: 'PAPER_BOX',
+    binId: 'PAPER',
+    minStage: 1,
+    name: 'Caixa de Papelão',
+    hpModifier: 0.9,
+    speedModifier: 1.0,
+    knockbackResist: 1.0,
+    movementStyle: 'direct',
+    spriteScale: [1.75, 1.95]
+  },
+  PAPER_NEWSPAPER: {
+    id: 'PAPER_NEWSPAPER',
+    binId: 'PAPER',
+    minStage: 2,
+    name: 'Jornal Velho',
+    hpModifier: 0.96,
+    speedModifier: 1.16,
+    knockbackResist: 1.05,
+    movementStyle: 'stride',
+    spriteScale: [1.82, 1.95]
+  },
+
+  // ==================== LIXEIRA R: VIDRO (VERDE) ====================
+  GLASS_BOTTLE: {
+    id: 'GLASS_BOTTLE',
+    binId: 'GLASS',
+    minStage: 1,
+    name: 'Garrafa de Vidro',
+    hpModifier: 1.0,
+    speedModifier: 1.0,
+    knockbackResist: 1.0,
+    movementStyle: 'direct',
+    spriteScale: [1.75, 1.95]
+  },
+  GLASS_JAR: {
+    id: 'GLASS_JAR',
+    binId: 'GLASS',
+    minStage: 2,
+    name: 'Pote de Vidro',
+    hpModifier: 1.28,
+    speedModifier: 0.92,
+    knockbackResist: 0.72,
+    movementStyle: 'steady',
+    spriteScale: [1.88, 1.98]
+  },
+
+  // ==================== LIXEIRA F: METAL (AMARELO) ====================
+  METAL_NUT: {
+    id: 'METAL_NUT',
+    binId: 'METAL',
+    minStage: 1,
+    name: 'Porca de Metal',
+    hpModifier: 1.2,
+    speedModifier: 0.88,
+    knockbackResist: 0.85,
+    movementStyle: 'direct',
+    spriteScale: [1.75, 1.95]
+  },
+  METAL_CAN: {
+    id: 'METAL_CAN',
+    binId: 'METAL',
+    minStage: 2,
+    name: 'Lata de Alumínio',
+    hpModifier: 1.38,
+    speedModifier: 1.0,
+    knockbackResist: 0.65,
+    movementStyle: 'steady',
+    spriteScale: [1.82, 2.02]
+  }
+};
+
+export const ENEMY_VARIANT_LIST = Object.values(ENEMY_VARIANTS);
+
+export const STAGE_2_NEW_VARIANT_IDS = [
+  'PLASTIC_BAG',
+  'PAPER_NEWSPAPER',
+  'GLASS_JAR',
+  'METAL_CAN'
+];
+
+export function getUnlockedEnemyVariants(stage = 1, binId = null) {
+  return ENEMY_VARIANT_LIST.filter(
+    (variant) => variant.minStage <= stage && (!binId || variant.binId === binId)
+  );
+}
+
+export function getBinItemNamesForStage(binId, stage = 1) {
+  return getUnlockedEnemyVariants(stage, binId).map((variant) => variant.name);
+}
+
 export const KEY_TO_ELEMENT = {
   Digit1: 'PLASTIC',
   Numpad1: 'PLASTIC',
