@@ -378,7 +378,7 @@ export class ComboSystem {
       multiplier,
       castStyleMeta,
       radius: spell.radius,
-      life: 2.1,
+      life: 2.6,
       pierceLeft: spell.behavior === 'damage_glass' ? 2 : 0,
       ricochetLeft: spell.behavior === 'damage_plastic' ? 1 : 0,
       hitEnemyIds: new Set(),

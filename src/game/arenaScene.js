@@ -17,7 +17,7 @@ import {
 import { ELEMENT_ORDER } from '../constants/recipes.js';
 
 export const ARENA_STAGE1_HALF_SIZE = 13.5;
-export const ARENA_STAGE2_HALF_SIZE = 17.5;
+export const ARENA_STAGE2_HALF_SIZE = 21.0;
 export const ARENA_HALF_SIZE = ARENA_STAGE1_HALF_SIZE;
 
 /**
@@ -44,14 +44,14 @@ export class ArenaScene {
     const width = viewportEl.clientWidth || 800;
     const height = viewportEl.clientHeight || 600;
     this.stage1CameraOffset = new THREE.Vector3(19, 21, 19);
-    this.stage2CameraOffset = new THREE.Vector3(22.2, 24.6, 22.2);
+    this.stage2CameraOffset = new THREE.Vector3(24.5, 27.2, 24.5);
     this.cameraOffset = this.stage1CameraOffset.clone();
     this.targetCameraOffset = this.stage1CameraOffset.clone();
     this.currentFollowFactor = 0.32;
     this.targetFollowFactor = 0.32;
     this.cameraTarget = new THREE.Vector3(0, 0, 0);
 
-    this.camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 180);
+    this.camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 210);
     this.camera.position.copy(this.cameraOffset);
     this.camera.lookAt(this.cameraTarget);
 
@@ -108,13 +108,13 @@ export class ArenaScene {
   }
 
   /**
-   * E2-06 — Define o tamanho alvo da praça conforme o Estágio (1 = 13.5, 2 = 17.5)
+   * E2-06 — Define o tamanho alvo da praça conforme o Estágio (1 = 13.5, 2 = 21.0)
    */
   setStageSize(stage = 1, immediate = false) {
     const isStage2 = stage >= 2;
     this.targetHalfSize = isStage2 ? ARENA_STAGE2_HALF_SIZE : ARENA_STAGE1_HALF_SIZE;
     this.targetCameraOffset.copy(isStage2 ? this.stage2CameraOffset : this.stage1CameraOffset);
-    this.targetFollowFactor = isStage2 ? 0.42 : 0.32;
+    this.targetFollowFactor = isStage2 ? 0.56 : 0.32;
 
     if (immediate) {
       this.currentHalfSize = this.targetHalfSize;
@@ -138,7 +138,7 @@ export class ArenaScene {
     this.dirLight.shadow.camera.top = d;
     this.dirLight.shadow.camera.bottom = -d;
     this.dirLight.shadow.camera.near = 1;
-    this.dirLight.shadow.camera.far = 85;
+    this.dirLight.shadow.camera.far = 105;
     this.dirLight.shadow.mapSize.width = 2048;
     this.dirLight.shadow.mapSize.height = 2048;
     this.dirLight.shadow.bias = -0.0005;
@@ -150,7 +150,7 @@ export class ArenaScene {
 
     // 1. Gramado Externo do Parque em 2D Pixel Art
     const grassTex = createParkGrassTexture();
-    const grassGeo = new THREE.PlaneGeometry(130, 130);
+    const grassGeo = new THREE.PlaneGeometry(155, 155);
     const grassMat = new THREE.MeshStandardMaterial({
       map: grassTex,
       roughness: 0.92,
