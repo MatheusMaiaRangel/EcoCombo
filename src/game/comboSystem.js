@@ -290,7 +290,7 @@ export class ComboSystem {
   fireSpellProjectile(spell, castStyleMeta = null) {
     // Se repetiu exatamente o mesmo ataque 3+ vezes seguidas sem variar modo ou lixeira, penaliza o estilo!
     if (this.repeatCount >= 3) {
-      this.addStylePoints(-130);
+      this.addStylePoints(-110);
       if (this.viewportEl && this.camera) {
         this.hud.spawnFloatingText(
           this.player.position.clone().add(new THREE.Vector3(0, 2.5, 0)),
@@ -425,19 +425,19 @@ export class ComboSystem {
   computeDamageStyleGain({ repeatCount = 0, recentCount = 0, wasControlled = false, isSecondaryHit = false }) {
     let gain = 0;
     if (repeatCount === 0) {
-      gain = recentCount === 0 ? 115 : recentCount === 1 ? 75 : 40;
+      gain = recentCount === 0 ? 130 : recentCount === 1 ? 90 : 55;
     } else if (repeatCount === 1) {
-      gain = 45;
+      gain = 55;
     } else if (repeatCount === 2) {
-      gain = 15;
+      gain = 20;
     }
 
     if (wasControlled && repeatCount < 2) {
-      gain += 55;
+      gain += 65;
     }
 
     if (isSecondaryHit) {
-      gain = Math.round(gain * 0.3);
+      gain = Math.round(gain * 0.35);
     }
 
     return gain;
@@ -445,13 +445,13 @@ export class ComboSystem {
 
   /**
    * Calcula ganho de estilo para bloqueios do Escudo Seletivo (Modo R):
-   * - Parry Perfeito (ativado <= 0.55s antes do impacto): base 100 pts
-   * - Bloqueio Comum (> 0.55s): base 38 pts
+   * - Parry Perfeito (ativado <= 0.55s antes do impacto): base 105 pts
+   * - Bloqueio Comum (> 0.55s): base 40 pts
    * - Retorno decrescente para bloqueios consecutivos sem atacar (1º: 100%, 2º: 40%, 3º+: 0%)
    */
   computeShieldBlockStyleGain({ isParry = false }) {
     this.consecutiveShieldBlocks += 1;
-    const base = isParry ? 100 : 38;
+    const base = isParry ? 105 : 40;
     let factor = 0;
     if (this.consecutiveShieldBlocks === 1) {
       factor = 1.0;

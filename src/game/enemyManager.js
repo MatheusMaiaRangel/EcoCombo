@@ -323,12 +323,12 @@ export class EnemyManager {
       // Recompensa o uso tático de Controle de Grupo no Style Meter Devil May Cry com controle de variedade
       const repeat = castStyleMeta ? castStyleMeta.repeatCount : this.comboSystem.repeatCount;
       const recent = castStyleMeta ? castStyleMeta.recentCount : 0;
-      const baseGain = Math.min(155, 80 + (hitCount - 1) * 25) + (matchingCount > 0 ? 25 : 0);
-      let varietyFactor = 0.2;
+      const baseGain = Math.min(170, 90 + (hitCount - 1) * 25) + (matchingCount > 0 ? 25 : 0);
+      let varietyFactor = 0.25;
       if (repeat === 0) {
-        varietyFactor = recent === 0 ? 1.0 : recent === 1 ? 0.68 : 0.4;
+        varietyFactor = recent === 0 ? 1.0 : recent === 1 ? 0.75 : 0.5;
       } else if (repeat === 1) {
-        varietyFactor = 0.48;
+        varietyFactor = 0.55;
       }
       const styleGain = Math.round(baseGain * varietyFactor);
       if (styleGain > 0) {
@@ -543,7 +543,7 @@ export class EnemyManager {
             const remainingCharges = this.player.consumeShieldCharge(1);
             this.player.invulnerableTimer = 0.75;
             this.sound.playPlayerHurt();
-            this.comboSystem.addStylePoints(-75);
+            this.comboSystem.addStylePoints(-65);
             const shieldMsg =
               remainingCharges > 0
                 ? `🛡 ESCUDO ERRADO (-8% PUREZA · ${remainingCharges} HIT RESTANTE · USE [${enemy.binElem.keyAlt}]!)`
@@ -567,7 +567,7 @@ export class EnemyManager {
           if (this.player.invulnerableTimer <= 0) {
             this.player.invulnerableTimer = 0.85;
             this.sound.playPlayerHurt();
-            this.comboSystem.addStylePoints(-240);
+            this.comboSystem.addStylePoints(-210);
             this.comboSystem.spawnImpactParticles(
               playerPos.clone().add(new THREE.Vector3(0, 1.0, 0)),
               0xff3b30,
@@ -647,7 +647,7 @@ export class EnemyManager {
             }
           } else {
             // ERROU A LIXEIRA DO ITEM! Derruba o Rank/Multiplicador e avisa qual lixeira usar!
-            this.comboSystem.addStylePoints(-190);
+            this.comboSystem.addStylePoints(-160);
           }
 
           const currentMultiplier = this.comboSystem.activeMultiplier;

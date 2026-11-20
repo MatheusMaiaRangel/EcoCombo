@@ -125,9 +125,9 @@ export const KEY_TO_HWEI_MODE = {
 /**
  * RN18 / E4-05 — Tabela de Ranks de Estilo inspirada em Devil May Cry (D, C, B, A, S, SS, SSS)
  * Com o Multiplicador Gigante Destacado logo abaixo da letra do Rank!
- * Escala exigente (0 a 2000 pts) com decaimento progressivo nos ranks altos (S, SS, SSS).
+ * Escala equilibrada (0 a 1600 pts) com decaimento progressivo nos ranks altos (S, SS, SSS).
  */
-export const MAX_STYLE_POINTS = 2000;
+export const MAX_STYLE_POINTS = 1600;
 
 export const DMC_STYLE_RANKS = [
   {
@@ -136,7 +136,7 @@ export const DMC_STYLE_RANKS = [
     subtitle: 'Acerte a lixeira certa!',
     multiplier: 1.0,
     minPoints: 0,
-    decayRate: 10,
+    decayRate: 7,
     color: '#8d99ae',
     glow: 'rgba(141, 153, 174, 0.45)',
     stateClass: 'rank-d'
@@ -146,8 +146,8 @@ export const DMC_STYLE_RANKS = [
     title: 'COLETOR',
     subtitle: 'Coleta seletiva iniciada!',
     multiplier: 1.5,
-    minPoints: 150,
-    decayRate: 13,
+    minPoints: 120,
+    decayRate: 10,
     color: '#4cc9f0',
     glow: 'rgba(76, 201, 240, 0.65)',
     stateClass: 'rank-c'
@@ -157,8 +157,8 @@ export const DMC_STYLE_RANKS = [
     title: 'BRIGADA VERDE',
     subtitle: 'Bom ritmo de reciclagem!',
     multiplier: 2.0,
-    minPoints: 350,
-    decayRate: 18,
+    minPoints: 280,
+    decayRate: 14,
     color: '#34c759',
     glow: 'rgba(52, 199, 89, 0.7)',
     stateClass: 'rank-b'
@@ -168,8 +168,8 @@ export const DMC_STYLE_RANKS = [
     title: 'ALQUIMISTA',
     subtitle: 'Varie lixeiras e modos!',
     multiplier: 3.0,
-    minPoints: 620,
-    decayRate: 25,
+    minPoints: 500,
+    decayRate: 19,
     color: '#ffd166',
     glow: 'rgba(255, 209, 102, 0.8)',
     stateClass: 'rank-a'
@@ -179,8 +179,8 @@ export const DMC_STYLE_RANKS = [
     title: 'SUSTENTÁVEL!',
     subtitle: 'Mantenha o ritmo sem erros!',
     multiplier: 4.0,
-    minPoints: 980,
-    decayRate: 36,
+    minPoints: 780,
+    decayRate: 26,
     color: '#ff7b00',
     glow: 'rgba(255, 123, 0, 0.85)',
     stateClass: 'rank-s'
@@ -190,8 +190,8 @@ export const DMC_STYLE_RANKS = [
     title: 'SUPER SELETIVO!!',
     subtitle: 'Combos variados e implacáveis!',
     multiplier: 5.0,
-    minPoints: 1400,
-    decayRate: 48,
+    minPoints: 1100,
+    decayRate: 34,
     color: '#ff006e',
     glow: 'rgba(255, 0, 110, 0.9)',
     stateClass: 'rank-ss'
@@ -201,8 +201,8 @@ export const DMC_STYLE_RANKS = [
     title: 'SUPREMO ECO!!!',
     subtitle: 'Mestre Absoluto da Reciclagem!',
     multiplier: 6.0,
-    minPoints: 1850,
-    decayRate: 62,
+    minPoints: 1450,
+    decayRate: 44,
     color: '#00f5d4',
     glow: 'rgba(0, 245, 212, 0.95)',
     stateClass: 'rank-sss'
