@@ -252,7 +252,12 @@ export class ComboSystem {
    */
   activateSelectiveShield(spell) {
     const binElem = CONAMA_ELEMENTS[spell.binId];
-    this.player.activateShield(spell.binId, spell.duration || 2.6, spell.cooldown || 3.0);
+    this.player.activateShield(
+      spell.binId,
+      spell.duration || 3.0,
+      spell.cooldown || 3.0,
+      spell.maxCharges || 2
+    );
     this.sound.playComboReady(spell, this.activeMultiplier);
 
     // Onda curta defensiva ao ativar o escudo
@@ -269,7 +274,7 @@ export class ComboSystem {
         this.player.position.clone().add(new THREE.Vector3(0, 2.5, 0)),
         this.camera,
         this.viewportEl,
-        `🛡 ESCUDO ${binElem.shortName.toUpperCase()}! (1 IMPACTO)`,
+        `🛡 ESCUDO ${binElem.shortName.toUpperCase()}! (ATÉ 2 HITS)`,
         binElem.hex
       );
     }
@@ -420,19 +425,19 @@ export class ComboSystem {
   computeDamageStyleGain({ repeatCount = 0, recentCount = 0, wasControlled = false, isSecondaryHit = false }) {
     let gain = 0;
     if (repeatCount === 0) {
-      gain = recentCount === 0 ? 95 : recentCount === 1 ? 60 : 30;
+      gain = recentCount === 0 ? 115 : recentCount === 1 ? 75 : 40;
     } else if (repeatCount === 1) {
-      gain = 35;
+      gain = 45;
     } else if (repeatCount === 2) {
-      gain = 10;
+      gain = 15;
     }
 
     if (wasControlled && repeatCount < 2) {
-      gain += 45;
+      gain += 55;
     }
 
     if (isSecondaryHit) {
-      gain = Math.round(gain * 0.25);
+      gain = Math.round(gain * 0.3);
     }
 
     return gain;
@@ -440,13 +445,13 @@ export class ComboSystem {
 
   /**
    * Calcula ganho de estilo para bloqueios do Escudo Seletivo (Modo R):
-   * - Parry Perfeito (ativado <= 0.55s antes do impacto): base 85 pts
-   * - Bloqueio Comum (> 0.55s): base 30 pts
+   * - Parry Perfeito (ativado <= 0.55s antes do impacto): base 100 pts
+   * - Bloqueio Comum (> 0.55s): base 38 pts
    * - Retorno decrescente para bloqueios consecutivos sem atacar (1º: 100%, 2º: 40%, 3º+: 0%)
    */
   computeShieldBlockStyleGain({ isParry = false }) {
     this.consecutiveShieldBlocks += 1;
-    const base = isParry ? 85 : 30;
+    const base = isParry ? 100 : 38;
     let factor = 0;
     if (this.consecutiveShieldBlocks === 1) {
       factor = 1.0;
@@ -522,12 +527,14 @@ export class ComboSystem {
       }
     }
 
-    // Atualiza indicador de duração/recarga do Escudo no HUD
+    // Atualiza indicador de duração/cargas/recarga do Escudo no HUD
     this.hud.updateShieldStatus(
       this.player.activeShieldBin,
       this.player.shieldTimer,
       this.player.shieldCooldown,
-      this.openBinId
+      this.openBinId,
+      this.player.shieldCharges,
+      this.player.shieldMaxCharges
     );
 
     // 2. Atualiza Projéteis em Trajetória na Arena
@@ -623,7 +630,9 @@ export class ComboSystem {
       this.player.activeShieldBin,
       this.player.shieldTimer,
       this.player.shieldCooldown,
-      this.openBinId
+      this.openBinId,
+      this.player.shieldCharges,
+      this.player.shieldMaxCharges
     );
   }
 

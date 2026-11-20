@@ -159,11 +159,14 @@ export class PlayerController {
     this.invulnerableTimer = 0;
     this.walkAnimTimer = 0;
 
-    // E3-05 — Estado do Escudo Protetivo Seletivo (Modo R no leque do Hwei)
+    // E3-05 — Estado do Escudo Protetivo Seletivo (Modo R no leque do Hwei — tanka até 2 hits)
     this.activeShieldBin = null;
     this.shieldTimer = 0;
     this.shieldElapsed = 0;
-    this.shieldMaxDuration = 2.6;
+    this.shieldMaxDuration = 3.0;
+    this.shieldCharges = 0;
+    this.shieldMaxCharges = 2;
+    this.shieldHitGrace = 0;
     this.shieldCooldown = 0;
     this.shieldCooldownDuration = 3.0;
 
@@ -304,13 +307,16 @@ export class PlayerController {
     this.rootGroup.add(this.shieldGroup);
   }
 
-  activateShield(binId, duration = 2.6, cooldown = 3.0) {
+  activateShield(binId, duration = 3.0, cooldown = 3.0, maxCharges = 2) {
     const elem = CONAMA_ELEMENTS[binId];
     if (!elem) return;
     this.activeShieldBin = binId;
     this.shieldTimer = duration;
     this.shieldElapsed = 0;
     this.shieldMaxDuration = duration;
+    this.shieldCharges = maxCharges;
+    this.shieldMaxCharges = maxCharges;
+    this.shieldHitGrace = 0;
     this.shieldCooldownDuration = cooldown;
     this.shieldDomeMat.color.setHex(elem.hexNumber);
     this.shieldAuraMat.color.setHex(elem.hexNumber);
@@ -322,10 +328,23 @@ export class PlayerController {
     return Boolean(this.activeShieldBin) && this.shieldElapsed <= windowSec;
   }
 
+  consumeShieldCharge(amount = 1) {
+    if (!this.activeShieldBin) return 0;
+    this.shieldCharges = Math.max(0, this.shieldCharges - amount);
+    this.shieldHitGrace = 0.25;
+    if (this.shieldCharges <= 0) {
+      this.clearShield(true);
+      return 0;
+    }
+    return this.shieldCharges;
+  }
+
   clearShield(triggerCooldown = true) {
     this.activeShieldBin = null;
     this.shieldTimer = 0;
     this.shieldElapsed = 0;
+    this.shieldCharges = 0;
+    this.shieldHitGrace = 0;
     this.shieldGroup.visible = false;
     if (triggerCooldown) {
       this.shieldCooldown = this.shieldCooldownDuration;
@@ -442,15 +461,21 @@ export class PlayerController {
       this.shieldCooldown = Math.max(0, this.shieldCooldown - dt);
     }
 
+    if (this.shieldHitGrace > 0) {
+      this.shieldHitGrace = Math.max(0, this.shieldHitGrace - dt);
+    }
+
     if (this.shieldTimer > 0) {
       this.shieldElapsed += dt;
       this.shieldTimer = Math.max(0, this.shieldTimer - dt);
       const inParry = this.shieldElapsed <= 0.55;
+      const chargeFactor = this.shieldCharges <= 1 ? 0.65 : 1.0;
       this.shieldDome.rotation.y += dt * (inParry ? 4.2 : 1.8);
       this.shieldDome.rotation.x += dt * (inParry ? 2.2 : 0.9);
-      this.shieldDomeMat.opacity = inParry ? 0.88 : 0.52;
-      this.shieldAuraMat.opacity = inParry ? 0.28 : 0.14;
-      const pulse = 1 + Math.sin(elapsedTime * (inParry ? 18 : 8)) * (inParry ? 0.07 : 0.04);
+      this.shieldDomeMat.opacity = (inParry ? 0.88 : 0.54) * chargeFactor;
+      this.shieldAuraMat.opacity = (inParry ? 0.28 : 0.15) * chargeFactor;
+      const baseScale = this.shieldCharges <= 1 ? 0.9 : 1.0;
+      const pulse = baseScale + Math.sin(elapsedTime * (inParry ? 18 : 8)) * (inParry ? 0.07 : 0.04);
       this.shieldDome.scale.setScalar(pulse);
       if (this.shieldTimer <= 0) {
         this.clearShield(true);

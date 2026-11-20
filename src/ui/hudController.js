@@ -99,17 +99,24 @@ export class HUDController {
   }
 
   /**
-   * Atualiza visualmente o tempo restante do Escudo ativo ou da recarga nos botões e badge
+   * Atualiza visualmente o tempo restante, cargas (até 2 hits) e recarga do Escudo nos botões e badge
    */
-  updateShieldStatus(activeShieldBin, shieldTimer = 0, shieldCooldown = 0, openBinId = null) {
-    const isActive = Boolean(activeShieldBin) && shieldTimer > 0;
+  updateShieldStatus(
+    activeShieldBin,
+    shieldTimer = 0,
+    shieldCooldown = 0,
+    openBinId = null,
+    shieldCharges = 0,
+    shieldMaxCharges = 2
+  ) {
+    const isActive = Boolean(activeShieldBin) && shieldTimer > 0 && shieldCharges > 0;
     const isOnCooldown = !isActive && shieldCooldown > 0;
 
     if (this.sidebarShieldBtn && this.sidebarShieldTitle) {
       this.sidebarShieldBtn.classList.toggle('on-cooldown', isOnCooldown);
       this.sidebarShieldBtn.classList.toggle('shield-live', isActive);
       if (isActive) {
-        this.sidebarShieldTitle.textContent = `ATIVO ${shieldTimer.toFixed(1)}s`;
+        this.sidebarShieldTitle.textContent = `${shieldCharges}/${shieldMaxCharges} · ${shieldTimer.toFixed(1)}s`;
       } else if (isOnCooldown) {
         this.sidebarShieldTitle.textContent = `CD ${shieldCooldown.toFixed(1)}s`;
       } else {
@@ -121,7 +128,7 @@ export class HUDController {
       this.fanShieldCard.classList.toggle('on-cooldown', isOnCooldown);
       this.fanShieldCard.classList.toggle('shield-live', isActive);
       if (isActive) {
-        this.fanShieldName.textContent = `ESCUDO ATIVO (${shieldTimer.toFixed(1)}s)`;
+        this.fanShieldName.textContent = `ESCUDO [${shieldCharges}/${shieldMaxCharges}] (${shieldTimer.toFixed(1)}s)`;
       } else if (isOnCooldown) {
         this.fanShieldName.textContent = `RECARGA (${shieldCooldown.toFixed(1)}s)`;
       } else {
@@ -136,7 +143,7 @@ export class HUDController {
         this.conjuredBadge.classList.remove('empty');
         this.conjuredBadge.style.borderColor = shElem.hex;
         this.conjuredBadge.style.color = shElem.hex;
-        this.conjuredBadgeText.textContent = `🛡 ESCUDO ${shElem.shortName.toUpperCase()} (${shieldTimer.toFixed(1)}s)`;
+        this.conjuredBadgeText.textContent = `🛡 ESCUDO ${shElem.shortName.toUpperCase()} [${shieldCharges}/${shieldMaxCharges}] (${shieldTimer.toFixed(1)}s)`;
       } else if (isOnCooldown) {
         this.conjuredBadge.classList.add('empty');
         this.conjuredBadge.style.borderColor = 'rgba(255, 209, 102, 0.55)';

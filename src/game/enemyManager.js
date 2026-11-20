@@ -323,12 +323,12 @@ export class EnemyManager {
       // Recompensa o uso tático de Controle de Grupo no Style Meter Devil May Cry com controle de variedade
       const repeat = castStyleMeta ? castStyleMeta.repeatCount : this.comboSystem.repeatCount;
       const recent = castStyleMeta ? castStyleMeta.recentCount : 0;
-      const baseGain = Math.min(125, 65 + (hitCount - 1) * 20) + (matchingCount > 0 ? 20 : 0);
-      let varietyFactor = 0.15;
+      const baseGain = Math.min(155, 80 + (hitCount - 1) * 25) + (matchingCount > 0 ? 25 : 0);
+      let varietyFactor = 0.2;
       if (repeat === 0) {
-        varietyFactor = recent === 0 ? 1.0 : recent === 1 ? 0.65 : 0.35;
+        varietyFactor = recent === 0 ? 1.0 : recent === 1 ? 0.68 : 0.4;
       } else if (repeat === 1) {
-        varietyFactor = 0.45;
+        varietyFactor = 0.48;
       }
       const styleGain = Math.round(baseGain * varietyFactor);
       if (styleGain > 0) {
@@ -478,13 +478,13 @@ export class EnemyManager {
       const screenRightDot = toPlayer.x * 0.7071 - toPlayer.z * 0.7071;
       enemy.spriteMesh.scale.x = screenRightDot < -0.05 ? -1 : 1;
 
-      // Colisão Inimigo-Protagonista (Com Checagem do Escudo Protetivo Seletivo — Modo R!)
+      // Colisão Inimigo-Protagonista (Com Checagem do Escudo Protetivo Seletivo — Modo R, até 2 hits!)
       if (distToPlayer < 1.15) {
         const activeShield = this.player.activeShieldBin;
 
         if (activeShield === enemy.binCategory) {
-          // ==================== BLOQUEIO SELETIVO (ESCUDO DA LIXEIRA CERTA — 1 IMPACTO) ====================
-          if (enemy.shieldBlockCooldown <= 0) {
+          // ==================== BLOQUEIO SELETIVO (ESCUDO DA LIXEIRA CERTA — ATÉ 2 HITS) ====================
+          if (enemy.shieldBlockCooldown <= 0 && this.player.shieldHitGrace <= 0) {
             enemy.shieldBlockCooldown = 0.85;
 
             // Empurra imediatamente para fora do raio de colisão para impedir múltiplos gatilhos por frame
@@ -496,9 +496,12 @@ export class EnemyManager {
             const isParry = this.player.isShieldInParryWindow(0.55);
             enemy.stunTimer = Math.max(enemy.stunTimer, isParry ? 1.2 : 0.7);
 
-            // Escudo consome 1 carga ao bloquear e inicia a recarga (evita invencibilidade infinita)
-            this.player.clearShield(true);
-            this.player.invulnerableTimer = Math.max(this.player.invulnerableTimer, 0.45);
+            // Escudo consome 1 das 2 cargas ao bloquear; ao zerar, quebra e inicia a recarga
+            const remainingCharges = this.player.consumeShieldCharge(1);
+            this.player.invulnerableTimer = Math.max(
+              this.player.invulnerableTimer,
+              remainingCharges === 0 ? 0.45 : 0.25
+            );
 
             this.sound.playComboReady(null, isParry ? 4.0 : 2.2);
             const { styleGain } = this.comboSystem.computeShieldBlockStyleGain({ isParry });
@@ -515,12 +518,13 @@ export class EnemyManager {
               isParry ? 20 : 12
             );
 
+            const chargeSuffix = remainingCharges > 0 ? ` · ${remainingCharges} HIT RESTANTE` : ' · ESCUDO QUEBROU!';
             const blockMsg =
               styleGain === 0
-                ? '🛡 BLOQUEIO REPETIDO! ATAQUE PARA SUBIR RANK!'
+                ? `🛡 BLOQUEIO REPETIDO! ATAQUE PARA SUBIR RANK!${chargeSuffix}`
                 : isParry
-                  ? `🛡 PARRY PERFEITO ${enemy.binElem.shortName.toUpperCase()}! (+${styleGain} ESTILO)`
-                  : `🛡 BLOQUEIO ${enemy.binElem.shortName.toUpperCase()} (+${styleGain} ESTILO)`;
+                  ? `🛡 PARRY PERFEITO ${enemy.binElem.shortName.toUpperCase()}! (+${styleGain} ESTILO${chargeSuffix})`
+                  : `🛡 BLOQUEIO ${enemy.binElem.shortName.toUpperCase()} (+${styleGain} ESTILO${chargeSuffix})`;
             const blockColor = styleGain === 0 ? '#ffd166' : isParry ? '#00f5d4' : '#98f5b1';
 
             this.hud.spawnFloatingText(
@@ -532,36 +536,38 @@ export class EnemyManager {
             );
           }
         } else if (activeShield) {
-          // ==================== ESCUDO DE OUTRA LIXEIRA (QUEBRA, -8% PUREZA E PENALIDADE DE ESTILO) ====================
+          // ==================== ESCUDO DE OUTRA LIXEIRA (CONSOME 1 CARGA, -8% PUREZA E -75 ESTILO) ====================
           const pushBack = toPlayer.clone().multiplyScalar(-13.0);
           enemy.knockbackVel.copy(pushBack);
-          this.player.clearShield(true);
-          if (this.player.invulnerableTimer <= 0) {
+          if (this.player.invulnerableTimer <= 0 && this.player.shieldHitGrace <= 0) {
+            const remainingCharges = this.player.consumeShieldCharge(1);
             this.player.invulnerableTimer = 0.75;
             this.sound.playPlayerHurt();
-            this.comboSystem.addStylePoints(-90);
+            this.comboSystem.addStylePoints(-75);
+            const shieldMsg =
+              remainingCharges > 0
+                ? `🛡 ESCUDO ERRADO (-8% PUREZA · ${remainingCharges} HIT RESTANTE · USE [${enemy.binElem.keyAlt}]!)`
+                : `🛡 ESCUDO ERRADO QUEBROU! (-8% PUREZA · USE [${enemy.binElem.keyAlt}]!)`;
             this.hud.spawnFloatingText(
               playerPos.clone().add(new THREE.Vector3(0, 2.3, 0)),
               this.camera,
               this.viewportEl,
-              `🛡 ESCUDO ERRADO QUEBROU! (-8% PUREZA · USE [${enemy.binElem.keyAlt}]!)`,
+              shieldMsg,
               '#ffd166'
             );
             if (this.onPlayerTouch) {
               this.onPlayerTouch(8);
             }
-          } else {
-            this.comboSystem.syncHUD();
           }
         } else {
-          // ==================== SEM ESCUDO (-15% PUREZA E QUEDA PESADA NO RANK DMC) ====================
+          // ==================== SEM ESCUDO (-15% PUREZA E QUEDA NO RANK DMC) ====================
           const pushBack = toPlayer.clone().multiplyScalar(-11.5);
           enemy.knockbackVel.copy(pushBack);
 
           if (this.player.invulnerableTimer <= 0) {
             this.player.invulnerableTimer = 0.85;
             this.sound.playPlayerHurt();
-            this.comboSystem.addStylePoints(-280);
+            this.comboSystem.addStylePoints(-240);
             this.comboSystem.spawnImpactParticles(
               playerPos.clone().add(new THREE.Vector3(0, 1.0, 0)),
               0xff3b30,
@@ -641,7 +647,7 @@ export class EnemyManager {
             }
           } else {
             // ERROU A LIXEIRA DO ITEM! Derruba o Rank/Multiplicador e avisa qual lixeira usar!
-            this.comboSystem.addStylePoints(-220);
+            this.comboSystem.addStylePoints(-190);
           }
 
           const currentMultiplier = this.comboSystem.activeMultiplier;
