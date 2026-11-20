@@ -46,6 +46,14 @@ export class HUDController {
     this.fanCcTitle = document.getElementById('fan-cc-title');
     this.fanCcDesc = document.getElementById('fan-cc-desc');
     this.fanShieldDesc = document.getElementById('fan-shield-desc');
+    this.sidebarShieldBtn = document.querySelector('.hwei-mini-btn[data-hwei-mode="SHIELD"]');
+    this.sidebarShieldTitle = this.sidebarShieldBtn
+      ? this.sidebarShieldBtn.querySelector('.hwei-mode-title')
+      : null;
+    this.fanShieldCard = document.querySelector('.hwei-fan-card[data-hwei-mode="SHIELD"]');
+    this.fanShieldName = this.fanShieldCard
+      ? this.fanShieldCard.querySelector('.fan-mode-name')
+      : null;
 
     this.staleAlert = document.getElementById('stale-combo-alert');
 
@@ -87,6 +95,59 @@ export class HUDController {
     }
     if (this.dmcArenaBarFill) {
       this.dmcArenaBarFill.style.width = pct;
+    }
+  }
+
+  /**
+   * Atualiza visualmente o tempo restante do Escudo ativo ou da recarga nos botões e badge
+   */
+  updateShieldStatus(activeShieldBin, shieldTimer = 0, shieldCooldown = 0, openBinId = null) {
+    const isActive = Boolean(activeShieldBin) && shieldTimer > 0;
+    const isOnCooldown = !isActive && shieldCooldown > 0;
+
+    if (this.sidebarShieldBtn && this.sidebarShieldTitle) {
+      this.sidebarShieldBtn.classList.toggle('on-cooldown', isOnCooldown);
+      this.sidebarShieldBtn.classList.toggle('shield-live', isActive);
+      if (isActive) {
+        this.sidebarShieldTitle.textContent = `ATIVO ${shieldTimer.toFixed(1)}s`;
+      } else if (isOnCooldown) {
+        this.sidebarShieldTitle.textContent = `CD ${shieldCooldown.toFixed(1)}s`;
+      } else {
+        this.sidebarShieldTitle.textContent = 'ESCUDO';
+      }
+    }
+
+    if (this.fanShieldCard && this.fanShieldName) {
+      this.fanShieldCard.classList.toggle('on-cooldown', isOnCooldown);
+      this.fanShieldCard.classList.toggle('shield-live', isActive);
+      if (isActive) {
+        this.fanShieldName.textContent = `ESCUDO ATIVO (${shieldTimer.toFixed(1)}s)`;
+      } else if (isOnCooldown) {
+        this.fanShieldName.textContent = `RECARGA (${shieldCooldown.toFixed(1)}s)`;
+      } else {
+        this.fanShieldName.textContent = 'ESCUDO SELETIVO';
+      }
+    }
+
+    // Quando nenhuma lixeira está aberta, reflete o status do escudo no badge do personagem
+    if (!openBinId && this.conjuredBadge && this.conjuredBadgeText) {
+      if (isActive && CONAMA_ELEMENTS[activeShieldBin]) {
+        const shElem = CONAMA_ELEMENTS[activeShieldBin];
+        this.conjuredBadge.classList.remove('empty');
+        this.conjuredBadge.style.borderColor = shElem.hex;
+        this.conjuredBadge.style.color = shElem.hex;
+        this.conjuredBadgeText.textContent = `🛡 ESCUDO ${shElem.shortName.toUpperCase()} (${shieldTimer.toFixed(1)}s)`;
+      } else if (isOnCooldown) {
+        this.conjuredBadge.classList.add('empty');
+        this.conjuredBadge.style.borderColor = 'rgba(255, 209, 102, 0.55)';
+        this.conjuredBadge.style.color = '#ffd166';
+        this.conjuredBadgeText.textContent = `🛡 ESCUDO EM RECARGA (${shieldCooldown.toFixed(1)}s)`;
+      } else {
+        this.conjuredBadge.classList.add('empty');
+        this.conjuredBadge.style.borderColor = 'rgba(255,255,255,0.35)';
+        this.conjuredBadge.style.color = '#dcd6f7';
+        this.conjuredBadgeText.textContent = 'ABRA UMA LIXEIRA (Q, E, R, F)';
+      }
     }
   }
 
@@ -322,7 +383,7 @@ export class HUDController {
     if (this.pauseScoreVal) this.pauseScoreVal.textContent = String(score);
     if (this.pauseStageVal) this.pauseStageVal.textContent = String(stage);
     if (this.pausePurityVal) this.pausePurityVal.textContent = `${Math.round(purity)}%`;
-    if (this.pauseRankVal) this.pauseRankVal.textContent = rank || 'C';
+    if (this.pauseRankVal) this.pauseRankVal.textContent = rank || 'D';
     if (this.pauseMenuOverlay) {
       this.pauseMenuOverlay.classList.remove('hidden');
     }

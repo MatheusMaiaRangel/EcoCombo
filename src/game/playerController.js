@@ -162,7 +162,10 @@ export class PlayerController {
     // E3-05 — Estado do Escudo Protetivo Seletivo (Modo R no leque do Hwei)
     this.activeShieldBin = null;
     this.shieldTimer = 0;
-    this.shieldMaxDuration = 5.0;
+    this.shieldElapsed = 0;
+    this.shieldMaxDuration = 2.6;
+    this.shieldCooldown = 0;
+    this.shieldCooldownDuration = 3.0;
 
     // Grupo 3D raiz do protagonista
     this.rootGroup = new THREE.Group();
@@ -301,22 +304,32 @@ export class PlayerController {
     this.rootGroup.add(this.shieldGroup);
   }
 
-  activateShield(binId, duration = 5.0) {
+  activateShield(binId, duration = 2.6, cooldown = 3.0) {
     const elem = CONAMA_ELEMENTS[binId];
     if (!elem) return;
     this.activeShieldBin = binId;
     this.shieldTimer = duration;
+    this.shieldElapsed = 0;
     this.shieldMaxDuration = duration;
+    this.shieldCooldownDuration = cooldown;
     this.shieldDomeMat.color.setHex(elem.hexNumber);
     this.shieldAuraMat.color.setHex(elem.hexNumber);
     this.shieldRingMat.color.setHex(elem.hexNumber);
     this.shieldGroup.visible = true;
   }
 
-  clearShield() {
+  isShieldInParryWindow(windowSec = 0.55) {
+    return Boolean(this.activeShieldBin) && this.shieldElapsed <= windowSec;
+  }
+
+  clearShield(triggerCooldown = true) {
     this.activeShieldBin = null;
     this.shieldTimer = 0;
+    this.shieldElapsed = 0;
     this.shieldGroup.visible = false;
+    if (triggerCooldown) {
+      this.shieldCooldown = this.shieldCooldownDuration;
+    }
   }
 
   /**
@@ -425,14 +438,22 @@ export class PlayerController {
       this.invulnerableTimer = Math.max(0, this.invulnerableTimer - dt);
     }
 
+    if (this.shieldCooldown > 0) {
+      this.shieldCooldown = Math.max(0, this.shieldCooldown - dt);
+    }
+
     if (this.shieldTimer > 0) {
+      this.shieldElapsed += dt;
       this.shieldTimer = Math.max(0, this.shieldTimer - dt);
-      this.shieldDome.rotation.y += dt * 1.8;
-      this.shieldDome.rotation.x += dt * 0.9;
-      const pulse = 1 + Math.sin(elapsedTime * 8) * 0.04;
+      const inParry = this.shieldElapsed <= 0.55;
+      this.shieldDome.rotation.y += dt * (inParry ? 4.2 : 1.8);
+      this.shieldDome.rotation.x += dt * (inParry ? 2.2 : 0.9);
+      this.shieldDomeMat.opacity = inParry ? 0.88 : 0.52;
+      this.shieldAuraMat.opacity = inParry ? 0.28 : 0.14;
+      const pulse = 1 + Math.sin(elapsedTime * (inParry ? 18 : 8)) * (inParry ? 0.07 : 0.04);
       this.shieldDome.scale.setScalar(pulse);
       if (this.shieldTimer <= 0) {
-        this.clearShield();
+        this.clearShield(true);
       }
     }
 
@@ -571,7 +592,8 @@ export class PlayerController {
     this.position.set(0, 0, 0);
     this.rootGroup.position.set(0, 0, 0);
     this.invulnerableTimer = 0;
-    this.clearShield();
+    this.clearShield(false);
+    this.shieldCooldown = 0;
     this.spriteMesh.visible = true;
   }
 }

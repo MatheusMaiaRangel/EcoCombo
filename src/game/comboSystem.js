@@ -3,6 +3,7 @@ import {
   CONAMA_ELEMENTS,
   KEY_TO_ELEMENT,
   KEY_TO_HWEI_MODE,
+  MAX_STYLE_POINTS,
   resolveHweiSpell,
   getStyleRankFromPoints
 } from '../constants/recipes.js';
@@ -31,9 +32,11 @@ export class ComboSystem {
     this.lastSpell = null;
     this.lastSpellId = null;
     this.repeatCount = 0;
+    this.recentSpellIds = [];
+    this.consecutiveShieldBlocks = 0;
 
-    // Medidor de Estilo Devil May Cry (0 a 1000 pontos -> Ranks D, C, B, A, S, SS, SSS)
-    this.stylePoints = 110; // Começa em C (1.5x) pronto para subir até SSS (6.0x)!
+    // Medidor de Estilo Devil May Cry (0 a 2000 pontos -> Ranks D, C, B, A, S, SS, SSS)
+    this.stylePoints = 0; // Começa em D (1.0x): precisa jogar com variedade para escalar até SSS (6.0x)!
     this.styleState = getStyleRankFromPoints(this.stylePoints);
     this.activeMultiplier = this.styleState.multiplier;
 
@@ -160,13 +163,47 @@ export class ComboSystem {
     const spell = resolveHweiSpell(binId, modeId);
     if (!spell) return false;
 
-    // Atualiza contador de repetição da mesma habilidade exata
+    // Se for Modo Escudo (R), valida se já há escudo ativo ou em recarga ANTES de gastar ação
+    if (modeId === 'SHIELD') {
+      if (this.player.activeShieldBin) {
+        if (this.viewportEl && this.camera) {
+          this.hud.spawnFloatingText(
+            this.player.position.clone().add(new THREE.Vector3(0, 2.4, 0)),
+            this.camera,
+            this.viewportEl,
+            '🛡 ESCUDO JÁ ESTÁ ATIVO!',
+            '#ffd166'
+          );
+        }
+        this.closeBin(false);
+        return false;
+      }
+      if (this.player.shieldCooldown > 0) {
+        if (this.viewportEl && this.camera) {
+          this.hud.spawnFloatingText(
+            this.player.position.clone().add(new THREE.Vector3(0, 2.4, 0)),
+            this.camera,
+            this.viewportEl,
+            `🛡 ESCUDO EM RECARGA (${this.player.shieldCooldown.toFixed(1)}s)`,
+            '#ffd166'
+          );
+        }
+        this.closeBin(false);
+        return false;
+      }
+    }
+
+    // Conta quantas vezes esta habilidade exata apareceu na janela recente (últimos 4 comandos)
+    const recentCount = this.getSpellRecentCount(spell.id);
+
+    // Atualiza contador de repetição consecutiva da mesma habilidade exata
     if (this.lastSpellId === spell.id) {
       this.repeatCount += 1;
     } else {
       this.repeatCount = 0;
       this.lastSpellId = spell.id;
     }
+    this.recordSpellCast(spell.id);
     this.lastSpell = spell;
 
     // Se for o Modo 3 (R = Escudo Protetivo Seletivo), ativa na hora ao redor do jogador!
@@ -176,8 +213,15 @@ export class ComboSystem {
       return true;
     }
 
+    // Metadados compartilhados entre todos os projéteis/hits deste mesmo disparo (evita triplicar pontos!)
+    const castStyleMeta = {
+      repeatCount: this.repeatCount,
+      recentCount,
+      hitsScored: 0
+    };
+
     // Para Q (Mais Dano) e E (Controle de Grupo), dispara na direção mirada pelo Mouse!
-    this.fireSpellProjectile(spell);
+    this.fireSpellProjectile(spell, castStyleMeta);
     this.closeBin(false);
     return true;
   }
@@ -204,32 +248,28 @@ export class ComboSystem {
 
   /**
    * Ativa o Escudo Protetivo Seletivo (Modo R no leque da Lixeira)
+   * Não concede pontos de estilo ao ativar: o jogador precisa realmente bloquear o item certo!
    */
   activateSelectiveShield(spell) {
     const binElem = CONAMA_ELEMENTS[spell.binId];
-    this.player.activateShield(spell.binId, spell.duration || 5.0);
+    this.player.activateShield(spell.binId, spell.duration || 2.6, spell.cooldown || 3.0);
     this.sound.playComboReady(spell, this.activeMultiplier);
 
     // Onda curta defensiva ao ativar o escudo
-    this.spawnAreaWave(this.player.position.clone(), spell.colorA, 2.8);
+    this.spawnAreaWave(this.player.position.clone(), spell.colorA, 2.5);
     this.spawnImpactParticles(
       this.player.position.clone().add(new THREE.Vector3(0, 1.1, 0)),
       spell.colorA,
       0xffffff,
-      16
+      14
     );
-
-    // Se não estiver spammando o escudo sem parar, ganha um pequeno impulso de estilo
-    if (this.repeatCount === 0) {
-      this.addStylePoints(45);
-    }
 
     if (this.viewportEl && this.camera) {
       this.hud.spawnFloatingText(
         this.player.position.clone().add(new THREE.Vector3(0, 2.5, 0)),
         this.camera,
         this.viewportEl,
-        `🛡 ESCUDO DE ${binElem.shortName.toUpperCase()} ATIVO!`,
+        `🛡 ESCUDO ${binElem.shortName.toUpperCase()}! (1 IMPACTO)`,
         binElem.hex
       );
     }
@@ -242,10 +282,10 @@ export class ComboSystem {
   /**
    * Dispara o projétil de Mais Dano (Q) ou Controle de Grupo (E) na direção da mira do Mouse
    */
-  fireSpellProjectile(spell) {
+  fireSpellProjectile(spell, castStyleMeta = null) {
     // Se repetiu exatamente o mesmo ataque 3+ vezes seguidas sem variar modo ou lixeira, penaliza o estilo!
     if (this.repeatCount >= 3) {
-      this.addStylePoints(-110);
+      this.addStylePoints(-130);
       if (this.viewportEl && this.camera) {
         this.hud.spawnFloatingText(
           this.player.position.clone().add(new THREE.Vector3(0, 2.5, 0)),
@@ -266,14 +306,28 @@ export class ComboSystem {
     const targetPoint = this.player.aimPoint.clone();
 
     if (spell.behavior === 'damage_paper') {
-      // Papel (E + Q): Rajada tripla de lâminas de origami
+      // Papel (E + Q): Rajada tripla de lâminas de origami (compartilha castStyleMeta)
       const angles = [-0.15, 0, 0.15];
       angles.forEach((ang) => {
         const dir = baseDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), ang);
-        this.spawnProjectileInstance(spell, spawnOrigin, dir, targetPoint, this.activeMultiplier);
+        this.spawnProjectileInstance(
+          spell,
+          spawnOrigin,
+          dir,
+          targetPoint,
+          this.activeMultiplier,
+          castStyleMeta
+        );
       });
     } else {
-      this.spawnProjectileInstance(spell, spawnOrigin, baseDir, targetPoint, this.activeMultiplier);
+      this.spawnProjectileInstance(
+        spell,
+        spawnOrigin,
+        baseDir,
+        targetPoint,
+        this.activeMultiplier,
+        castStyleMeta
+      );
     }
 
     if (this.onShotFired) {
@@ -281,7 +335,7 @@ export class ComboSystem {
     }
   }
 
-  spawnProjectileInstance(spell, origin, direction, targetPoint, multiplier) {
+  spawnProjectileInstance(spell, origin, direction, targetPoint, multiplier, castStyleMeta = null) {
     const mesh = buildRecipeObjectMesh(spell, spell.modeId === 'CONTROL' ? 1.15 : 1.0);
     mesh.position.copy(origin);
     const yaw = Math.atan2(direction.x, direction.z);
@@ -302,6 +356,7 @@ export class ComboSystem {
       traveledDist: 0,
       speed: spell.speed,
       multiplier,
+      castStyleMeta,
       radius: spell.radius,
       life: 1.7,
       pierceLeft: spell.behavior === 'damage_glass' ? 2 : 0,
@@ -337,12 +392,79 @@ export class ComboSystem {
     });
   }
 
+  getSpellRecentCount(spellId) {
+    let count = 0;
+    for (const id of this.recentSpellIds) {
+      if (id === spellId) count += 1;
+    }
+    return count;
+  }
+
+  recordSpellCast(spellId) {
+    this.recentSpellIds.push(spellId);
+    if (this.recentSpellIds.length > 4) {
+      this.recentSpellIds.shift();
+    }
+  }
+
+  registerOffensiveStyleHit() {
+    this.consecutiveShieldBlocks = 0;
+  }
+
+  /**
+   * Calcula ganho de estilo para acertos de Dano (Modo Q) considerando:
+   * - Variedade recente (últimos 4 comandos) e repetição consecutiva
+   * - Bônus de combo Controle [E] -> Dano [Q]
+   * - Redução para múltiplos hits de um mesmo disparo (ex.: rajada tripla, perfuração ou ricochete)
+   */
+  computeDamageStyleGain({ repeatCount = 0, recentCount = 0, wasControlled = false, isSecondaryHit = false }) {
+    let gain = 0;
+    if (repeatCount === 0) {
+      gain = recentCount === 0 ? 95 : recentCount === 1 ? 60 : 30;
+    } else if (repeatCount === 1) {
+      gain = 35;
+    } else if (repeatCount === 2) {
+      gain = 10;
+    }
+
+    if (wasControlled && repeatCount < 2) {
+      gain += 45;
+    }
+
+    if (isSecondaryHit) {
+      gain = Math.round(gain * 0.25);
+    }
+
+    return gain;
+  }
+
+  /**
+   * Calcula ganho de estilo para bloqueios do Escudo Seletivo (Modo R):
+   * - Parry Perfeito (ativado <= 0.55s antes do impacto): base 85 pts
+   * - Bloqueio Comum (> 0.55s): base 30 pts
+   * - Retorno decrescente para bloqueios consecutivos sem atacar (1º: 100%, 2º: 40%, 3º+: 0%)
+   */
+  computeShieldBlockStyleGain({ isParry = false }) {
+    this.consecutiveShieldBlocks += 1;
+    const base = isParry ? 85 : 30;
+    let factor = 0;
+    if (this.consecutiveShieldBlocks === 1) {
+      factor = 1.0;
+    } else if (this.consecutiveShieldBlocks === 2) {
+      factor = 0.4;
+    }
+    return {
+      styleGain: Math.round(base * factor),
+      blockIndex: this.consecutiveShieldBlocks
+    };
+  }
+
   /**
    * Atualiza o Medidor de Estilo Devil May Cry (D -> C -> B -> A -> S -> SS -> SSS)
    * e recalcula o Multiplicador em destaque abaixo
    */
   addStylePoints(delta) {
-    this.stylePoints = Math.max(0, Math.min(1000, this.stylePoints + delta));
+    this.stylePoints = Math.max(0, Math.min(MAX_STYLE_POINTS, this.stylePoints + delta));
     this.styleState = getStyleRankFromPoints(this.stylePoints);
     this.activeMultiplier = this.styleState.multiplier;
     this.syncHUD();
@@ -385,9 +507,9 @@ export class ComboSystem {
   }
 
   update(dt) {
-    // 1. Decaimento temporal suave da barra de estilo Devil May Cry (mantém o ritmo de combate)
+    // 1. Decaimento temporal progressivo da barra de estilo Devil May Cry (mais exigente em S/SS/SSS)
     if (this.stylePoints > 0) {
-      const decayRate = this.styleState.index >= 4 ? 18 : 10;
+      const decayRate = this.styleState.decayRate || 10;
       this.stylePoints = Math.max(0, this.stylePoints - decayRate * dt);
       const newState = getStyleRankFromPoints(this.stylePoints);
       const rankChanged = newState.rank !== this.styleState.rank;
@@ -399,6 +521,14 @@ export class ComboSystem {
         this.hud.updateStyleMeterBarOnly(this.styleState);
       }
     }
+
+    // Atualiza indicador de duração/recarga do Escudo no HUD
+    this.hud.updateShieldStatus(
+      this.player.activeShieldBin,
+      this.player.shieldTimer,
+      this.player.shieldCooldown,
+      this.openBinId
+    );
 
     // 2. Atualiza Projéteis em Trajetória na Arena
     const limit = ARENA_HALF_SIZE + 0.5;
@@ -419,7 +549,12 @@ export class ComboSystem {
       // Se for uma habilidade de Controle de Grupo (Modo E) que chegou no ponto mirado pelo mouse, detona em área!
       if (p.recipe.modeId === 'CONTROL' && p.traveledDist >= p.maxTravelDist) {
         if (this.onControlWaveDetonated) {
-          this.onControlWaveDetonated(p.mesh.position.clone(), p.recipe, p.multiplier);
+          this.onControlWaveDetonated(
+            p.mesh.position.clone(),
+            p.recipe,
+            p.multiplier,
+            p.castStyleMeta
+          );
         }
         this.scene.remove(p.mesh);
         this.projectiles.splice(i, 1);
@@ -484,6 +619,12 @@ export class ComboSystem {
       lastRecipe: this.lastSpell,
       activeShieldBin: this.player.activeShieldBin
     });
+    this.hud.updateShieldStatus(
+      this.player.activeShieldBin,
+      this.player.shieldTimer,
+      this.player.shieldCooldown,
+      this.openBinId
+    );
   }
 
   reset() {
@@ -506,10 +647,13 @@ export class ComboSystem {
     this.lastSpell = null;
     this.lastSpellId = null;
     this.repeatCount = 0;
-    this.stylePoints = 110;
+    this.recentSpellIds = [];
+    this.consecutiveShieldBlocks = 0;
+    this.stylePoints = 0;
     this.styleState = getStyleRankFromPoints(this.stylePoints);
     this.activeMultiplier = this.styleState.multiplier;
     this.player.setConjuredRecipePreview(null, []);
     this.syncHUD();
+    this.hud.updateShieldStatus(null, 0, 0, null);
   }
 }

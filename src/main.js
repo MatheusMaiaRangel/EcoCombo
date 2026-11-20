@@ -423,7 +423,7 @@ class EcoComboMVPApp {
       score: this.score,
       stage: this.stage,
       purity: this.purity,
-      rank: this.comboSystem.styleState?.rank || 'C'
+      rank: this.comboSystem.styleState?.rank || 'D'
     });
   }
 

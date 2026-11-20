@@ -45,8 +45,8 @@ export class EnemyManager {
     this.difficultySpawnMult = 1.0;
 
     // Registra o callback de detonação de Controle de Grupo (Modo E) no ComboSystem
-    this.comboSystem.onControlWaveDetonated = (centerPos, spell, multiplier) => {
-      this.detonateControlWave(centerPos, spell, multiplier);
+    this.comboSystem.onControlWaveDetonated = (centerPos, spell, multiplier, castStyleMeta) => {
+      this.detonateControlWave(centerPos, spell, multiplier, castStyleMeta);
     };
   }
 
@@ -219,7 +219,8 @@ export class EnemyManager {
       pullTarget: new THREE.Vector3(),
       knockbackVel: new THREE.Vector3(0, 0, 0),
       animTimer: Math.random() * 2,
-      hitFlashTimer: 0
+      hitFlashTimer: 0,
+      shieldBlockCooldown: 0
     });
   }
 
@@ -230,7 +231,7 @@ export class EnemyManager {
    * - GLASS   (R -> E): LENTIDÃO + FRÁGIL (70% Slow + +35% dano recebido)
    * - METAL   (F -> E): ESTUNAR (Paralisa os itens no lugar por 2.8s)
    */
-  detonateControlWave(centerPos, spell, multiplier) {
+  detonateControlWave(centerPos, spell, multiplier, castStyleMeta = null) {
     const aoeRadius = spell.aoeRadius || 4.4;
     this.comboSystem.spawnAreaWave(centerPos, spell.colorA, aoeRadius);
     this.comboSystem.spawnImpactParticles(
@@ -241,6 +242,7 @@ export class EnemyManager {
     );
 
     let hitCount = 0;
+    let matchingCount = 0;
 
     for (let ei = this.enemies.length - 1; ei >= 0; ei--) {
       const enemy = this.enemies[ei];
@@ -252,6 +254,7 @@ export class EnemyManager {
       if (dist <= aoeRadius) {
         hitCount += 1;
         const isMatchingBin = enemy.binCategory === spell.binId;
+        if (isMatchingBin) matchingCount += 1;
 
         // Aplica o Controle de Grupo específico da Lixeira!
         if (spell.ccType === 'separate') {
@@ -316,9 +319,21 @@ export class EnemyManager {
 
     if (hitCount > 0) {
       this.sound.playEnemyHit(multiplier, false);
-      // Recompensa o uso tático de Controle de Grupo no Style Meter Devil May Cry!
-      const styleGain = 120 + (hitCount - 1) * 45;
-      this.comboSystem.addStylePoints(styleGain);
+      this.comboSystem.registerOffensiveStyleHit();
+      // Recompensa o uso tático de Controle de Grupo no Style Meter Devil May Cry com controle de variedade
+      const repeat = castStyleMeta ? castStyleMeta.repeatCount : this.comboSystem.repeatCount;
+      const recent = castStyleMeta ? castStyleMeta.recentCount : 0;
+      const baseGain = Math.min(125, 65 + (hitCount - 1) * 20) + (matchingCount > 0 ? 20 : 0);
+      let varietyFactor = 0.15;
+      if (repeat === 0) {
+        varietyFactor = recent === 0 ? 1.0 : recent === 1 ? 0.65 : 0.35;
+      } else if (repeat === 1) {
+        varietyFactor = 0.45;
+      }
+      const styleGain = Math.round(baseGain * varietyFactor);
+      if (styleGain > 0) {
+        this.comboSystem.addStylePoints(styleGain);
+      }
     }
   }
 
@@ -379,7 +394,7 @@ export class EnemyManager {
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const enemy = this.enemies[i];
 
-      // Timers de Controle de Grupo (Stun, Slow, Fragile, Pull)
+      // Timers de Controle de Grupo (Stun, Slow, Fragile, Pull) e cooldown de bloqueio no escudo
       if (enemy.stunTimer > 0) {
         enemy.stunTimer = Math.max(0, enemy.stunTimer - dt);
       }
@@ -388,6 +403,9 @@ export class EnemyManager {
       }
       if (enemy.fragileTimer > 0) {
         enemy.fragileTimer = Math.max(0, enemy.fragileTimer - dt);
+      }
+      if (enemy.shieldBlockCooldown > 0) {
+        enemy.shieldBlockCooldown = Math.max(0, enemy.shieldBlockCooldown - dt);
       }
 
       // Halo visual de Controle de Grupo sob o inimigo
@@ -465,53 +483,85 @@ export class EnemyManager {
         const activeShield = this.player.activeShieldBin;
 
         if (activeShield === enemy.binCategory) {
-          // ==================== BLOQUEIO SELETIVO PERFEITO (ESCUDO DA LIXEIRA CERTA!) ====================
-          const pushBack = toPlayer.clone().multiplyScalar(-18.0);
-          enemy.knockbackVel.copy(pushBack);
-          enemy.stunTimer = Math.max(enemy.stunTimer, 1.8);
+          // ==================== BLOQUEIO SELETIVO (ESCUDO DA LIXEIRA CERTA — 1 IMPACTO) ====================
+          if (enemy.shieldBlockCooldown <= 0) {
+            enemy.shieldBlockCooldown = 0.85;
 
-          this.sound.playComboReady(null, 4.0);
-          this.comboSystem.addStylePoints(210);
-          this.comboSystem.spawnImpactParticles(
-            playerPos.clone().add(new THREE.Vector3(0, 1.1, 0)),
-            enemy.binElem.hexNumber,
-            0x00f5d4,
-            20
-          );
-          this.hud.spawnFloatingText(
-            playerPos.clone().add(new THREE.Vector3(0, 2.5, 0)),
-            this.camera,
-            this.viewportEl,
-            `🛡 ESCUDO ${enemy.binElem.shortName.toUpperCase()} BLOQUEOU 100%! +ESTILO!`,
-            '#00f5d4'
-          );
+            // Empurra imediatamente para fora do raio de colisão para impedir múltiplos gatilhos por frame
+            const sepDir = distToPlayer > 0.001 ? toPlayer.clone().multiplyScalar(-1) : new THREE.Vector3(1, 0, 0);
+            enemy.group.position.x = THREE.MathUtils.clamp(playerPos.x + sepDir.x * 1.45, -limit, limit);
+            enemy.group.position.z = THREE.MathUtils.clamp(playerPos.z + sepDir.z * 1.45, -limit, limit);
+            enemy.knockbackVel.copy(sepDir.multiplyScalar(15.5));
+
+            const isParry = this.player.isShieldInParryWindow(0.55);
+            enemy.stunTimer = Math.max(enemy.stunTimer, isParry ? 1.2 : 0.7);
+
+            // Escudo consome 1 carga ao bloquear e inicia a recarga (evita invencibilidade infinita)
+            this.player.clearShield(true);
+            this.player.invulnerableTimer = Math.max(this.player.invulnerableTimer, 0.45);
+
+            this.sound.playComboReady(null, isParry ? 4.0 : 2.2);
+            const { styleGain } = this.comboSystem.computeShieldBlockStyleGain({ isParry });
+            if (styleGain > 0) {
+              this.comboSystem.addStylePoints(styleGain);
+            } else {
+              this.comboSystem.syncHUD();
+            }
+
+            this.comboSystem.spawnImpactParticles(
+              playerPos.clone().add(new THREE.Vector3(0, 1.1, 0)),
+              enemy.binElem.hexNumber,
+              isParry ? 0x00f5d4 : 0xffffff,
+              isParry ? 20 : 12
+            );
+
+            const blockMsg =
+              styleGain === 0
+                ? '🛡 BLOQUEIO REPETIDO! ATAQUE PARA SUBIR RANK!'
+                : isParry
+                  ? `🛡 PARRY PERFEITO ${enemy.binElem.shortName.toUpperCase()}! (+${styleGain} ESTILO)`
+                  : `🛡 BLOQUEIO ${enemy.binElem.shortName.toUpperCase()} (+${styleGain} ESTILO)`;
+            const blockColor = styleGain === 0 ? '#ffd166' : isParry ? '#00f5d4' : '#98f5b1';
+
+            this.hud.spawnFloatingText(
+              playerPos.clone().add(new THREE.Vector3(0, 2.5, 0)),
+              this.camera,
+              this.viewportEl,
+              blockMsg,
+              blockColor
+            );
+          }
         } else if (activeShield) {
-          // ==================== ESCUDO DE OUTRA LIXEIRA (MITIGAÇÃO PARCIAL: SÓ -5% PUREZA) ====================
+          // ==================== ESCUDO DE OUTRA LIXEIRA (QUEBRA, -8% PUREZA E PENALIDADE DE ESTILO) ====================
           const pushBack = toPlayer.clone().multiplyScalar(-13.0);
           enemy.knockbackVel.copy(pushBack);
+          this.player.clearShield(true);
           if (this.player.invulnerableTimer <= 0) {
             this.player.invulnerableTimer = 0.75;
             this.sound.playPlayerHurt();
+            this.comboSystem.addStylePoints(-90);
             this.hud.spawnFloatingText(
               playerPos.clone().add(new THREE.Vector3(0, 2.3, 0)),
               this.camera,
               this.viewportEl,
-              `🛡 ESCUDO PARCIAL (-5% PUREZA · USE [${enemy.binElem.keyAlt}]!)`,
+              `🛡 ESCUDO ERRADO QUEBROU! (-8% PUREZA · USE [${enemy.binElem.keyAlt}]!)`,
               '#ffd166'
             );
             if (this.onPlayerTouch) {
-              this.onPlayerTouch(5);
+              this.onPlayerTouch(8);
             }
+          } else {
+            this.comboSystem.syncHUD();
           }
         } else {
-          // ==================== SEM ESCUDO (-15% PUREZA E QUEDA NO RANK DMC) ====================
+          // ==================== SEM ESCUDO (-15% PUREZA E QUEDA PESADA NO RANK DMC) ====================
           const pushBack = toPlayer.clone().multiplyScalar(-11.5);
           enemy.knockbackVel.copy(pushBack);
 
           if (this.player.invulnerableTimer <= 0) {
             this.player.invulnerableTimer = 0.85;
             this.sound.playPlayerHurt();
-            this.comboSystem.addStylePoints(-200);
+            this.comboSystem.addStylePoints(-280);
             this.comboSystem.spawnImpactParticles(
               playerPos.clone().add(new THREE.Vector3(0, 1.0, 0)),
               0xff3b30,
@@ -555,7 +605,8 @@ export class EnemyManager {
             this.detonateControlWave(
               enemy.group.position.clone(),
               proj.recipe,
-              proj.multiplier
+              proj.multiplier,
+              proj.castStyleMeta
             );
             removeProjectile = true;
             break;
@@ -570,17 +621,27 @@ export class EnemyManager {
             enemy.pullTimer > 0;
 
           if (isMatchingBin) {
-            // ACERTO NA LIXEIRA CERTA! Sobe o Style Meter Devil May Cry!
-            const repeat = this.comboSystem.repeatCount;
-            let styleGain =
-              repeat === 0 ? 165 : repeat === 1 ? 85 : repeat === 2 ? 25 : 0;
-            if (wasControlled) {
-              styleGain += 85; // Bônus por combar Controle [E] -> Dano [Q]!
+            // ACERTO NA LIXEIRA CERTA! Sobe o Style Meter Devil May Cry com régua exigente de variedade!
+            this.comboSystem.registerOffensiveStyleHit();
+            const meta = proj.castStyleMeta || {
+              repeatCount: this.comboSystem.repeatCount,
+              recentCount: 0,
+              hitsScored: 0
+            };
+            const isSecondaryHit = meta.hitsScored > 0;
+            meta.hitsScored += 1;
+            const styleGain = this.comboSystem.computeDamageStyleGain({
+              repeatCount: meta.repeatCount,
+              recentCount: meta.recentCount,
+              wasControlled,
+              isSecondaryHit
+            });
+            if (styleGain > 0) {
+              this.comboSystem.addStylePoints(styleGain);
             }
-            this.comboSystem.addStylePoints(styleGain);
           } else {
             // ERROU A LIXEIRA DO ITEM! Derruba o Rank/Multiplicador e avisa qual lixeira usar!
-            this.comboSystem.addStylePoints(-175);
+            this.comboSystem.addStylePoints(-220);
           }
 
           const currentMultiplier = this.comboSystem.activeMultiplier;

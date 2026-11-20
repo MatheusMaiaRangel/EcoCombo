@@ -125,7 +125,10 @@ export const KEY_TO_HWEI_MODE = {
 /**
  * RN18 / E4-05 — Tabela de Ranks de Estilo inspirada em Devil May Cry (D, C, B, A, S, SS, SSS)
  * Com o Multiplicador Gigante Destacado logo abaixo da letra do Rank!
+ * Escala exigente (0 a 2000 pts) com decaimento progressivo nos ranks altos (S, SS, SSS).
  */
+export const MAX_STYLE_POINTS = 2000;
+
 export const DMC_STYLE_RANKS = [
   {
     rank: 'D',
@@ -133,6 +136,7 @@ export const DMC_STYLE_RANKS = [
     subtitle: 'Acerte a lixeira certa!',
     multiplier: 1.0,
     minPoints: 0,
+    decayRate: 10,
     color: '#8d99ae',
     glow: 'rgba(141, 153, 174, 0.45)',
     stateClass: 'rank-d'
@@ -142,7 +146,8 @@ export const DMC_STYLE_RANKS = [
     title: 'COLETOR',
     subtitle: 'Coleta seletiva iniciada!',
     multiplier: 1.5,
-    minPoints: 100,
+    minPoints: 150,
+    decayRate: 14,
     color: '#4cc9f0',
     glow: 'rgba(76, 201, 240, 0.65)',
     stateClass: 'rank-c'
@@ -152,7 +157,8 @@ export const DMC_STYLE_RANKS = [
     title: 'BRIGADA VERDE',
     subtitle: 'Bom ritmo de reciclagem!',
     multiplier: 2.0,
-    minPoints: 220,
+    minPoints: 350,
+    decayRate: 20,
     color: '#34c759',
     glow: 'rgba(52, 199, 89, 0.7)',
     stateClass: 'rank-b'
@@ -160,9 +166,10 @@ export const DMC_STYLE_RANKS = [
   {
     rank: 'A',
     title: 'ALQUIMISTA',
-    subtitle: 'Ótima combinação de modos!',
+    subtitle: 'Varie lixeiras e modos!',
     multiplier: 3.0,
-    minPoints: 360,
+    minPoints: 620,
+    decayRate: 28,
     color: '#ffd166',
     glow: 'rgba(255, 209, 102, 0.8)',
     stateClass: 'rank-a'
@@ -170,9 +177,10 @@ export const DMC_STYLE_RANKS = [
   {
     rank: 'S',
     title: 'SUSTENTÁVEL!',
-    subtitle: 'Domínio tático das lixeiras!',
+    subtitle: 'Mantenha o ritmo sem erros!',
     multiplier: 4.0,
-    minPoints: 520,
+    minPoints: 980,
+    decayRate: 40,
     color: '#ff7b00',
     glow: 'rgba(255, 123, 0, 0.85)',
     stateClass: 'rank-s'
@@ -180,9 +188,10 @@ export const DMC_STYLE_RANKS = [
   {
     rank: 'SS',
     title: 'SUPER SELETIVO!!',
-    subtitle: 'Execução impecável!',
+    subtitle: 'Combos variados e implacáveis!',
     multiplier: 5.0,
-    minPoints: 700,
+    minPoints: 1400,
+    decayRate: 56,
     color: '#ff006e',
     glow: 'rgba(255, 0, 110, 0.9)',
     stateClass: 'rank-ss'
@@ -192,7 +201,8 @@ export const DMC_STYLE_RANKS = [
     title: 'SUPREMO ECO!!!',
     subtitle: 'Mestre Absoluto da Reciclagem!',
     multiplier: 6.0,
-    minPoints: 880,
+    minPoints: 1850,
+    decayRate: 72,
     color: '#00f5d4',
     glow: 'rgba(0, 245, 212, 0.95)',
     stateClass: 'rank-sss'
@@ -200,7 +210,7 @@ export const DMC_STYLE_RANKS = [
 ];
 
 export function getStyleRankFromPoints(points) {
-  const clamped = Math.max(0, Math.min(1000, points));
+  const clamped = Math.max(0, Math.min(MAX_STYLE_POINTS, points));
   let currentIdx = 0;
   for (let i = DMC_STYLE_RANKS.length - 1; i >= 0; i--) {
     if (clamped >= DMC_STYLE_RANKS[i].minPoints) {
@@ -210,14 +220,9 @@ export function getStyleRankFromPoints(points) {
   }
   const current = DMC_STYLE_RANKS[currentIdx];
   const next = DMC_STYLE_RANKS[currentIdx + 1] || null;
-  let progressPercent = 100;
-  if (next) {
-    const span = next.minPoints - current.minPoints;
-    progressPercent = Math.max(
-      0,
-      Math.min(100, ((clamped - current.minPoints) / span) * 100)
-    );
-  }
+  const span = next ? next.minPoints - current.minPoints : MAX_STYLE_POINTS - current.minPoints;
+  const progressPercent =
+    span > 0 ? Math.max(0, Math.min(100, ((clamped - current.minPoints) / span) * 100)) : 100;
   return {
     ...current,
     index: currentIdx,
@@ -279,13 +284,15 @@ export const HWEI_SPELLS = {
     recipeLabel: 'Plástico [Q] → Protetivo [R]: ESCUDO',
     colorsLabel: 'Lixeira Vermelha • Escudo Seletivo',
     name: 'Escudo Polimérico Flexível',
-    effectDesc: 'Cria Escudo de Plástico: absorve o impacto da Garrafa PET e a repele sem quebrar o combo!',
+    effectDesc: 'Bloqueia 1 impacto de Garrafa PET (2.6s • recarga 3s). Ative na hora exata para Parry!',
     primaryHex: '#FF3B30',
     secondaryHex: '#FFFFFF',
     colorA: 0xff3b30,
     colorB: 0xff857d,
     shape: 'sphere_polymer',
-    duration: 5.0,
+    duration: 2.6,
+    cooldown: 3.0,
+    parryWindow: 0.55,
     behavior: 'shield'
   },
 
@@ -338,13 +345,15 @@ export const HWEI_SPELLS = {
     recipeLabel: 'Papel [E] → Protetivo [R]: ESCUDO',
     colorsLabel: 'Lixeira Azul • Escudo Seletivo',
     name: 'Barreira de Celulose Multicamadas',
-    effectDesc: 'Cria Escudo de Papel: absorve o impacto de Caixas de Papelão e mantém o multiplicador!',
+    effectDesc: 'Bloqueia 1 impacto de Papelão (2.6s • recarga 3s). Ative na hora exata para Parry!',
     primaryHex: '#007AFF',
     secondaryHex: '#FFFFFF',
     colorA: 0x007aff,
     colorB: 0x80c2ff,
     shape: 'origami_fan',
-    duration: 5.0,
+    duration: 2.6,
+    cooldown: 3.0,
+    parryWindow: 0.55,
     behavior: 'shield'
   },
 
@@ -397,13 +406,15 @@ export const HWEI_SPELLS = {
     recipeLabel: 'Vidro [R] → Protetivo [R]: ESCUDO',
     colorsLabel: 'Lixeira Verde • Escudo Seletivo',
     name: 'Redoma de Vidro Temperado',
-    effectDesc: 'Cria Escudo de Vidro: bloqueia o corte de Garrafas de Vidro e reflete estilhaços!',
+    effectDesc: 'Bloqueia 1 impacto de Vidro (2.6s • recarga 3s). Ative na hora exata para Parry!',
     primaryHex: '#34C759',
     secondaryHex: '#FFFFFF',
     colorA: 0x34c759,
     colorB: 0x98f5b1,
     shape: 'crystal_lance',
-    duration: 5.0,
+    duration: 2.6,
+    cooldown: 3.0,
+    parryWindow: 0.55,
     behavior: 'shield'
   },
 
@@ -456,13 +467,15 @@ export const HWEI_SPELLS = {
     recipeLabel: 'Metal [F] → Protetivo [R]: ESCUDO',
     colorsLabel: 'Lixeira Amarela • Escudo Seletivo',
     name: 'Blindagem Eletromagnética',
-    effectDesc: 'Cria Escudo de Metal: bloqueia o impacto da Porca de Metal e a estuna no contato!',
+    effectDesc: 'Bloqueia 1 impacto de Metal (2.6s • recarga 3s). Ative na hora exata para Parry!',
     primaryHex: '#FFCC00',
     secondaryHex: '#FFFFFF',
     colorA: 0xffcc00,
     colorB: 0xfff099,
     shape: 'heavy_alloy',
-    duration: 5.0,
+    duration: 2.6,
+    cooldown: 3.0,
+    parryWindow: 0.55,
     behavior: 'shield'
   }
 };

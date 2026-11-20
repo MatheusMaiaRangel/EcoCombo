@@ -1052,6 +1052,19 @@ html, body {
   transform: translateY(-1px);
 }
 
+.hwei-mini-btn.on-cooldown,
+.hwei-fan-card.on-cooldown {
+  opacity: 0.52;
+  filter: grayscale(0.45);
+  border-color: rgba(255, 209, 102, 0.45);
+}
+
+.hwei-mini-btn.shield-live,
+.hwei-fan-card.shield-live {
+  border-color: #00f5d4;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.45);
+}
+
 .hwei-key {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.5rem;
