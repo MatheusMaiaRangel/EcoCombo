@@ -52,13 +52,15 @@ Este guia segue rigorosamente todos os critérios de avaliação do documento or
 | E3-03 | Aplicar efeitos elementais secundários (ricochete, empurrão, lentidão) por receita | 3 | Média | |
 | E3-04 | Conceder bônus de Maestria Elemental ao alternar 4 combos inéditos seguidos | 2 | Baixa | |
 | E3-05 | Implementar comandos de Lixeiras e Leque de Modos Táticos estilo *Hwei* (Dano, Controle por Lixeira e Escudo) | 5 | Alta | Sprint 1 |
-| **E4** | **Painel Lateral do Personagem (HUD), Rank *Devil May Cry* e Feedback Audiovisual** | **18** | | |
+| **E4** | **Painel Lateral do Personagem (HUD), Rank *Devil May Cry* e Feedback Audiovisual** | **24** | | |
 | E4-01 | Exibir painel lateral com retrato reativo do personagem, receita do combo e multiplicador | 3 | Alta | Sprint 1 |
 | E4-02 | Atualizar expressão do personagem na lateral ao repetir combo ($1\times$) ou sofrer dano | 3 | Média | |
 | E4-03 | Emitir partículas 3D e áudio sintetizado progressivo ao conjurar e atingir inimigos | 3 | Média | |
 | E4-04 | Exibir tela de Game Over com resumo da partida e botão de reinício | 3 | Alta | |
 | E4-05 | Exibir Rank de Estilo *Devil May Cry* (`D` a `SSS`) com Multiplicador destacado embaixo e Leque Visual | 3 | Alta | Sprint 1 |
 | E4-06 | Exibir Menu Inicial antes da partida e Menu de Pausa com Opções na tecla `ESC` durante a gameplay | 3 | Alta | Sprint 1 |
+| E4-07 | Implementar Tutorial Interativo Guiado na Arena ao clicar em "Como Jogar" com travamento progressivo de teclas | 3 | Alta | Sprint 1 |
+| E4-08 | Exibir Cutscene Inicial Legendada e Pulável em Pixel Art apresentando a história do jogo | 3 | Alta | Sprint 1 |
 | **E5** | **Chefões da Poluição e Eventos de Arena** | **13** | | |
 | E5-01 | Instanciar Chefão Colosso de Entulho ao final do estágio | 5 | Alta | |
 | E5-02 | Exigir combos variados ($M \ge 2.5\times$) para quebrar o escudo do chefão | 3 | Alta | |
@@ -518,6 +520,49 @@ Abra cada épico, clique em **Create sub-issue**, cole o título e o corpo e adi
 - [x] Aplicar a ilustração Pixel Art como fundo do Menu Inicial (substituindo o fundo de início da gameplay)
 - [x] Criar animação por frames em Pixel Art para o fundo do Menu Inicial (vento no cabelo/roupa do protagonista, folhas das árvores se mexendo, pássaros batendo asa, pulso da esfera e reflexo na água)
 - [x] Implementar o Menu de Pausa e Opções acionado pela tecla `ESC` durante a gameplay com controles em tempo real e persistência em `localStorage`
+```
+
+#### E4-07 Implementar Tutorial Interativo Guiado na Arena ao clicar em "Como Jogar" com travamento progressivo de teclas
+* **Título:** `E4-07 Implementar Tutorial Interativo Guiado na Arena ao clicar em 'Como Jogar' com travamento progressivo de teclas`
+* **Ficha:** label `estória` · pai `E4` · Estimativa `3` · Prioridade `Alta` · Sprint `Sprint 1` · Status `Concluído`
+```markdown
+**Como** jogador iniciante, **quero** clicar em **Como Jogar** no Menu Inicial para entrar diretamente em um tutorial rápido e interativo na arena 2.5D (máximo ~2 minutos) que destaca as teclas permitidas em cada etapa e bloqueia as demais até eu completar a ação, **para** aprender na prática a movimentação, mira, lixeiras CONAMA, leque Hwei e combos antes de jogar.
+
+**Regras:** RN01, RN02, RN16, RN17, RN18, RN19, RN21
+
+### Critérios de aceite
+- **Dado** que o jogador está no Menu Inicial, **quando** clica no botão `📖 COMO JOGAR`, **então** o jogo carrega diretamente a arena 2.5D em modo Tutorial Interativo (sem inimigos aleatórios e sem risco de Game Over).
+- **Dado** que o jogador está em uma etapa do tutorial, **quando** pressiona qualquer tecla não liberada naquela etapa, **então** o comando é bloqueado e um destaque visual/sonoro indica qual tecla deve ser utilizada.
+- **Dado** que o jogador conclui as 6 etapas guiadas (`WASD`, abrir Lixeira `Q` Plástico, disparar `Q` Mais Dano na PET, Controle de Grupo `E`→`E` Papel, Escudo Seletivo `F`→`R` Metal e prática final livre), **então** o tutorial conclui em no máximo ~2 minutos exibindo resumo e botões para jogar ou voltar ao menu.
+- **Dado** que o jogador deseja sair antes do fim, **quando** pressiona `ESC` ou clica em `✖ SAIR [ESC]`, **então** retorna ao Menu Inicial com os controles liberados.
+
+### Tarefas
+- [x] Criar controlador de estado e roteiro do Tutorial Interativo (`src/game/tutorialManager.js`) com 6 etapas curtas (~2 min total)
+- [x] Implementar filtro de travamento de teclas (`setInputGate`) em `PlayerController`, `ComboSystem` e `main.js` para liberar apenas as teclas da etapa atual
+- [x] Adicionar spawning didático/controlado de inimigos recicláveis (`spawnTutorialEnemy`) no `EnemyManager` durante o modo tutorial
+- [x] Criar HUD guiado de instruções do tutorial com teclas destacadas, barra de progresso das etapas e tela de conclusão
+- [x] Conectar o botão `📖 COMO JOGAR` do Menu Inicial ao modo Tutorial Interativo na arena
+```
+
+#### E4-08 Exibir Cutscene Inicial Legendada e Pulável em Pixel Art apresentando a história do jogo
+* **Título:** `E4-08 Exibir Cutscene Inicial Legendada e Pulável em Pixel Art apresentando a história do jogo`
+* **Ficha:** label `estória` · pai `E4` · Estimativa `3` · Prioridade `Alta` · Sprint `Sprint 1` · Status `Concluído`
+```markdown
+**Como** jogador, **quero** assistir a uma cutscene inicial legendada em Pixel Art (com opção de pular a qualquer momento) apresentando a história do EcoCombo — humanos piorando o descarte incorreto nas ruas e lixeiras erradas, esses itens ganhando vida e o protagonista sendo a única pessoa no mundo com poderes para combatê-los —, **para** mergulhar na narrativa antes da minha primeira partida e poder revê-la quando quiser.
+
+**Regras:** RN07, RN12, RN19, RN22
+
+### Critérios de aceite
+- **Dado** que o jogador clica em `▶ JOGAR AGORA` pela primeira vez (ainda não visto no `localStorage`), **quando** a partida é iniciada, **então** a cutscene inicial em Pixel Art é reproduzida automaticamente antes da gameplay e inicia a partida ao término.
+- **Dado** que a cutscene está em exibição, **quando** as 4 cenas avançam, **então** cada cena apresenta ilustração em Pixel Art consistente com o jogo (efeito Ken Burns + partículas), legendas em português animadas estilo máquina de escrever e áudio sintetizado via Web Audio API.
+- **Dado** que o jogador já assistiu à cutscene anteriormente, **quando** clica em `▶ JOGAR AGORA`, **então** vai direto para a arena, mantendo o botão `🎬 HISTÓRIA` no Menu Inicial para rever quando desejar.
+- **Dado** que o jogador está assistindo à cutscene, **quando** pressiona `ESC` ou clica em `⏭ PULAR CUTSCENE [ESC]`, **então** a cutscene encerra imediatamente e segue para o destino esperado.
+
+### Tarefas
+- [x] Produzir cenas panorâmicas (16:9) em Pixel Art consistentes com o protagonista e a tela título (`public/cutscene/scene-1.jpg`, `scene-2.jpg` + composição animada com as 4 estrelas CONAMA)
+- [x] Criar controlador da Cutscene Inicial (`src/ui/cutscenePlayer.js`) com 4 capítulos, efeito Ken Burns, canvas atmosférico, legendas typewriter, avanço (`ESPAÇO`/`ENTER`/clique) e pular (`ESC`/botão)
+- [x] Adicionar sons sintetizados de narrativa/transição de cena na `SoundEngine` (Web Audio API)
+- [x] Integrar a cutscene na máquina de estados (`CUTSCENE`) com exibição automática na 1ª vez em `Jogar Agora` (`localStorage`) e botão `🎬 HISTÓRIA` no Menu Inicial
 ```
 
 ---
