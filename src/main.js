@@ -417,7 +417,9 @@ class EcoComboMVPApp {
     if (origin === 'MENU') {
       this.gameState = 'PAUSED';
       this.sound.playMenuClick(true);
-      this.hud.hideStartMenu();
+      if (this.hud.startMenuOverlay) {
+        this.hud.startMenuOverlay.classList.add('options-open');
+      }
       if (badgeEl) badgeEl.textContent = '⚙ CONFIGURAÇÕES // MENU INICIAL';
       if (liveStatsEl) liveStatsEl.classList.add('hidden');
       if (resumeBtn) resumeBtn.textContent = '▶ SALVAR & VOLTAR AO MENU (ESC)';

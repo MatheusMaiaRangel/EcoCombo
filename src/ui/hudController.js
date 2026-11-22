@@ -437,12 +437,13 @@ export class HUDController {
 
   showStartMenu() {
     if (this.startMenuOverlay) {
-      this.startMenuOverlay.classList.remove('hidden');
+      this.startMenuOverlay.classList.remove('hidden', 'options-open');
     }
   }
 
   hideStartMenu() {
     if (this.startMenuOverlay) {
+      this.startMenuOverlay.classList.remove('options-open');
       this.startMenuOverlay.classList.add('hidden');
     }
   }

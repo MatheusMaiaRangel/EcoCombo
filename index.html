@@ -237,19 +237,10 @@
           </div>
         </div>
 
-        <!-- MENU INICIAL DO JOGO (E4-06 — Layout Translúcido que deixa a Praça 3D Ensolarada e o Protagonista 100% visíveis ao fundo!) -->
+        <!-- MENU INICIAL DO JOGO (E4-06 — Fundo em Pixel Art estilo Dead Cells com o Protagonista à esquerda e o Parque ao fundo!) -->
         <div id="start-menu-overlay" class="arena-modal-overlay start-menu-overlay" role="dialog" aria-modal="true" aria-labelledby="start-menu-title">
-          <!-- Topo Flutuante: Logo & Subtítulo sem tampar o meio da Arena 3D -->
-          <div class="start-menu-top-banner">
-            <div class="modal-badge start-badge">☀ PARQUE ECOLÓGICO 2.5D // COLETA SELETIVA CONAMA</div>
-            <h1 id="start-menu-title" class="start-menu-logo">ECOCOMBO 3D</h1>
-            <p class="start-menu-subtitle">
-              COMBOS DEVIL MAY CRY (<span class="highlight-cyan">D → SSS</span>) &amp; GRIMÓRIO SELETIVO <span class="highlight-gold">HWEI</span>
-            </p>
-          </div>
-
-          <!-- Centro Livre (O protagonista e o parque 3D ficam totalmente visíveis aqui! O Guia só abre se clicar em "COMO JOGAR") -->
-          <div class="start-menu-center-slot">
+          <div class="start-menu-hero-column">
+            <!-- Guia rápido (Só abre se clicar em "COMO JOGAR", flutuando acima do bloco direito sem cobrir o protagonista) -->
             <div id="start-howto-box" class="start-howto-box hidden">
               <div class="howto-step">
                 <strong>1. MOVA E MIRE:</strong> Ande com <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> pelo parque 2.5D e aponte o cursor do <strong>Mouse</strong> para os resíduos.
@@ -261,43 +252,54 @@
                 <strong>3. ESCOLHA O MODO NO LEQUE:</strong> <kbd>Q</kbd> <strong>Mais Dano</strong> · <kbd>E</kbd> <strong>Controle de Grupo</strong> · <kbd>R</kbd> <strong>Escudo Seletivo</strong> · <kbd>ESC</kbd> <strong>Pausar / Opções</strong>.
               </div>
             </div>
-          </div>
 
-          <!-- Base Flutuante Translúcida: As 4 Lixeiras CONAMA + Botões de Iniciar e Opções -->
-          <div class="arena-modal-card start-menu-bottom-dock">
-            <div class="start-bins-grid">
-              <div class="start-bin-chip bin-plastic">
-                <span class="bin-chip-key">Q / 1</span>
-                <span class="bin-chip-name">PLÁSTICO</span>
-                <span class="bin-chip-target">Garrafa PET • [E] Separar</span>
-              </div>
-              <div class="start-bin-chip bin-paper">
-                <span class="bin-chip-key">E / 2</span>
-                <span class="bin-chip-name">PAPEL</span>
-                <span class="bin-chip-target">Papelão • [E] Juntar</span>
-              </div>
-              <div class="start-bin-chip bin-glass">
-                <span class="bin-chip-key">R / 3</span>
-                <span class="bin-chip-name">VIDRO</span>
-                <span class="bin-chip-target">Garrafa • [E] Slow + Frágil</span>
-              </div>
-              <div class="start-bin-chip bin-metal">
-                <span class="bin-chip-key">F / 4</span>
-                <span class="bin-chip-name">METAL</span>
-                <span class="bin-chip-target">Porca • [E] Estunar</span>
-              </div>
+            <!-- Título Luminoso Estilo Dead Cells (Posicionado na região inferior-direita sobre o reflexo do lago) -->
+            <div class="start-menu-title-block">
+              <div class="modal-badge start-badge">☀ PARQUE ECOLÓGICO 2.5D // COLETA SELETIVA CONAMA</div>
+              <h1 id="start-menu-title" class="start-menu-logo">
+                ECO<span class="deadcells-orb-emblem" aria-hidden="true">♻</span>COMBO
+              </h1>
+              <p class="start-menu-subtitle">
+                COMBOS DEVIL MAY CRY (<span class="highlight-cyan">D → SSS</span>) &amp; GRIMÓRIO SELETIVO <span class="highlight-gold">HWEI</span>
+              </p>
             </div>
 
-            <div class="start-dock-buttons-row">
-              <button id="btn-start-play" type="button" class="btn-primary-retro btn-play-hero">
-                ▶ JOGAR AGORA (ENTER)
-              </button>
-              <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
-                ⚙ OPÇÕES
-              </button>
-              <button id="btn-start-toggle-guide" type="button" class="btn-secondary-retro">
-                📖 COMO JOGAR
-              </button>
+            <!-- Dock Inferior-Direito: As 4 Lixeiras CONAMA + Botões de Iniciar, Opções e Como Jogar -->
+            <div class="arena-modal-card start-menu-bottom-dock">
+              <div class="start-bins-grid">
+                <div class="start-bin-chip bin-plastic">
+                  <span class="bin-chip-key">Q / 1</span>
+                  <span class="bin-chip-name">PLÁSTICO</span>
+                  <span class="bin-chip-target">Garrafa PET • [E] Separar</span>
+                </div>
+                <div class="start-bin-chip bin-paper">
+                  <span class="bin-chip-key">E / 2</span>
+                  <span class="bin-chip-name">PAPEL</span>
+                  <span class="bin-chip-target">Papelão • [E] Juntar</span>
+                </div>
+                <div class="start-bin-chip bin-glass">
+                  <span class="bin-chip-key">R / 3</span>
+                  <span class="bin-chip-name">VIDRO</span>
+                  <span class="bin-chip-target">Garrafa • [E] Slow + Frágil</span>
+                </div>
+                <div class="start-bin-chip bin-metal">
+                  <span class="bin-chip-key">F / 4</span>
+                  <span class="bin-chip-name">METAL</span>
+                  <span class="bin-chip-target">Porca • [E] Estunar</span>
+                </div>
+              </div>
+
+              <div class="start-dock-buttons-row">
+                <button id="btn-start-play" type="button" class="btn-primary-retro btn-play-hero">
+                  ▶ JOGAR AGORA (ENTER)
+                </button>
+                <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
+                  ⚙ OPÇÕES
+                </button>
+                <button id="btn-start-toggle-guide" type="button" class="btn-secondary-retro">
+                  📖 COMO JOGAR
+                </button>
+              </div>
             </div>
           </div>
         </div>

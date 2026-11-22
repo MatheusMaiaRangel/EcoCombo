@@ -503,20 +503,20 @@ Abra cada épico, clique em **Create sub-issue**, cole o título e o corpo e adi
 * **Título:** `E4-06 Exibir Menu Inicial antes da partida e Menu de Pausa com Opções na tecla ESC durante a gameplay`
 * **Ficha:** label `estória` · pai `E4` · Estimativa `3` · Prioridade `Alta` · Sprint `Sprint 1` · Status `Concluído`
 ```markdown
-**Como** jogador, **quero** visualizar um Menu Inicial ao abrir o jogo antes da partida começar e poder pressionar a tecla `ESC` no meio da gameplay para pausar e abrir o Menu de Opções, **para** iniciar a partida apenas quando estiver pronto e configurar som, volume, ritmo da arena e efeitos visuais a qualquer momento.
+**Como** jogador, **quero** visualizar um Menu Inicial com fundo ilustrado em Pixel Art do Parque Ecológico e o protagonista em primeiro plano à esquerda (composição inspirada na tela título de *Dead Cells*) antes da partida começar e poder pressionar a tecla `ESC` no meio da gameplay para pausar e abrir o Menu de Opções, **para** ter uma tela título épica em pixel art e configurar som, volume, ritmo da arena e efeitos visuais a qualquer momento.
 
 **Regras:** RN07, RN12, RN19
 
 ### Critérios de aceite
-- **Dado** que o jogador abre o jogo no navegador, **quando** a aplicação carrega, **então** exibe o Menu Inicial sobre a arena 3D panorâmica com resumo das 4 lixeiras CONAMA, botão "Iniciar Partida" (`Enter`), "Opções de Jogo" e "Como Jogar", mantendo o spawn e perseguição de inimigos aguardando o início da partida.
-- **Dado** que o jogador está no meio da gameplay ativa, **quando** pressiona a tecla `ESC` (ou clica no botão `⚙ MENU [ESC]`), **então** a partida é pausada imediatamente (congelando movimentação, inimigos, projéteis e decaimento do Rank DMC) e o Menu de Pausa com Opções é aberto.
+- **Dado** que o jogador abre o jogo no navegador, **quando** a aplicação carrega, **então** exibe o Menu Inicial com uma ilustração panorâmica em Pixel Art inspirada em *Dead Cells* ao fundo (em vez do início da gameplay), trazendo o protagonista do jogo em primeiro plano à esquerda canalizando a esfera de energia de reciclagem com as 4 estrelas CONAMA e observando o parque ecológico em pixel art ao fundo.
+- **Dado** que o jogador está no meio da gameplay ativa, **quando** pressiona a tecla `ESC` (ou clica no botão `⚙ MENU [ESC]`), **então** a partida é pausada imediatamente e o Menu de Pausa com Opções é exibido de forma translúcida permitindo ver a arena ao fundo.
 - **Dado** que o Menu de Opções está aberto, **quando** o jogador altera Áudio Sintetizado (Ligado/Desligado), Volume do Som (0% a 100%), Ritmo da Arena (Calmo, Normal, Intenso), Brilho Neon Bloom 3D ou Textos Flutuantes de Dano, **então** as configurações são aplicadas em tempo real e salvas localmente (`localStorage`), podendo continuar a partida (`ESC`), reiniciar ou voltar ao Menu Inicial.
 
 ### Tarefas
-- [x] Implementar máquina de estados de fluxo do jogo (`MENU`, `PLAYING`, `PAUSED`, `GAMEOVER`) com panorâmica 3D no Menu Inicial
-- [x] Construir a interface do Menu Inicial com cards das 4 lixeiras CONAMA, guia rápido e botões de Iniciar Partida e Opções
-- [x] Implementar o Menu de Pausa e Opções acionado pela tecla `ESC` durante a gameplay com congelamento do loop de combate
-- [x] Integrar controles em tempo real e persistência local (`localStorage`) de Volume Mestre Web Audio, Som ON/OFF, Ritmo da Arena, Bloom 3D e Textos de Dano
+- [x] Implementar máquina de estados de fluxo do jogo (`MENU`, `PLAYING`, `PAUSED`, `GAMEOVER`)
+- [x] Criar ilustração Pixel Art do Menu Inicial inspirada em *Dead Cells* (protagonista em primeiro plano à esquerda + parque ecológico em pixel art ao fundo)
+- [x] Aplicar a ilustração Pixel Art como fundo do Menu Inicial (substituindo o fundo de início da gameplay)
+- [x] Implementar o Menu de Pausa e Opções acionado pela tecla `ESC` durante a gameplay com controles em tempo real e persistência em `localStorage`
 ```
 
 ---
