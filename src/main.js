@@ -5,6 +5,7 @@ import { ComboSystem } from './game/comboSystem.js';
 import { EnemyManager } from './game/enemyManager.js';
 import { SidebarCharacterRenderer } from './ui/sidebarCharacter.js';
 import { HUDController } from './ui/hudController.js';
+import { StartMenuAnimator } from './ui/startMenuAnimator.js';
 import { SoundEngine } from './audio/soundEngine.js';
 import { STAGE_2_UNLOCK_TIME_SEC } from './constants/recipes.js';
 
@@ -32,11 +33,12 @@ class EcoComboMVPApp {
     // 1. Áudio Sintetizado Procedural (Web Audio API)
     this.sound = new SoundEngine();
 
-    // 2. Painel Lateral Reativo (E4-01: Estrutura Capsule + Arte Until Then)
+    // 2. Painel Lateral Reativo (E4-01: Estrutura Capsule + Arte Until Then) e Animador por Frames do Menu Inicial (E4-06)
     const upperCanvas = document.getElementById('character-upper-canvas');
     const portraitCanvas = document.getElementById('character-portrait-canvas');
     this.sidebarCharacter = new SidebarCharacterRenderer(upperCanvas, portraitCanvas);
     this.hud = new HUDController(this.sidebarCharacter);
+    this.startMenuAnimator = new StartMenuAnimator(document.getElementById('start-menu-bg-canvas'));
 
     // 3. Cena 3D Isométrica 2.5D com Sombras, UnrealBloomPass e Expansão Dinâmica no Estágio 2 (E1-01 / E2-06)
     this.arena = new ArenaScene(this.canvas, this.viewportEl);
@@ -612,11 +614,15 @@ class EcoComboMVPApp {
       );
       this.arena.update(elapsedTime, dt, this.player.position, false);
     } else if (this.gameState === 'MENU') {
-      // No Menu Inicial, mantém os 4 orbes orbitando e a câmera isométrica em leve panorâmica
+      // No Menu Inicial, roda a animação por frames em Pixel Art (vento, árvores, pássaros e protagonista)
+      this.startMenuAnimator.updateAndRender(elapsedTime, dt);
       this.player.updateIdleOrbsOnly(elapsedTime);
       this.arena.update(elapsedTime, dt, this.player.position, true);
     } else {
-      // Em PAUSED ou GAMEOVER, congela a lógica de combate mas mantém os cristais da arena vivos
+      // Em PAUSED ou GAMEOVER, congela a lógica de combate (se abriu Opções pelo Menu Inicial, mantém os frames vivos ao fundo)
+      if (this.gameState === 'PAUSED' && this.optionsOrigin === 'MENU') {
+        this.startMenuAnimator.updateAndRender(elapsedTime, dt);
+      }
       this.arena.update(elapsedTime, dt, this.player.position, false);
     }
 

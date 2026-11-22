@@ -1200,20 +1200,13 @@ html, body {
   color: #161422;
 }
 
-/* Menu Inicial: Tela Cheia 16:9 com Ilustração Pixel Art estilo Dead Cells (Protagonista à Esquerda + Parque à Direita) */
+/* Menu Inicial: Tela Cheia 16:9 com Animação por Frames em Pixel Art estilo Dead Cells */
 .start-menu-overlay {
   position: fixed;
   inset: 0;
   z-index: 80;
   background-color: #0b1326;
-  background-image:
-    linear-gradient(
-      180deg,
-      rgba(10, 15, 30, 0.0) 0%,
-      rgba(10, 15, 30, 0.04) 55%,
-      rgba(7, 12, 26, 0.58) 100%
-    ),
-    url('/menu-bg-pixelart.jpg');
+  background-image: url('/menu-bg-pixelart.jpg');
   background-size: cover;
   background-position: 24% center;
   background-repeat: no-repeat;
@@ -1224,6 +1217,32 @@ html, body {
   justify-content: flex-end;
   padding: 22px 34px 24px;
   pointer-events: auto;
+  overflow: hidden;
+}
+
+.start-menu-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 24% center;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.start-menu-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 15, 30, 0.0) 0%,
+    rgba(10, 15, 30, 0.04) 55%,
+    rgba(7, 12, 26, 0.56) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .start-menu-overlay.options-open .start-menu-hero-column {
@@ -1232,6 +1251,8 @@ html, body {
 }
 
 .start-menu-hero-column {
+  position: relative;
+  z-index: 2;
   pointer-events: auto;
   width: min(650px, 60vw);
   display: flex;

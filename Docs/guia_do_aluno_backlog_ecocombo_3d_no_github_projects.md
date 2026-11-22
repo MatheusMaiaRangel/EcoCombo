@@ -516,6 +516,7 @@ Abra cada épico, clique em **Create sub-issue**, cole o título e o corpo e adi
 - [x] Implementar máquina de estados de fluxo do jogo (`MENU`, `PLAYING`, `PAUSED`, `GAMEOVER`)
 - [x] Criar ilustração Pixel Art do Menu Inicial inspirada em *Dead Cells* (protagonista em primeiro plano à esquerda + parque ecológico em pixel art ao fundo)
 - [x] Aplicar a ilustração Pixel Art como fundo do Menu Inicial (substituindo o fundo de início da gameplay)
+- [x] Criar animação por frames em Pixel Art para o fundo do Menu Inicial (vento no cabelo/roupa do protagonista, folhas das árvores se mexendo, pássaros batendo asa, pulso da esfera e reflexo na água)
 - [x] Implementar o Menu de Pausa e Opções acionado pela tecla `ESC` durante a gameplay com controles em tempo real e persistência em `localStorage`
 ```
 
