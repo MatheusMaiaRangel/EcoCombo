@@ -3,9 +3,11 @@ import { ArenaScene } from './game/arenaScene.js';
 import { PlayerController } from './game/playerController.js';
 import { ComboSystem } from './game/comboSystem.js';
 import { EnemyManager } from './game/enemyManager.js';
+import { TutorialManager } from './game/tutorialManager.js';
 import { SidebarCharacterRenderer } from './ui/sidebarCharacter.js';
 import { HUDController } from './ui/hudController.js';
 import { StartMenuAnimator } from './ui/startMenuAnimator.js';
+import { CutscenePlayer } from './ui/cutscenePlayer.js';
 import { SoundEngine } from './audio/soundEngine.js';
 import { STAGE_2_UNLOCK_TIME_SEC } from './constants/recipes.js';
 
@@ -16,8 +18,8 @@ class EcoComboMVPApp {
     this.canvas = document.getElementById('three-canvas');
     this.viewportEl = document.getElementById('arena-viewport');
 
-    // Estado da Partida e Fluxo de Menus (E4-06)
-    // 'MENU' (Menu Inicial) | 'PLAYING' (Gameplay ativa) | 'PAUSED' (Menu ESC) | 'GAMEOVER' (Pureza 0%)
+    // Estado da Partida e Fluxo de Menus (E4-06 / E4-07 / E4-08)
+    // 'MENU' | 'CUTSCENE' | 'TUTORIAL' | 'PLAYING' | 'PAUSED' | 'GAMEOVER'
     this.gameState = 'MENU';
     this.optionsOrigin = 'PLAYING'; // 'MENU' | 'PLAYING'
 
@@ -62,7 +64,9 @@ class EcoComboMVPApp {
       viewportEl: this.viewportEl,
       camera: this.arena.camera,
       getArenaHalfSize,
-      isGameplayActive: () => this.gameState === 'PLAYING',
+      isGameplayActive: () =>
+        this.gameState === 'PLAYING' ||
+        (this.gameState === 'TUTORIAL' && !this.tutorialManager?.completed),
       onShotFired: () => {
         this.sidebarCharacter.triggerShootFlash();
       }
@@ -80,6 +84,21 @@ class EcoComboMVPApp {
       getArenaHalfSize,
       onPlayerTouch: (purityLoss) => this.handlePlayerHit(purityLoss),
       onEnemyKilled: (hitEvent) => this.handleEnemyHitOrKilled(hitEvent)
+    });
+
+    // 7. Tutorial Interativo Guiado na Arena (E4-07) e Cutscene Inicial Legendada em Pixel Art (E4-08)
+    this.tutorialManager = new TutorialManager({
+      player: this.player,
+      comboSystem: this.comboSystem,
+      enemyManager: this.enemyManager,
+      hud: this.hud,
+      sound: this.sound,
+      camera: this.arena.camera,
+      viewportEl: this.viewportEl
+    });
+
+    this.cutscenePlayer = new CutscenePlayer({
+      sound: this.sound
     });
 
     this.applySettingsToSystems();
@@ -184,9 +203,16 @@ class EcoComboMVPApp {
   }
 
   bindUIEvents() {
-    // Clique Esquerdo do Mouse (LMB) na Arena dispara o Objeto/Energia formado (E3-01)
+    // Clique Esquerdo do Mouse (LMB) na Arena dispara o Objeto/Energia formado (E3-01 / E4-07)
     this.viewportEl.addEventListener('mousedown', (e) => {
-      if (e.button !== 0 || this.gameState !== 'PLAYING') return;
+      if (e.button !== 0) return;
+      if (e.target.closest('button')) return;
+      if (
+        this.gameState !== 'PLAYING' &&
+        !(this.gameState === 'TUTORIAL' && !this.tutorialManager.completed)
+      ) {
+        return;
+      }
       this.comboSystem.tryFireAtAim(this.viewportEl, this.arena.camera);
     });
 
@@ -203,7 +229,7 @@ class EcoComboMVPApp {
       });
     }
 
-    // Botão no topo da arena para abrir o Menu de Pausa e Opções (ESC)
+    // Botão no topo da arena para abrir o Menu de Pausa e Opções (ESC) ou sair do Tutorial
     const openPauseBtn = document.getElementById('btn-open-pause-menu');
     if (openPauseBtn) {
       openPauseBtn.addEventListener('click', () => {
@@ -211,11 +237,13 @@ class EcoComboMVPApp {
           this.openPauseMenu('PLAYING');
         } else if (this.gameState === 'PAUSED') {
           this.handlePausePrimaryAction();
+        } else if (this.gameState === 'TUTORIAL') {
+          this.exitTutorialToMenu();
         }
       });
     }
 
-    // ==================== EVENTOS DO MENU INICIAL (E4-06) ====================
+    // ==================== EVENTOS DO MENU INICIAL (E4-06 / E4-07 / E4-08) ====================
     const startPlayBtn = document.getElementById('btn-start-play');
     if (startPlayBtn) {
       startPlayBtn.addEventListener('click', () => {
@@ -230,12 +258,43 @@ class EcoComboMVPApp {
       });
     }
 
+    // E4-07: Botão "COMO JOGAR" vai direto para o Tutorial Interativo na Arena!
     const startGuideBtn = document.getElementById('btn-start-toggle-guide');
-    const howtoBox = document.getElementById('start-howto-box');
-    if (startGuideBtn && howtoBox) {
+    if (startGuideBtn) {
       startGuideBtn.addEventListener('click', () => {
+        this.startTutorialFromMenu();
+      });
+    }
+
+    // E4-08: Botão "HISTÓRIA" no Menu Inicial para rever a Cutscene Inicial quando quiser
+    const startWatchIntroBtn = document.getElementById('btn-start-watch-intro');
+    if (startWatchIntroBtn) {
+      startWatchIntroBtn.addEventListener('click', () => {
         this.sound.playMenuClick(true);
-        howtoBox.classList.toggle('hidden');
+        this.startCutscene({ thenPlayMatch: false });
+      });
+    }
+
+    // ==================== EVENTOS DO TUTORIAL INTERATIVO (E4-07) ====================
+    const tutorialExitBtn = document.getElementById('btn-tutorial-exit');
+    if (tutorialExitBtn) {
+      tutorialExitBtn.addEventListener('click', () => {
+        this.exitTutorialToMenu();
+      });
+    }
+
+    const tutorialStartGameBtn = document.getElementById('btn-tutorial-start-game');
+    if (tutorialStartGameBtn) {
+      tutorialStartGameBtn.addEventListener('click', () => {
+        this.tutorialManager.stop();
+        this.startNewMatchFromMenu();
+      });
+    }
+
+    const tutorialToMenuBtn = document.getElementById('btn-tutorial-to-menu');
+    if (tutorialToMenuBtn) {
+      tutorialToMenuBtn.addEventListener('click', () => {
+        this.exitTutorialToMenu();
       });
     }
 
@@ -339,13 +398,17 @@ class EcoComboMVPApp {
       gameoverToMenuBtn.addEventListener('click', () => this.returnToStartMenu());
     }
 
-    // Atalhos Globais de Teclado: ESC (Abre/Fecha Menu de Pausa e Opções) e ENTER (Inicia/Reinicia)
+    // Atalhos Globais de Teclado: ESC (Pausa / Pular Cutscene / Sair do Tutorial), ESPAÇO (Cutscene) e ENTER
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
 
       if (e.code === 'Escape') {
         e.preventDefault();
-        if (this.gameState === 'PLAYING') {
+        if (this.gameState === 'CUTSCENE') {
+          this.cutscenePlayer.skip();
+        } else if (this.gameState === 'TUTORIAL') {
+          this.exitTutorialToMenu();
+        } else if (this.gameState === 'PLAYING') {
           this.openPauseMenu('PLAYING');
         } else if (this.gameState === 'PAUSED') {
           this.handlePausePrimaryAction();
@@ -353,9 +416,21 @@ class EcoComboMVPApp {
         return;
       }
 
+      if (this.gameState === 'CUTSCENE') {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          this.cutscenePlayer.advanceOrReveal();
+        }
+        return;
+      }
+
       if (e.code === 'Enter') {
         if (this.gameState === 'MENU') {
           e.preventDefault();
+          this.startNewMatchFromMenu();
+        } else if (this.gameState === 'TUTORIAL' && this.tutorialManager.completed) {
+          e.preventDefault();
+          this.tutorialManager.stop();
           this.startNewMatchFromMenu();
         } else if (this.gameState === 'GAMEOVER') {
           e.preventDefault();
@@ -366,14 +441,90 @@ class EcoComboMVPApp {
   }
 
   /**
-   * Inicia a partida a partir do Menu Inicial (E4-06)
+   * Inicia a partida a partir do Menu Inicial (E4-06 / E4-08)
+   * Na 1ª vez, reproduz a Cutscene Inicial legendada e pulável antes de entrar na arena.
    */
   startNewMatchFromMenu() {
+    this.sound.playMenuClick(true);
+    if (!this.cutscenePlayer.hasSeenIntro()) {
+      this.startCutscene({ thenPlayMatch: true });
+      return;
+    }
+    this.beginPlayMatch();
+  }
+
+  /**
+   * E4-08 — Reproduz a Cutscene Inicial em Pixel Art (legendada e pulável)
+   */
+  startCutscene({ thenPlayMatch = true } = {}) {
+    this.hud.hideStartMenu();
+    this.hud.hidePauseMenu();
+    this.hud.hidePurityDepletedModal();
+    this.hud.hideStageTransitionBanner();
+    if (this.tutorialManager.active) {
+      this.tutorialManager.stop();
+    }
+    this.player.clearKeys();
+    this.gameState = 'CUTSCENE';
+
+    this.cutscenePlayer.play({
+      onComplete: () => {
+        if (thenPlayMatch) {
+          this.beginPlayMatch();
+        } else {
+          this.returnToStartMenu();
+        }
+      }
+    });
+  }
+
+  /**
+   * E4-07 — Entra diretamente na arena 2.5D em Modo Tutorial Interativo Guiado ("COMO JOGAR")
+   */
+  startTutorialFromMenu() {
     this.sound.playMenuClick(true);
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
+
+    this.score = 0;
+    this.stage = 1;
+    this.matchElapsedSec = 0;
+    this.purity = 100;
+    this.kills = 0;
+    this.isGameOver = false;
+    this.gameState = 'TUTORIAL';
+
+    this.arena.setStageSize(1, true);
+    this.hud.setCurrentStage(1);
+    this.tutorialManager.start();
+
+    this.hud.updatePurity(this.purity);
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      0
+    );
+  }
+
+  exitTutorialToMenu() {
+    this.tutorialManager.stop();
+    this.returnToStartMenu();
+  }
+
+  /**
+   * Inicia efetivamente o loop de combate na arena (usado após a cutscene ou diretamente nas partidas seguintes)
+   */
+  beginPlayMatch() {
+    this.hud.hideStartMenu();
+    this.hud.hidePauseMenu();
+    this.hud.hidePurityDepletedModal();
+    this.hud.hideStageTransitionBanner();
+    if (this.tutorialManager.active) {
+      this.tutorialManager.stop();
+    }
 
     this.score = 0;
     this.stage = 1;
@@ -387,6 +538,7 @@ class EcoComboMVPApp {
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
+    this.enemyManager.setAutoSpawnEnabled(true);
     this.enemyManager.reset();
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'PLASTIC');
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'METAL');
@@ -467,6 +619,9 @@ class EcoComboMVPApp {
 
   returnToStartMenu() {
     this.sound.playMenuClick(false);
+    if (this.tutorialManager.active) {
+      this.tutorialManager.stop();
+    }
     this.score = 0;
     this.stage = 1;
     this.matchElapsedSec = 0;
@@ -482,6 +637,7 @@ class EcoComboMVPApp {
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
+    this.enemyManager.setAutoSpawnEnabled(true);
     this.enemyManager.reset();
 
     this.hud.updatePurity(this.purity);
@@ -510,6 +666,14 @@ class EcoComboMVPApp {
   }
 
   handlePlayerHit(purityLoss = 15) {
+    if (this.gameState === 'TUTORIAL') {
+      // No Tutorial Interativo (E4-07), nunca ocorre Game Over e a Pureza permanece protegida
+      this.purity = Math.max(85, this.purity - Math.min(5, purityLoss));
+      this.sidebarCharacter.triggerHurt();
+      this.hud.updatePurity(this.purity);
+      return;
+    }
+
     if (this.gameState !== 'PLAYING' || this.isGameOver) return;
     this.purity = Math.max(0, this.purity - purityLoss);
     this.sidebarCharacter.triggerHurt();
@@ -531,6 +695,21 @@ class EcoComboMVPApp {
   }
 
   handleEnemyHitOrKilled({ points, multiplier, defeated, enemyPos }) {
+    if (this.gameState === 'TUTORIAL') {
+      this.score += points;
+      if (defeated) {
+        this.kills += 1;
+        this.tutorialManager.handleEnemyKilled();
+      }
+      this.hud.updateStageAndScore(
+        this.stage,
+        this.score,
+        this.enemyManager.enemies.length,
+        0
+      );
+      return;
+    }
+
     if (this.gameState !== 'PLAYING' || this.isGameOver) return;
 
     this.score += points;
@@ -578,6 +757,7 @@ class EcoComboMVPApp {
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
+    this.enemyManager.setAutoSpawnEnabled(true);
     this.enemyManager.reset();
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'PLASTIC');
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'METAL');
@@ -613,6 +793,19 @@ class EcoComboMVPApp {
         this.matchElapsedSec
       );
       this.arena.update(elapsedTime, dt, this.player.position, false);
+    } else if (this.gameState === 'TUTORIAL') {
+      if (!this.tutorialManager.completed) {
+        this.player.update(elapsedTime, dt);
+        this.comboSystem.update(dt);
+        this.enemyManager.update(elapsedTime, dt, 1);
+        this.tutorialManager.update(dt);
+        this.hud.updateStageAndScore(1, this.score, this.enemyManager.enemies.length, 0);
+      }
+      this.arena.update(elapsedTime, dt, this.player.position, false);
+    } else if (this.gameState === 'CUTSCENE') {
+      this.cutscenePlayer.update(elapsedTime, dt);
+      this.player.updateIdleOrbsOnly(elapsedTime);
+      this.arena.update(elapsedTime, dt, this.player.position, true);
     } else if (this.gameState === 'MENU') {
       // No Menu Inicial, roda a animação por frames em Pixel Art (vento, árvores, pássaros e protagonista)
       this.startMenuAnimator.updateAndRender(elapsedTime, dt);

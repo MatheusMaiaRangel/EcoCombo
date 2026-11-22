@@ -158,6 +158,8 @@ export class PlayerController {
     this.mouseNDC = new THREE.Vector2(0, 0);
 
     this.invulnerableTimer = 0;
+    this.canUseMoveKey = () => true;
+    this.onBlockedMoveKey = null;
     this.walkAnimTimer = 0;
 
     // E3-05 — Estado do Escudo Protetivo Seletivo (Modo R no leque do Hwei — tanka até 2 hits)
@@ -433,9 +435,21 @@ export class PlayerController {
     });
   }
 
+  setInputGate({ canUseMoveKey, onBlockedMoveKey } = {}) {
+    this.canUseMoveKey = canUseMoveKey || (() => true);
+    this.onBlockedMoveKey = onBlockedMoveKey || null;
+  }
+
   bindInputEvents() {
     window.addEventListener('keydown', (e) => {
       if (e.code in this.keys) {
+        if (!this.canUseMoveKey(e.code)) {
+          this.keys[e.code] = false;
+          if (!e.repeat && this.onBlockedMoveKey) {
+            this.onBlockedMoveKey(e.code);
+          }
+          return;
+        }
         this.keys[e.code] = true;
       }
     });

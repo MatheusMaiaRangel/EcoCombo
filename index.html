@@ -237,70 +237,117 @@
           </div>
         </div>
 
+        <!-- PAINEL GUIADO DO TUTORIAL INTERATIVO NA ARENA (E4-07 — Travamento Progressivo de Teclas) -->
+        <div id="tutorial-guide-banner" class="tutorial-guide-banner hidden" aria-live="polite">
+          <div class="tutorial-guide-header">
+            <span id="tutorial-step-badge" class="tutorial-step-badge">📖 TUTORIAL RÁPIDO · ETAPA 1 / 6</span>
+            <button id="btn-tutorial-exit" type="button" class="tutorial-exit-btn" title="Sair do Tutorial e Voltar ao Menu (ESC)">
+              ✖ SAIR [ESC]
+            </button>
+          </div>
+          <div class="tutorial-progress-track">
+            <div id="tutorial-progress-fill" class="tutorial-progress-fill" style="width: 12%"></div>
+          </div>
+          <div id="tutorial-step-title" class="tutorial-step-title">1. MOVA-SE PELO PARQUE</div>
+          <p id="tutorial-step-desc" class="tutorial-step-desc">
+            Use W, A, S, D para andar pela arena.
+          </p>
+          <div id="tutorial-allowed-keys" class="tutorial-allowed-keys"></div>
+          <div id="tutorial-lock-hint" class="tutorial-lock-hint">
+            🔒 Apenas as teclas destacadas estão liberadas nesta etapa.
+          </div>
+        </div>
+
+        <!-- MODAL DE CONCLUSÃO DO TUTORIAL INTERATIVO (E4-07) -->
+        <div id="tutorial-complete-overlay" class="arena-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-complete-title">
+          <div class="arena-modal-card tutorial-complete-card">
+            <div class="modal-badge tutorial-done-badge">✓ TUTORIAL CONCLUÍDO!</div>
+            <h2 id="tutorial-complete-title">VOCÊ ESTÁ PRONTO PARA RECICLAR!</h2>
+            <p>
+              Agora você domina as <strong>4 Lixeiras CONAMA</strong> e o <strong>Leque Tático</strong>:
+            </p>
+            <div class="tutorial-summary-grid">
+              <div class="tut-sum-chip plastic"><kbd>Q</kbd> Plástico · Garrafa PET</div>
+              <div class="tut-sum-chip paper"><kbd>E</kbd> Papel · Caixa de Papelão</div>
+              <div class="tut-sum-chip glass"><kbd>R</kbd> Vidro · Garrafa de Vidro</div>
+              <div class="tut-sum-chip metal"><kbd>F</kbd> Metal · Porca de Metal</div>
+            </div>
+            <div class="tutorial-modes-summary">
+              <span><strong>2º Toque no Leque:</strong> <kbd>Q</kbd> Mais Dano · <kbd>E</kbd> Controle de Grupo · <kbd>R</kbd> Escudo Seletivo</span>
+            </div>
+            <div class="menu-actions-stack">
+              <button id="btn-tutorial-start-game" type="button" class="btn-primary-retro">
+                ▶ JOGAR PARTIDA AGORA (ENTER)
+              </button>
+              <button id="btn-tutorial-to-menu" type="button" class="btn-secondary-retro">
+                🏠 VOLTAR AO MENU INICIAL
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CUTSCENE INICIAL LEGENDADA E PULÁVEL EM PIXEL ART (E4-08) -->
+        <div id="cutscene-overlay" class="cutscene-overlay hidden" role="dialog" aria-modal="true" aria-label="Cutscene Inicial — História do EcoCombo">
+          <div class="cutscene-stage">
+            <img id="cutscene-scene-img" class="cutscene-scene-img" src="/cutscene/scene-1.jpg" alt="Cena da história do EcoCombo" />
+            <canvas id="cutscene-fx-canvas" class="cutscene-fx-canvas" width="1280" height="720" aria-hidden="true"></canvas>
+            <div class="cutscene-vignette" aria-hidden="true"></div>
+          </div>
+
+          <!-- Tarja Superior Cinematográfica (Capítulo + Progresso + Botão Pular) -->
+          <div class="cutscene-letterbox-top">
+            <div class="cutscene-top-left">
+              <span id="cutscene-chapter-tag" class="cutscene-chapter-tag">CAPÍTULO I · O DESCARTE INCORRETO</span>
+              <div id="cutscene-progress-dots" class="cutscene-progress-dots" aria-hidden="true"></div>
+            </div>
+            <button id="btn-cutscene-skip" type="button" class="cutscene-skip-btn">
+              ⏭ PULAR CUTSCENE [ESC]
+            </button>
+          </div>
+
+          <!-- Tarja Inferior Cinematográfica (Legendas Animadas Estilo Until Then + Continuar) -->
+          <div class="cutscene-letterbox-bottom">
+            <div class="cutscene-subtitle-box">
+              <p id="cutscene-subtitle-text" class="cutscene-subtitle-text" aria-live="polite"></p>
+              <div class="cutscene-subtitle-footer">
+                <div class="cutscene-auto-bar-track">
+                  <div id="cutscene-auto-bar-fill" class="cutscene-auto-bar-fill" style="width: 0%"></div>
+                </div>
+                <button id="btn-cutscene-next" type="button" class="cutscene-next-btn">
+                  CONTINUAR ▸ [ESPAÇO]
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- MENU INICIAL DO JOGO (E4-06 — Fundo Animado por Frames em Pixel Art estilo Dead Cells com o Protagonista à esquerda e o Parque ao fundo!) -->
         <div id="start-menu-overlay" class="arena-modal-overlay start-menu-overlay" role="dialog" aria-modal="true" aria-labelledby="start-menu-title">
           <canvas id="start-menu-bg-canvas" class="start-menu-bg-canvas" width="1376" height="768" aria-hidden="true"></canvas>
           <div class="start-menu-vignette" aria-hidden="true"></div>
 
           <div class="start-menu-hero-column">
-            <!-- Guia rápido (Só abre se clicar em "COMO JOGAR", flutuando acima do bloco direito sem cobrir o protagonista) -->
-            <div id="start-howto-box" class="start-howto-box hidden">
-              <div class="howto-step">
-                <strong>1. MOVA E MIRE:</strong> Ande com <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> pelo parque 2.5D e aponte o cursor do <strong>Mouse</strong> para os resíduos.
-              </div>
-              <div class="howto-step">
-                <strong>2. ABRA A LIXEIRA CERTA:</strong> Veja qual item está vindo e pressione <kbd>Q</kbd>, <kbd>E</kbd>, <kbd>R</kbd> ou <kbd>F</kbd> para abrir o leque daquela cor.
-              </div>
-              <div class="howto-step">
-                <strong>3. ESCOLHA O MODO NO LEQUE:</strong> <kbd>Q</kbd> <strong>Mais Dano</strong> · <kbd>E</kbd> <strong>Controle de Grupo</strong> · <kbd>R</kbd> <strong>Escudo Seletivo</strong> · <kbd>ESC</kbd> <strong>Pausar / Opções</strong>.
-              </div>
-            </div>
-
-            <!-- Título Luminoso Estilo Dead Cells (Posicionado na região inferior-direita sobre o reflexo do lago) -->
+            <!-- Título Luminoso Estilo Dead Cells (Sem textos extras em cima ou embaixo) -->
             <div class="start-menu-title-block">
-              <div class="modal-badge start-badge">☀ PARQUE ECOLÓGICO 2.5D // COLETA SELETIVA CONAMA</div>
               <h1 id="start-menu-title" class="start-menu-logo">
                 ECO<span class="deadcells-orb-emblem" aria-hidden="true">♻</span>COMBO
               </h1>
-              <p class="start-menu-subtitle">
-                COMBOS DEVIL MAY CRY (<span class="highlight-cyan">D → SSS</span>) &amp; GRIMÓRIO SELETIVO <span class="highlight-gold">HWEI</span>
-              </p>
             </div>
 
-            <!-- Dock Inferior-Direito: As 4 Lixeiras CONAMA + Botões de Iniciar, Opções e Como Jogar -->
+            <!-- Botões de Iniciar, Como Jogar (Tutorial Interativo), História (Cutscene) e Opções -->
             <div class="arena-modal-card start-menu-bottom-dock">
-              <div class="start-bins-grid">
-                <div class="start-bin-chip bin-plastic">
-                  <span class="bin-chip-key">Q / 1</span>
-                  <span class="bin-chip-name">PLÁSTICO</span>
-                  <span class="bin-chip-target">Garrafa PET • [E] Separar</span>
-                </div>
-                <div class="start-bin-chip bin-paper">
-                  <span class="bin-chip-key">E / 2</span>
-                  <span class="bin-chip-name">PAPEL</span>
-                  <span class="bin-chip-target">Papelão • [E] Juntar</span>
-                </div>
-                <div class="start-bin-chip bin-glass">
-                  <span class="bin-chip-key">R / 3</span>
-                  <span class="bin-chip-name">VIDRO</span>
-                  <span class="bin-chip-target">Garrafa • [E] Slow + Frágil</span>
-                </div>
-                <div class="start-bin-chip bin-metal">
-                  <span class="bin-chip-key">F / 4</span>
-                  <span class="bin-chip-name">METAL</span>
-                  <span class="bin-chip-target">Porca • [E] Estunar</span>
-                </div>
-              </div>
-
               <div class="start-dock-buttons-row">
                 <button id="btn-start-play" type="button" class="btn-primary-retro btn-play-hero">
                   ▶ JOGAR AGORA (ENTER)
                 </button>
-                <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
-                  ⚙ OPÇÕES
-                </button>
                 <button id="btn-start-toggle-guide" type="button" class="btn-secondary-retro">
                   📖 COMO JOGAR
+                </button>
+                <button id="btn-start-watch-intro" type="button" class="btn-secondary-retro">
+                  🎬 HISTÓRIA
+                </button>
+                <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
+                  ⚙ OPÇÕES
                 </button>
               </div>
             </div>

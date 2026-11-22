@@ -59,8 +59,29 @@ export class ComboSystem {
     // Callback de explosão de Controle de Grupo registrada pelo EnemyManager
     this.onControlWaveDetonated = null;
 
+    // Hooks opcionais para Tutorial Interativo (E4-07 — travamento de teclas e detecção de ações)
+    this.canOpenBin = () => true;
+    this.canExecuteMode = () => true;
+    this.onBlockedInput = null;
+    this.onBinOpened = null;
+    this.onSpellExecuted = null;
+
     this.bindInputs();
     this.syncHUD();
+  }
+
+  setInputGate({
+    canOpenBin,
+    canExecuteMode,
+    onBlockedInput,
+    onBinOpened,
+    onSpellExecuted
+  } = {}) {
+    this.canOpenBin = canOpenBin || (() => true);
+    this.canExecuteMode = canExecuteMode || (() => true);
+    this.onBlockedInput = onBlockedInput || null;
+    this.onBinOpened = onBinOpened || null;
+    this.onSpellExecuted = onSpellExecuted || null;
   }
 
   bindInputs() {
@@ -71,6 +92,10 @@ export class ComboSystem {
       if (!this.openBinId) {
         const binId = KEY_TO_ELEMENT[e.code];
         if (binId) {
+          if (!this.canOpenBin(binId, e.code)) {
+            if (this.onBlockedInput) this.onBlockedInput(e.code);
+            return;
+          }
           this.openBin(binId);
         }
         return;
@@ -79,6 +104,10 @@ export class ComboSystem {
       // Se uma lixeira JÁ está aberta, o 2º Toque escolhe o Modo no Leque (Q=Dano, E=Controle, R=Escudo, F=Cancelar)
       const modeId = KEY_TO_HWEI_MODE[e.code];
       if (modeId) {
+        if (!this.canExecuteMode(modeId, this.openBinId, e.code)) {
+          if (this.onBlockedInput) this.onBlockedInput(e.code);
+          return;
+        }
         this.executeModeFromOpenBin(modeId);
       }
     });
@@ -88,6 +117,10 @@ export class ComboSystem {
       e.preventDefault();
       if (!this.isGameplayActive()) return;
       if (this.openBinId) {
+        if (!this.canExecuteMode('CANCEL', this.openBinId, 'MouseRight')) {
+          if (this.onBlockedInput) this.onBlockedInput('MouseRight');
+          return;
+        }
         this.closeBin(true);
       }
     });
@@ -100,8 +133,16 @@ export class ComboSystem {
         const binId = pill.getAttribute('data-element');
         if (!binId) return;
         if (this.openBinId === binId) {
+          if (!this.canExecuteMode('CANCEL', this.openBinId, 'ClickCancel')) {
+            if (this.onBlockedInput) this.onBlockedInput('ClickCancel');
+            return;
+          }
           this.closeBin(true);
         } else {
+          if (!this.canOpenBin(binId, `Bin_${binId}`)) {
+            if (this.onBlockedInput) this.onBlockedInput(`Bin_${binId}`);
+            return;
+          }
           this.openBin(binId);
         }
       });
@@ -115,6 +156,10 @@ export class ComboSystem {
         if (!this.isGameplayActive()) return;
         const modeId = btn.getAttribute('data-hwei-mode');
         if (this.openBinId && modeId) {
+          if (!this.canExecuteMode(modeId, this.openBinId, `Mode_${modeId}`)) {
+            if (this.onBlockedInput) this.onBlockedInput(`Mode_${modeId}`);
+            return;
+          }
           this.executeModeFromOpenBin(modeId);
         }
       });
@@ -138,6 +183,9 @@ export class ComboSystem {
     const defaultSpell = resolveHweiSpell(binId, 'DAMAGE');
     this.player.setConjuredRecipePreview(defaultSpell, [binId]);
     this.syncHUD();
+    if (this.onBinOpened) {
+      this.onBinOpened(binId);
+    }
   }
 
   /**
@@ -221,6 +269,9 @@ export class ComboSystem {
     if (modeId === 'SHIELD') {
       this.activateSelectiveShield(spell);
       this.closeBin(false);
+      if (this.onSpellExecuted) {
+        this.onSpellExecuted({ binId, modeId, spell });
+      }
       return true;
     }
 
@@ -234,6 +285,9 @@ export class ComboSystem {
     // Para Q (Mais Dano) e E (Controle de Grupo), dispara na direção mirada pelo Mouse!
     this.fireSpellProjectile(spell, castStyleMeta);
     this.closeBin(false);
+    if (this.onSpellExecuted) {
+      this.onSpellExecuted({ binId, modeId, spell });
+    }
     return true;
   }
 
@@ -244,7 +298,15 @@ export class ComboSystem {
    */
   tryFireAtAim(viewportEl, camera) {
     if (this.openBinId) {
+      if (!this.canExecuteMode('DAMAGE', this.openBinId, 'MouseLeft')) {
+        if (this.onBlockedInput) this.onBlockedInput('MouseLeft');
+        return false;
+      }
       return this.executeModeFromOpenBin('DAMAGE');
+    }
+
+    if (!this.canOpenBin(null, 'MouseLeft')) {
+      return false;
     }
 
     this.hud.spawnFloatingText(

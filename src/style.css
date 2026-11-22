@@ -1297,9 +1297,13 @@ html, body {
 
 .start-dock-buttons-row {
   display: grid;
-  grid-template-columns: 1.7fr 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   align-items: stretch;
+}
+
+.start-dock-buttons-row .btn-play-hero {
+  grid-column: 1 / -1;
 }
 
 /* Menu de Pausa (ESC): Cobre a tela (sobre o fundo Pixel Art quando aberto do Menu Inicial ou sobre a Arena 3D na partida) */
@@ -1747,4 +1751,487 @@ html, body {
   .start-bins-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ==========================================================================
+   TUTORIAL INTERATIVO GUIADO NA ARENA (E4-07)
+   ========================================================================== */
+.tutorial-guide-banner {
+  position: absolute;
+  top: 88px;
+  left: 14px;
+  transform: none;
+  width: min(460px, calc(100% - 275px));
+  z-index: 22;
+  background: rgba(13, 17, 34, 0.92);
+  border: 2.5px solid #00f5d4;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.7),
+    0 0 22px rgba(0, 245, 212, 0.25);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.tutorial-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.tutorial-step-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  color: #101626;
+  background: #00f5d4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+.tutorial-exit-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.48rem;
+  background: rgba(255, 77, 109, 0.16);
+  color: #ff8fa3;
+  border: 1.5px solid rgba(255, 77, 109, 0.7);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tutorial-exit-btn:hover {
+  background: #ff4d6d;
+  color: #ffffff;
+}
+
+.tutorial-progress-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 9px;
+}
+
+.tutorial-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f5d4, #4ade80, #ffd166);
+  transition: width 0.25s ease;
+}
+
+.tutorial-step-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  color: #ffd166;
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.tutorial-step-desc {
+  font-size: 0.88rem;
+  color: #e8eefc;
+  line-height: 1.4;
+  margin: 0 0 10px;
+}
+
+.tutorial-allowed-keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.tutorial-allowed-keys.pulse-highlight {
+  animation: tutKeysPulse 0.36s ease;
+}
+
+@keyframes tutKeysPulse {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.045);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.tut-key-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(34, 42, 72, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+}
+
+.tut-key-pill kbd {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  background: #ffd166;
+  color: #14121f;
+  padding: 2px 6px;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 #b45309;
+}
+
+.tut-key-pill.active-key {
+  border-color: #00f5d4;
+  background: rgba(0, 245, 212, 0.16);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.42);
+  animation: tutKeyGlow 1.3s ease-in-out infinite;
+}
+
+.tut-key-pill.plastic.active-key {
+  border-color: #ff4d4f;
+  background: rgba(255, 59, 48, 0.22);
+  box-shadow: 0 0 14px rgba(255, 59, 48, 0.5);
+}
+
+.tut-key-pill.paper.active-key {
+  border-color: #38bdf8;
+  background: rgba(0, 122, 255, 0.22);
+  box-shadow: 0 0 14px rgba(0, 122, 255, 0.5);
+}
+
+.tut-key-pill.glass.active-key {
+  border-color: #4ade80;
+  background: rgba(52, 199, 89, 0.22);
+  box-shadow: 0 0 14px rgba(52, 199, 89, 0.5);
+}
+
+.tut-key-pill.metal.active-key {
+  border-color: #ffd166;
+  background: rgba(255, 204, 0, 0.22);
+  box-shadow: 0 0 14px rgba(255, 204, 0, 0.5);
+}
+
+.tut-key-pill.done-key {
+  border-color: #4ade80;
+  background: rgba(34, 197, 94, 0.2);
+  color: #bbf7d0;
+}
+
+.tut-key-pill.mouse-pill {
+  border-color: #93c5fd;
+  background: rgba(59, 130, 246, 0.18);
+  color: #dbeafe;
+}
+
+.tut-key-arrow {
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.tut-key-note {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+@keyframes tutKeyGlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.tutorial-lock-hint {
+  font-size: 0.76rem;
+  color: #93c5fd;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tutorial-lock-hint.shake-alert {
+  color: #ffd166;
+  font-weight: 700;
+  animation: tutShake 0.3s ease;
+}
+
+@keyframes tutShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Modal de Conclusão do Tutorial */
+.tutorial-complete-card {
+  max-width: 540px;
+  border-color: #4ade80;
+}
+
+.tutorial-done-badge {
+  background: #4ade80;
+  color: #0b1623;
+}
+
+.tutorial-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 12px 0 10px;
+}
+
+.tut-sum-chip {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid currentColor;
+  text-align: left;
+}
+
+.tut-sum-chip kbd {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  margin-right: 4px;
+}
+
+.tut-sum-chip.plastic { color: #ff6b6b; }
+.tut-sum-chip.paper { color: #60a5fa; }
+.tut-sum-chip.glass { color: #4ade80; }
+.tut-sum-chip.metal { color: #ffd166; }
+
+.tutorial-modes-summary {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 14px;
+}
+
+.tutorial-modes-summary kbd {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  background: #ffd166;
+  color: #14121f;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+/* ==========================================================================
+   CUTSCENE INICIAL LEGENDADA E PULÁVEL EM PIXEL ART (E4-08)
+   ========================================================================== */
+.cutscene-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: #060812;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  user-select: none;
+  cursor: pointer;
+}
+
+.cutscene-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.cutscene-scene-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  will-change: transform, opacity;
+  filter: contrast(1.04) saturate(1.08);
+}
+
+.cutscene-scene-img.scene-fade-in {
+  animation: cutsceneFadeIn 0.55s ease;
+}
+
+@keyframes cutsceneFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cutscene-fx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 1;
+}
+
+.cutscene-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(6, 8, 18, 0.0) 45%, rgba(4, 6, 14, 0.72) 100%),
+    linear-gradient(180deg, rgba(4, 6, 14, 0.72) 0%, rgba(4, 6, 14, 0) 20%, rgba(4, 6, 14, 0) 64%, rgba(4, 6, 14, 0.92) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cutscene-letterbox-top {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  background: linear-gradient(180deg, rgba(5, 8, 18, 0.92) 0%, rgba(5, 8, 18, 0.35) 100%);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.22);
+}
+
+.cutscene-top-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cutscene-chapter-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: #00f5d4;
+  letter-spacing: 0.8px;
+  text-shadow: 0 2px 10px rgba(0, 245, 212, 0.45);
+}
+
+.cutscene-progress-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cutscene-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.cutscene-dot.passed {
+  background: #4ade80;
+  border-color: #86efac;
+}
+
+.cutscene-dot.active {
+  background: #ffd166;
+  border-color: #ffffff;
+  transform: scale(1.25);
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.8);
+}
+
+.cutscene-skip-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  padding: 9px 14px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  border: 2px solid rgba(255, 209, 102, 0.85);
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.cutscene-skip-btn:hover {
+  background: #ffd166;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.cutscene-letterbox-bottom {
+  position: relative;
+  z-index: 4;
+  padding: 18px 28px 26px;
+  background: linear-gradient(0deg, rgba(5, 8, 18, 0.96) 0%, rgba(5, 8, 18, 0.72) 72%, rgba(5, 8, 18, 0) 100%);
+  display: flex;
+  justify-content: center;
+}
+
+.cutscene-subtitle-box {
+  width: min(860px, 94%);
+  background: rgba(11, 16, 32, 0.9);
+  border: 2.5px solid rgba(56, 189, 248, 0.72);
+  border-radius: 10px;
+  padding: 18px 24px 14px;
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(0, 245, 212, 0.18);
+  backdrop-filter: blur(5px);
+}
+
+.cutscene-subtitle-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.02rem, 1.55vw, 1.28rem);
+  font-weight: 500;
+  color: #f8fafc;
+  line-height: 1.55;
+  min-height: 3.1em;
+  margin: 0 0 12px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75);
+}
+
+.cutscene-subtitle-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cutscene-auto-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.cutscene-auto-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f5d4, #ffd166);
+  transition: width 0.08s linear;
+}
+
+.cutscene-next-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #00f5d4;
+  color: #0b1326;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+.cutscene-next-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
 }

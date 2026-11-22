@@ -64,11 +64,168 @@ export class EnemyManager {
     this.difficultyMode = 'NORMAL';
     this.difficultySpeedMult = 1.0;
     this.difficultySpawnMult = 1.0;
+    this.autoSpawnEnabled = true;
+
+    // Callbacks opcionais usados pelo Tutorial Interativo (E4-07)
+    this.onControlHit = null;
+    this.onShieldBlock = null;
 
     // Registra o callback de detonação de Controle de Grupo (Modo E) no ComboSystem
     this.comboSystem.onControlWaveDetonated = (centerPos, spell, multiplier, castStyleMeta) => {
       this.detonateControlWave(centerPos, spell, multiplier, castStyleMeta);
     };
+  }
+
+  setAutoSpawnEnabled(enabled) {
+    this.autoSpawnEnabled = Boolean(enabled);
+  }
+
+  /**
+   * E4-07 — Instancia um inimigo reciclável controlado em posição exata para o Tutorial Interativo
+   */
+  spawnTutorialEnemy({ variantId = 'PLASTIC_PET', x = 0, z = -5.5, speed = 0, hp = 85 } = {}) {
+    const variant = ENEMY_VARIANTS[variantId] || ENEMY_VARIANTS.PLASTIC_PET;
+    const binCategory = variant.binId;
+    const binElem = CONAMA_ELEMENTS[binCategory];
+    const texFrames = this.enemyTextureSets[variant.id] || this.enemyTextureSets[binCategory];
+    const [spriteW, spriteH] = variant.spriteScale || [1.75, 1.95];
+
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+
+    const spriteGeo = new THREE.PlaneGeometry(spriteW, spriteH);
+    const spriteMat = new THREE.MeshBasicMaterial({
+      map: texFrames[0],
+      transparent: true,
+      alphaTest: 0.45,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      fog: false
+    });
+    const spriteMesh = new THREE.Mesh(spriteGeo, spriteMat);
+    spriteMesh.position.y = spriteH * 0.49;
+    spriteMesh.rotation.y = Math.PI / 4;
+    spriteMesh.castShadow = true;
+    group.add(spriteMesh);
+
+    const darkShadowRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.38, 0.74, 20),
+      new THREE.MeshBasicMaterial({
+        color: 0x120d1a,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    darkShadowRing.rotation.x = -Math.PI / 2;
+    darkShadowRing.position.y = 0.025;
+    group.add(darkShadowRing);
+
+    const shadowRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.43, 0.68, 20),
+      new THREE.MeshBasicMaterial({
+        color: binElem.hexNumber,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.96,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    shadowRing.rotation.x = -Math.PI / 2;
+    shadowRing.position.y = 0.032;
+    group.add(shadowRing);
+
+    const statusRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.75, 0.92, 16),
+      new THREE.MeshBasicMaterial({
+        color: 0xffcc00,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.0,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    statusRing.rotation.x = -Math.PI / 2;
+    statusRing.position.y = 0.05;
+    group.add(statusRing);
+
+    const hpGroup = new THREE.Group();
+    hpGroup.position.set(0, 2.12, 0);
+    hpGroup.rotation.y = Math.PI / 4;
+
+    const badgeMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.12, 0.42),
+      new THREE.MeshBasicMaterial({
+        map: this.variantBadgeTextures[variant.id],
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    badgeMesh.position.y = 0.35;
+
+    const hpBg = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.42, 0.22),
+      new THREE.MeshBasicMaterial({
+        color: 0x0f172a,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    const hpFill = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.32, 0.14),
+      new THREE.MeshBasicMaterial({
+        color: binElem.hexNumber,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+        fog: false
+      })
+    );
+    hpFill.position.z = 0.01;
+
+    hpGroup.add(badgeMesh, hpBg, hpFill);
+    group.add(hpGroup);
+    this.scene.add(group);
+
+    const enemy = {
+      id: NEXT_ENEMY_ID++,
+      variantId: variant.id,
+      itemName: variant.name,
+      movementStyle: 'direct',
+      knockbackResist: variant.knockbackResist ?? 1.0,
+      movePhase: 0,
+      binCategory,
+      binElem,
+      group,
+      spriteMesh,
+      spriteMat,
+      statusRing,
+      texFrames,
+      hpFill,
+      hpFillMat: hpFill.material,
+      hp,
+      maxHp: hp,
+      speed,
+      stunTimer: 0,
+      slowTimer: 0,
+      fragileTimer: 0,
+      pullTimer: 0,
+      pullTarget: new THREE.Vector3(),
+      knockbackVel: new THREE.Vector3(0, 0, 0),
+      animTimer: 0,
+      hitFlashTimer: 0,
+      shieldBlockCooldown: 0
+    };
+
+    this.enemies.push(enemy);
+    return enemy;
   }
 
   getMaxConcurrentEnemies(stage = 1) {
@@ -386,6 +543,10 @@ export class EnemyManager {
         this.comboSystem.addStylePoints(styleGain);
       }
     }
+
+    if (this.onControlHit) {
+      this.onControlHit({ spell, hitCount, matchingCount });
+    }
   }
 
   updateEnemyHpBar(enemy) {
@@ -430,12 +591,14 @@ export class EnemyManager {
   }
 
   update(elapsedTime, dt, stage) {
-    // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-05 / E2-06)
-    this.spawnTimer -= dt;
-    if (this.spawnTimer <= 0) {
-      this.spawnEnemyAroundPerimeter(stage);
-      const baseInterval = stage >= 2 ? 2.15 : this.spawnInterval;
-      this.spawnTimer = baseInterval * this.difficultySpawnMult;
+    // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-05 / E2-06; desativado no Tutorial E4-07)
+    if (this.autoSpawnEnabled) {
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0) {
+        this.spawnEnemyAroundPerimeter(stage);
+        const baseInterval = stage >= 2 ? 2.15 : this.spawnInterval;
+        this.spawnTimer = baseInterval * this.difficultySpawnMult;
+      }
     }
 
     const playerPos = this.player.position;
@@ -596,6 +759,10 @@ export class EnemyManager {
               blockMsg,
               blockColor
             );
+
+            if (this.onShieldBlock) {
+              this.onShieldBlock({ enemy, isParry });
+            }
           }
         } else if (activeShield) {
           // ==================== ESCUDO DE OUTRA LIXEIRA (CONSOME 1 CARGA, -8% PUREZA E -75 ESTILO) ====================

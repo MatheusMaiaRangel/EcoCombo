@@ -298,4 +298,143 @@ export class SoundEngine {
       osc.stop(t0 + (idx === notes.length - 1 ? 0.44 : 0.18));
     });
   }
+
+  /**
+   * E4-07 — Som suave de tecla bloqueada durante uma etapa do Tutorial Interativo
+   */
+  playBlockedKey() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(190, now);
+    osc.frequency.exponentialRampToValueAtTime(125, now + 0.08);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.08, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+    osc.connect(gain);
+    gain.connect(this.getOutput(ctx));
+    osc.start(now);
+    osc.stop(now + 0.095);
+  }
+
+  /**
+   * E4-07 — Som positivo ao concluir uma etapa do Tutorial Interativo
+   */
+  playTutorialStepComplete() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.065;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.11, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + 0.19);
+    });
+  }
+
+  /**
+   * E4-07 — Fanfarra curta ao concluir todo o Tutorial Interativo
+   */
+  playTutorialComplete() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.075;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx >= 3 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.12, t0 + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (idx === notes.length - 1 ? 0.45 : 0.2));
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + (idx === notes.length - 1 ? 0.48 : 0.22));
+    });
+  }
+
+  /**
+   * E4-08 — Pulso delicado estilo visual novel / pixel RPG durante a digitação da legenda da Cutscene
+   */
+  playCutsceneBlip(pitchShift = 0) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    const base = 420 + (pitchShift % 4) * 28;
+    osc.frequency.setValueAtTime(base, now);
+    osc.frequency.exponentialRampToValueAtTime(base * 0.92, now + 0.032);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.035, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.036);
+
+    osc.connect(gain);
+    gain.connect(this.getOutput(ctx));
+    osc.start(now);
+    osc.stop(now + 0.04);
+  }
+
+  /**
+   * E4-08 — Acorde atmosférico sintetizado ao transitar de cena na Cutscene Inicial
+   */
+  playCutsceneSceneChange(sceneIndex = 0) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    // Progressão narrativa: melancólico (cena 0) -> tensão (cena 1) -> despertar (cena 2) -> heroico (cena 3)
+    const chords = [
+      [220.0, 261.63, 329.63], // Am (descarte)
+      [196.0, 233.08, 293.66], // Gm (lixo ganhando vida)
+      [261.63, 329.63, 392.0], // C (único com poderes)
+      [293.66, 369.99, 440.0, 587.33] // D maior brilhante (batalha começa)
+    ];
+    const chord = chords[sceneIndex % chords.length];
+
+    chord.forEach((freq, idx) => {
+      const t0 = now + idx * 0.055;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx === 0 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.065, t0 + 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.85);
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + 0.9);
+    });
+  }
 }
