@@ -24,7 +24,8 @@ export class ComboSystem {
     camera,
     onShotFired,
     isGameplayActive,
-    getArenaHalfSize
+    getArenaHalfSize,
+    findObstacleHit
   }) {
     this.scene = scene;
     this.player = player;
@@ -35,6 +36,7 @@ export class ComboSystem {
     this.onShotFired = onShotFired;
     this.isGameplayActive = isGameplayActive || (() => true);
     this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
+    this.findObstacleHit = findObstacleHit || null;
 
     // Estado do Grimório / Lixeira estilo Hwei
     // null = Nenhuma lixeira aberta (1º toque escolhe Q/E/R/F)
@@ -628,6 +630,28 @@ export class ComboSystem {
       if (p.trailTimer >= 0.04) {
         p.trailTimer = 0;
         this.spawnImpactParticles(p.mesh.position, p.recipe.colorA, p.recipe.colorB, 1);
+      }
+
+      // E1-03 — Impacto de projéteis contra obstáculos 3D sólidos (dissipa projéteis comuns em partículas)
+      if (this.findObstacleHit) {
+        const hitObs = this.findObstacleHit(p.mesh.position, Math.max(0.22, p.radius * 0.5));
+        if (hitObs) {
+          this.spawnImpactParticles(p.mesh.position, p.recipe.colorA, 0xd6d3d1, 14);
+          if (this.sound && typeof this.sound.playObstacleHit === 'function') {
+            this.sound.playObstacleHit();
+          }
+          if (p.recipe.modeId === 'CONTROL' && this.onControlWaveDetonated) {
+            this.onControlWaveDetonated(
+              p.mesh.position.clone(),
+              p.recipe,
+              p.multiplier,
+              p.castStyleMeta
+            );
+          }
+          this.scene.remove(p.mesh);
+          this.projectiles.splice(i, 1);
+          continue;
+        }
       }
 
       // Se for uma habilidade de Controle de Grupo (Modo E) que chegou no ponto mirado pelo mouse, detona em área!

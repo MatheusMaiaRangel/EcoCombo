@@ -131,12 +131,20 @@ export function buildRecipeObjectMesh(recipe, scale = 1.0) {
  * E1-02 — Controlador do Protagonista 2.5D, Movimentação WASD, 4 Orbes em Órbita e Mira no Mouse (Raycaster)
  */
 export class PlayerController {
-  constructor(scene, camera, viewportEl, groundPlane, getArenaHalfSize = () => ARENA_HALF_SIZE) {
+  constructor(
+    scene,
+    camera,
+    viewportEl,
+    groundPlane,
+    getArenaHalfSize = () => ARENA_HALF_SIZE,
+    resolveObstacleCollision = null
+  ) {
     this.scene = scene;
     this.camera = camera;
     this.viewportEl = viewportEl;
     this.groundPlane = groundPlane;
     this.getArenaHalfSize = getArenaHalfSize;
+    this.resolveObstacleCollision = resolveObstacleCollision;
 
     this.position = new THREE.Vector3(0, 0, 0);
     this.moveSpeed = 8.4;
@@ -529,6 +537,14 @@ export class PlayerController {
     } else {
       this.walkAnimTimer = 0;
       this.spriteMat.map = this.textures[0];
+    }
+
+    // E1-03 — Bloqueio físico contra os obstáculos 3D da arena (pilares e lixeiras urbanas)
+    if (this.resolveObstacleCollision) {
+      this.resolveObstacleCollision(this.position, 0.54);
+      const limit = this.getArenaHalfSize() - 0.9;
+      this.position.x = THREE.MathUtils.clamp(this.position.x, -limit, limit);
+      this.position.z = THREE.MathUtils.clamp(this.position.z, -limit, limit);
     }
 
     this.rootGroup.position.copy(this.position);

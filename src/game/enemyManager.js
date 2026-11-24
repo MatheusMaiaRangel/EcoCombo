@@ -33,7 +33,8 @@ export class EnemyManager {
     viewportEl,
     onPlayerTouch,
     onEnemyKilled,
-    getArenaHalfSize
+    getArenaHalfSize,
+    resolveObstacleCollision
   }) {
     this.scene = scene;
     this.player = player;
@@ -45,6 +46,7 @@ export class EnemyManager {
     this.onPlayerTouch = onPlayerTouch;
     this.onEnemyKilled = onEnemyKilled;
     this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
+    this.resolveObstacleCollision = resolveObstacleCollision || null;
 
     this.enemyTextureSets = createEnemyTextures();
     this.variantBadgeTextures = {};
@@ -92,6 +94,9 @@ export class EnemyManager {
 
     const group = new THREE.Group();
     group.position.set(x, 0, z);
+    if (this.resolveObstacleCollision) {
+      this.resolveObstacleCollision(group.position, 0.72);
+    }
 
     const spriteGeo = new THREE.PlaneGeometry(spriteW, spriteH);
     const spriteMat = new THREE.MeshBasicMaterial({
@@ -695,6 +700,19 @@ export class EnemyManager {
       if (enemy.knockbackVel.lengthSq() > 0.05) {
         enemy.group.position.addScaledVector(enemy.knockbackVel, dt);
         enemy.knockbackVel.multiplyScalar(Math.max(0, 1 - dt * 6.5));
+      }
+
+      // E1-03 — Bloqueio físico contra os obstáculos 3D da arena + contorno suave pela lateral
+      if (this.resolveObstacleCollision) {
+        const collision = this.resolveObstacleCollision(enemy.group.position, 0.56);
+        if (collision.hit && enemy.stunTimer <= 0 && enemy.pullTimer <= 0) {
+          // Deslize tangencial suave para o inimigo contornar o pilar/lixeira em direção ao jogador
+          const tangentA = new THREE.Vector3(-collision.normalZ, 0, collision.normalX);
+          const sideSign = tangentA.dot(toPlayer) >= 0 ? 1 : -1;
+          const slideSpeed = enemy.speed * this.difficultySpeedMult * speedFactor * 0.72;
+          enemy.group.position.addScaledVector(tangentA, sideSign * slideSpeed * dt);
+          this.resolveObstacleCollision(enemy.group.position, 0.56);
+        }
       }
 
       enemy.group.position.x = THREE.MathUtils.clamp(enemy.group.position.x, -limit, limit);

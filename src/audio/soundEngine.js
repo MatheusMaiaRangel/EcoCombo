@@ -269,6 +269,31 @@ export class SoundEngine {
   }
 
   /**
+   * E1-03 — Som seco de impacto quando um projétil se dissipa em um obstáculo 3D sólido
+   */
+  playObstacleHit() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(85, now + 0.09);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.11, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+    osc.connect(gain);
+    gain.connect(this.getOutput(ctx));
+    osc.start(now);
+    osc.stop(now + 0.11);
+  }
+
+  /**
    * E2-06 — Fanfarra ascendente sintetizada ao expandir o mapa e liberar o Estágio 2 (01:30)
    */
   playStageTransition() {

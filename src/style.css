@@ -2235,3 +2235,44 @@ html, body {
   transform: translateY(-1px);
   filter: brightness(1.08);
 }
+
+/* ==========================================================================
+   E1-04 — CAMADA ATMOSFÉRICA DINÂMICA CONFORME PUREZA AMBIENTAL
+   ========================================================================== */
+#purity-atmosphere-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  --smog-opacity: 0;
+  transition: opacity 0.35s ease, background 0.35s ease;
+}
+
+#purity-atmosphere-overlay[data-purity-band="clean"] {
+  background: radial-gradient(
+    circle at 82% 14%,
+    rgba(255, 232, 163, 0.14) 0%,
+    rgba(255, 224, 130, 0.04) 36%,
+    transparent 70%
+  );
+  opacity: 1;
+}
+
+#purity-atmosphere-overlay[data-purity-band="warning"] {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 52%,
+    rgba(139, 92, 246, 0.26) 100%
+  );
+  opacity: var(--smog-opacity);
+}
+
+#purity-atmosphere-overlay[data-purity-band="critical"] {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 46%,
+    rgba(139, 92, 246, 0.26) 80%,
+    rgba(109, 40, 217, 0.48) 100%
+  );
+  opacity: var(--smog-opacity);
+}

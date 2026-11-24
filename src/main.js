@@ -42,17 +42,20 @@ class EcoComboMVPApp {
     this.hud = new HUDController(this.sidebarCharacter);
     this.startMenuAnimator = new StartMenuAnimator(document.getElementById('start-menu-bg-canvas'));
 
-    // 3. Cena 3D Isométrica 2.5D com Sombras, UnrealBloomPass e Expansão Dinâmica no Estágio 2 (E1-01 / E2-06)
+    // 3. Cena 3D Isométrica 2.5D com Sombras, UnrealBloomPass, Obstáculos 3D (E1-03), Atmosfera por Pureza (E1-04) e Estágio 2 (E2-06)
     this.arena = new ArenaScene(this.canvas, this.viewportEl);
     const getArenaHalfSize = () => this.arena.getHalfSize();
+    const resolveObstacleCollision = (pos, radius) => this.arena.resolveCircleCollision(pos, radius);
+    const findObstacleHit = (pos, radius) => this.arena.findProjectileObstacleHit(pos, radius);
 
-    // 4. Protagonista no WASD + 4 Orbes em Órbita + Mira com Raycaster (E1-02)
+    // 4. Protagonista no WASD + 4 Orbes em Órbita + Mira com Raycaster (E1-02 / E1-03)
     this.player = new PlayerController(
       this.arena.scene,
       this.arena.camera,
       this.viewportEl,
       this.arena.groundPlane,
-      getArenaHalfSize
+      getArenaHalfSize,
+      resolveObstacleCollision
     );
 
     // 5. Sistema de Lixeiras e Leque Hwei (Q/E/R/F) + Medidor de Estilo Devil May Cry (E3-05 / E4-05)
@@ -64,6 +67,7 @@ class EcoComboMVPApp {
       viewportEl: this.viewportEl,
       camera: this.arena.camera,
       getArenaHalfSize,
+      findObstacleHit,
       isGameplayActive: () =>
         this.gameState === 'PLAYING' ||
         (this.gameState === 'TUTORIAL' && !this.tutorialManager?.completed),
@@ -82,6 +86,7 @@ class EcoComboMVPApp {
       camera: this.arena.camera,
       viewportEl: this.viewportEl,
       getArenaHalfSize,
+      resolveObstacleCollision,
       onPlayerTouch: (purityLoss) => this.handlePlayerHit(purityLoss),
       onEnemyKilled: (hitEvent) => this.handleEnemyHitOrKilled(hitEvent)
     });
@@ -497,6 +502,7 @@ class EcoComboMVPApp {
     this.gameState = 'TUTORIAL';
 
     this.arena.setStageSize(1, true);
+    this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.tutorialManager.start();
 
@@ -535,6 +541,7 @@ class EcoComboMVPApp {
     this.gameState = 'PLAYING';
 
     this.arena.setStageSize(1, true);
+    this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
@@ -634,6 +641,7 @@ class EcoComboMVPApp {
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
     this.arena.setStageSize(1, true);
+    this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
@@ -678,6 +686,10 @@ class EcoComboMVPApp {
     this.purity = Math.max(0, this.purity - purityLoss);
     this.sidebarCharacter.triggerHurt();
     this.hud.updatePurity(this.purity);
+    this.arena.setPurity(this.purity, false);
+    if (this.purity < 30) {
+      this.arena.triggerPollutionSurge();
+    }
 
     if (this.purity <= 0) {
       this.isGameOver = true;
@@ -721,6 +733,7 @@ class EcoComboMVPApp {
       if (multiplier >= 2.5 && this.purity < 100) {
         this.purity = Math.min(100, this.purity + 2);
         this.hud.updatePurity(this.purity);
+        this.arena.setPurity(this.purity, false);
         this.hud.spawnFloatingText(
           enemyPos.add(new THREE.Vector3(0, 1.2, 0)),
           this.arena.camera,
@@ -754,6 +767,7 @@ class EcoComboMVPApp {
     this.hud.hideStageTransitionBanner();
 
     this.arena.setStageSize(1, true);
+    this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();

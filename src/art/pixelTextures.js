@@ -1096,3 +1096,154 @@ export function createReticleTexture() {
   const tex = new THREE.CanvasTexture(canvas);
   return applyNearestPixelFilter(tex);
 }
+
+/**
+ * E1-03 — Texturas Pixel Art (THREE.NearestFilter) para Pilares de Pedra 3D da Praça
+ */
+export function createPixelStonePillarTextures() {
+  // 1. Face lateral do pilar (pedra esculpida com musgo e emblema ecológico)
+  const sideCanvas = document.createElement('canvas');
+  sideCanvas.width = 32;
+  sideCanvas.height = 48;
+  const sctx = sideCanvas.getContext('2d');
+  sctx.imageSmoothingEnabled = false;
+
+  sctx.fillStyle = '#94a3b8';
+  sctx.fillRect(0, 0, 32, 48);
+
+  const rows = [0, 10, 20, 30, 40];
+  rows.forEach((y, idx) => {
+    const h = idx === rows.length - 1 ? 8 : 10;
+    sctx.fillStyle = idx % 2 === 0 ? '#cbd5e1' : '#b8c5d6';
+    sctx.fillRect(1, y + 1, 30, h - 2);
+    sctx.fillStyle = '#475569';
+    sctx.fillRect(0, y, 32, 1);
+    sctx.fillStyle = '#e2e8f0';
+    sctx.fillRect(1, y + 1, 30, 1);
+    sctx.fillRect(1, y + 1, 2, h - 2);
+    sctx.fillStyle = '#64748b';
+    sctx.fillRect(29, y + 1, 2, h - 2);
+    const splitX = idx % 2 === 0 ? 15 : 9;
+    sctx.fillStyle = '#475569';
+    sctx.fillRect(splitX, y, 1, h);
+    if (idx % 2 !== 0) {
+      sctx.fillRect(23, y, 1, h);
+    }
+  });
+
+  sctx.fillStyle = '#1e293b';
+  sctx.fillRect(0, 0, 1, 48);
+  sctx.fillRect(31, 0, 1, 48);
+  sctx.fillRect(0, 46, 32, 2);
+
+  // Placa ecológica central (folha verde reciclagem)
+  sctx.fillStyle = '#1e293b';
+  sctx.fillRect(8, 16, 16, 14);
+  sctx.fillStyle = '#0f172a';
+  sctx.fillRect(9, 17, 14, 12);
+  sctx.fillStyle = '#22c55e';
+  sctx.fillRect(14, 19, 4, 2);
+  sctx.fillRect(12, 21, 8, 4);
+  sctx.fillRect(14, 25, 4, 2);
+  sctx.fillStyle = '#bbf7d0';
+  sctx.fillRect(15, 20, 2, 5);
+
+  // Musgo pixelado na base e no capitel
+  sctx.fillStyle = '#15803d';
+  sctx.fillRect(2, 43, 8, 3);
+  sctx.fillRect(20, 44, 9, 2);
+  sctx.fillRect(3, 2, 7, 2);
+  sctx.fillStyle = '#4ade80';
+  sctx.fillRect(3, 43, 5, 1);
+  sctx.fillRect(22, 44, 5, 1);
+
+  // 2. Topo do pilar (capitel de pedra)
+  const topCanvas = document.createElement('canvas');
+  topCanvas.width = 32;
+  topCanvas.height = 32;
+  const tctx = topCanvas.getContext('2d');
+  tctx.imageSmoothingEnabled = false;
+
+  tctx.fillStyle = '#334155';
+  tctx.fillRect(0, 0, 32, 32);
+  tctx.fillStyle = '#cbd5e1';
+  tctx.fillRect(2, 2, 28, 28);
+  tctx.fillStyle = '#e2e8f0';
+  tctx.fillRect(4, 4, 24, 24);
+  tctx.fillStyle = '#94a3b8';
+  tctx.fillRect(7, 7, 18, 18);
+  tctx.fillStyle = '#f8fafc';
+  tctx.fillRect(4, 4, 24, 2);
+  tctx.fillRect(4, 4, 2, 24);
+
+  return {
+    side: applyNearestPixelFilter(new THREE.CanvasTexture(sideCanvas)),
+    top: applyNearestPixelFilter(new THREE.CanvasTexture(topCanvas))
+  };
+}
+
+/**
+ * E1-03 — Texturas Pixel Art (THREE.NearestFilter) para Lixeiras Urbanas 3D (Estação Ecológica)
+ */
+export function createPixelUrbanBinTextures() {
+  const sideCanvas = document.createElement('canvas');
+  sideCanvas.width = 32;
+  sideCanvas.height = 40;
+  const sctx = sideCanvas.getContext('2d');
+  sctx.imageSmoothingEnabled = false;
+
+  sctx.fillStyle = '#1e293b';
+  sctx.fillRect(0, 0, 32, 40);
+  sctx.fillStyle = '#475569';
+  sctx.fillRect(2, 2, 28, 36);
+  sctx.fillStyle = '#64748b';
+  sctx.fillRect(3, 3, 24, 34);
+  sctx.fillStyle = '#94a3b8';
+  sctx.fillRect(3, 3, 4, 34);
+
+  // Boca de descarte superior
+  sctx.fillStyle = '#0f172a';
+  sctx.fillRect(6, 6, 20, 6);
+  sctx.fillStyle = '#334155';
+  sctx.fillRect(6, 5, 20, 1);
+
+  // Faixa de reciclagem CONAMA (Vermelho, Azul, Verde, Amarelo)
+  sctx.fillStyle = '#0f172a';
+  sctx.fillRect(2, 16, 28, 8);
+  sctx.fillStyle = '#ff3b30';
+  sctx.fillRect(4, 18, 6, 4);
+  sctx.fillStyle = '#007aff';
+  sctx.fillRect(10, 18, 6, 4);
+  sctx.fillStyle = '#34c759';
+  sctx.fillRect(16, 18, 6, 4);
+  sctx.fillStyle = '#ffcc00';
+  sctx.fillRect(22, 18, 6, 4);
+
+  // Frisos metálicos inferiores
+  sctx.fillStyle = '#334155';
+  sctx.fillRect(6, 28, 20, 2);
+  sctx.fillRect(6, 32, 20, 2);
+
+  // Tampa superior 3D da lixeira urbana
+  const topCanvas = document.createElement('canvas');
+  topCanvas.width = 32;
+  topCanvas.height = 32;
+  const tctx = topCanvas.getContext('2d');
+  tctx.imageSmoothingEnabled = false;
+
+  tctx.fillStyle = '#0f172a';
+  tctx.fillRect(0, 0, 32, 32);
+  tctx.fillStyle = '#334155';
+  tctx.fillRect(2, 2, 28, 28);
+  tctx.fillStyle = '#475569';
+  tctx.fillRect(4, 4, 24, 24);
+  tctx.fillStyle = '#22c55e';
+  tctx.fillRect(11, 11, 10, 10);
+  tctx.fillStyle = '#0f172a';
+  tctx.fillRect(14, 14, 4, 4);
+
+  return {
+    side: applyNearestPixelFilter(new THREE.CanvasTexture(sideCanvas)),
+    top: applyNearestPixelFilter(new THREE.CanvasTexture(topCanvas))
+  };
+}
