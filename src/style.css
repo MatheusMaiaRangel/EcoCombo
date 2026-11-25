@@ -918,6 +918,20 @@ html, body {
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
 }
 
+.stage-transition-banner.boss-victory {
+  border-color: #00f5d4;
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.96) 0%, rgba(15, 23, 42, 0.96) 100%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 26px rgba(0, 245, 212, 0.55);
+}
+
+.stage-transition-banner.boss-victory .stage-banner-badge {
+  color: #fde047;
+}
+
+.stage-transition-banner.boss-victory .stage-banner-title {
+  color: #a7f3d0;
+}
+
 /* ==========================================================================
    CHEFÃO COLOSSO DE ENTULHO — BARRA DE HP DESTACADA (E5-01)
    ========================================================================== */

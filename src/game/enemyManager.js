@@ -703,6 +703,28 @@ export class EnemyManager {
   }
 
   /**
+   * E5-04 — Purifica todos os inimigos remanescentes na arena em partículas limpas ao derrotar o Chefão
+   */
+  purifyAllEnemiesOnBossDefeat() {
+    let purifiedCount = 0;
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const enemy = this.enemies[i];
+      this.comboSystem.spawnImpactParticles(
+        enemy.group.position.clone().add(new THREE.Vector3(0, 1.0, 0)),
+        0x00f5d4,
+        0x34c759,
+        14,
+        1.15
+      );
+      this.scene.remove(enemy.group);
+      this.enemies.splice(i, 1);
+      purifiedCount += 1;
+    }
+    this.spawnTimer = 2.6;
+    return purifiedCount;
+  }
+
+  /**
    * E3-04 — Pulso de Purificação em Área ao ativar a Maestria Elemental (4 combos inéditos seguidos)
    */
   applyMasteryPurificationPulse(centerPos, radius = 8.5) {

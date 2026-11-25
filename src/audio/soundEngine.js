@@ -450,6 +450,37 @@ export class SoundEngine {
   }
 
   /**
+   * E5-04 — Fanfarra heroica triunfal ao derrotar o Chefão Colosso de Entulho (+3.000 pts / +50% Pureza)
+   */
+  playBossVictory() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [392.0, 523.25, 659.25, 783.99, 1046.5, 1318.51];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.085;
+      const isLast = idx === notes.length - 1;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx >= 3 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+      if (isLast) {
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.03, t0 + 0.55);
+      }
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(isLast ? 0.18 : 0.13, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (isLast ? 0.65 : 0.25));
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + (isLast ? 0.68 : 0.27));
+    });
+  }
+
+  /**
    * E5-03 — Alerta sonoro curto ao surgir círculo de aviso de poça tóxica no chão
    */
   playToxicWarning() {

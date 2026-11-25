@@ -525,6 +525,7 @@ export class HUDController {
     }
 
     const isStage3 = stage >= 3;
+    this.stageTransitionBanner.classList.remove('boss-victory');
     this.stageTransitionBanner.classList.toggle('stage-3', isStage3);
 
     if (this.stageBannerBadge) {
@@ -550,6 +551,43 @@ export class HUDController {
           <span class="stage-enemy-chip glass">[R] Pote de Vidro</span>
           <span class="stage-enemy-chip metal">[F] Lata de Alumínio</span>
         `;
+    }
+
+    this.stageTransitionBanner.classList.remove('hidden');
+    this.stageBannerTimeout = setTimeout(() => {
+      this.hideStageTransitionBanner();
+    }, durationMs);
+  }
+
+  /**
+   * E5-04 — Banner comemorativo ao derrotar o Chefão, purificar o cenário (+50% Pureza) e ganhar +3.000 pontos
+   */
+  showBossVictoryBanner({
+    bossName = 'COLOSSO DE ENTULHO',
+    nextStage = 4,
+    scoreBonus = 3000,
+    purityBonus = 50
+  } = {}, durationMs = 5600) {
+    if (!this.stageTransitionBanner) return;
+    if (this.stageBannerTimeout) {
+      clearTimeout(this.stageBannerTimeout);
+    }
+
+    this.stageTransitionBanner.classList.remove('stage-3');
+    this.stageTransitionBanner.classList.add('boss-victory');
+
+    if (this.stageBannerBadge) {
+      this.stageBannerBadge.textContent = `🏆 ${bossName} PURIFICADO!`;
+    }
+    if (this.stageBannerTitle) {
+      this.stageBannerTitle.textContent = `CENÁRIO PURIFICADO! +${scoreBonus.toLocaleString('pt-BR')} PTS · +${purityBonus}% PUREZA!`;
+    }
+    if (this.stageBannerEnemies) {
+      this.stageBannerEnemies.innerHTML = `
+        <span class="stage-enemy-chip metal">🏆 +${scoreBonus.toLocaleString('pt-BR')} PONTOS</span>
+        <span class="stage-enemy-chip glass">🌿 +${purityBonus}% PUREZA RESTAURADA</span>
+        <span class="stage-enemy-chip paper">🚀 ESTÁGIO ${nextStage} INICIADO!</span>
+      `;
     }
 
     this.stageTransitionBanner.classList.remove('hidden');

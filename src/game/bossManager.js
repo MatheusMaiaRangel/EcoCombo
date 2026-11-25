@@ -767,8 +767,18 @@ export class BossManager {
     const defeatedBoss = this.boss;
     const pos = defeatedBoss.group.position.clone();
 
-    this.comboSystem.spawnAreaWave(pos, 0x00f5d4, 11.5);
-    this.comboSystem.spawnImpactParticles(pos.clone().add(new THREE.Vector3(0, 2.2, 0)), 0x00f5d4, 0xffd166, 48, 1.5);
+    // E5-04 — Explosão tripla em partículas limpas e ondas de purificação pela arena!
+    this.comboSystem.spawnAreaWave(pos, 0x00f5d4, 13.5);
+    this.comboSystem.spawnAreaWave(pos, 0x34c759, 10.0);
+    this.comboSystem.spawnAreaWave(pos, 0xffd166, 7.0);
+
+    const burstOrigin = pos.clone().add(new THREE.Vector3(0, 2.2, 0));
+    this.comboSystem.spawnImpactParticles(burstOrigin, 0x00f5d4, 0xffffff, 36, 1.55);
+    this.comboSystem.spawnImpactParticles(burstOrigin, 0x34c759, 0xffd166, 36, 1.45);
+
+    if (this.sound && typeof this.sound.playBossVictory === 'function') {
+      this.sound.playBossVictory();
+    }
 
     this.scene.remove(defeatedBoss.group);
     this.boss = null;
@@ -781,6 +791,8 @@ export class BossManager {
         bossName: defeatedBoss.name,
         bossTier: defeatedBoss.bossTier,
         stage: defeatedBoss.stage,
+        scoreBonus: 3000,
+        purityBonus: 50,
         position: pos
       });
     }

@@ -789,14 +789,52 @@ class EcoComboMVPApp {
     );
   }
 
-  handleBossDefeated() {
+  /**
+   * E5-04 — Derrota do Chefão Colosso de Entulho:
+   * purifica o cenário, concede +3.000 pontos, restaura +50% de Pureza Ambiental e avança para o próximo estágio!
+   */
+  handleBossDefeated({
+    bossName = 'COLOSSO DE ENTULHO',
+    scoreBonus = 3000,
+    purityBonus = 50,
+    position = null
+  } = {}) {
     if (this.gameState !== 'PLAYING' || this.isGameOver) return;
+
     this.bossDefeatedCount += 1;
     this.kills += 1;
+    this.score += scoreBonus;
+    this.purity = Math.min(100, this.purity + purityBonus);
     this.stage += 1;
     this.nextBossSpawnTimeSec = this.matchElapsedSec + BOSS_CYCLE_INTERVAL_SEC;
+
+    // Purifica todos os resíduos remanescentes e restaura a atmosfera limpa do parque
+    const purifiedMinions = this.enemyManager.purifyAllEnemiesOnBossDefeat();
+    this.kills += purifiedMinions;
     this.enemyManager.setMaxConcurrentOverride(null);
+
     this.hud.setCurrentStage(this.stage);
+    this.hud.updatePurity(this.purity);
+    this.arena.setPurity(this.purity, false);
+    this.sidebarCharacter.triggerMasteryFlash();
+    this.hud.triggerPortraitMastery(2200);
+
+    this.hud.showBossVictoryBanner({
+      bossName,
+      nextStage: this.stage,
+      scoreBonus,
+      purityBonus
+    });
+
+    const anchorPos = (position || this.player.position).clone().add(new THREE.Vector3(0, 3.2, 0));
+    this.hud.spawnFloatingText(
+      anchorPos,
+      this.arena.camera,
+      this.viewportEl,
+      `🏆 +${scoreBonus.toLocaleString('pt-BR')} PTS · +${purityBonus}% PUREZA!`,
+      '#00f5d4'
+    );
+
     this.hud.updateStageAndScore(
       this.stage,
       this.score,
