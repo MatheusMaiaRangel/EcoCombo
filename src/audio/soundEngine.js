@@ -106,7 +106,7 @@ export class SoundEngine {
   }
 
   /**
-   * Som ao canalizar uma das 4 cores da reciclagem (1/Q, 2/E, 3/R, 4/F)
+   * E4-03 — Som distinto ao selecionar/abrir cada uma das 4 Lixeiras CONAMA (Q/1, E/2, R/3, F/4)
    */
   playElementSelect(elementId, slotIndex = 0) {
     const ctx = this.ensureContext();
@@ -125,14 +125,30 @@ export class SoundEngine {
     osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + 0.09);
 
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.14, now + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+    gain.gain.linearRampToValueAtTime(0.13, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.115);
 
     osc.connect(gain);
     gain.connect(this.getOutput(ctx));
-
     osc.start(now);
-    osc.stop(now + 0.12);
+    osc.stop(now + 0.125);
+
+    // Harmônico sutil para diferenciar ainda mais o timbre de cada material
+    const overtone = ctx.createOscillator();
+    const overGain = ctx.createGain();
+    overtone.type = 'sine';
+    const ratio = elementId === 'GLASS' ? 2.0 : elementId === 'METAL' ? 1.5 : 1.25;
+    overtone.frequency.setValueAtTime(freq * ratio, now);
+    overtone.frequency.exponentialRampToValueAtTime(freq * ratio * 1.15, now + 0.08);
+
+    overGain.gain.setValueAtTime(0.001, now);
+    overGain.gain.linearRampToValueAtTime(0.055, now + 0.012);
+    overGain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+
+    overtone.connect(overGain);
+    overGain.connect(this.getOutput(ctx));
+    overtone.start(now);
+    overtone.stop(now + 0.105);
   }
 
   /**
@@ -184,64 +200,193 @@ export class SoundEngine {
   }
 
   /**
-   * Som ao disparar o objeto/energia na direção do mouse (LMB)
+   * E4-03 — Som progressivo ao disparar:
+   * - Em 1.0x / combo desgastado: som opaco/abafado (filtro passa-baixas) indicando necessidade de variar
+   * - Em multiplicadores altos (>= 4.0x): pulso energizado com camada harmônica brilhante
    */
-  playShoot(multiplier = 4.0) {
+  playShoot(multiplier = 1.0, isStale = false, binId = null) {
     const ctx = this.ensureContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
+    const elem = binId ? CONAMA_ELEMENTS[binId] : null;
+    const isDull = multiplier <= 1.0 || isStale;
+
+    if (isDull) {
+      // Disparo desgastado em 1.0x: filtro passa-baixas para timbre claramente opaco
+      const osc = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(isStale ? 320 : 440, now);
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(isStale ? 155 : 185, now);
+      osc.frequency.exponentialRampToValueAtTime(68, now + 0.16);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.13, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(now);
+      osc.stop(now + 0.18);
+      return;
+    }
+
+    // Disparo energizado progressivo proporcional ao multiplicador (1.5x até 6.0x)
+    const elemPitchOffset = elem ? (elem.freq - 440) * 0.18 : 0;
+    const startFreq = Math.max(220, 250 + multiplier * 88 + elemPitchOffset);
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
+    osc.type = binId === 'GLASS' ? 'triangle' : 'sawtooth';
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(125, now + 0.15);
 
-    if (multiplier <= 1.0) {
-      // Disparo desgastado em 1x (som abafado e grave)
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(75, now + 0.14);
-      gain.gain.setValueAtTime(0.11, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    } else {
-      // Disparo energizado (quanto maior o multiplicador, mais brilhante o pulso)
-      osc.type = 'sawtooth';
-      const startFreq = 260 + multiplier * 95;
-      osc.frequency.setValueAtTime(startFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(110, now + 0.16);
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
-    }
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.13, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.165);
 
     osc.connect(gain);
     gain.connect(this.getOutput(ctx));
     osc.start(now);
-    osc.stop(now + 0.18);
+    osc.stop(now + 0.175);
+
+    // Em multiplicador >= 4.0x (Rank S/SS/SSS), adiciona camada brilhante aguda
+    if (multiplier >= 4.0) {
+      const shimmer = ctx.createOscillator();
+      const sGain = ctx.createGain();
+      shimmer.type = 'sine';
+      shimmer.frequency.setValueAtTime(startFreq * 1.5, now);
+      shimmer.frequency.exponentialRampToValueAtTime(startFreq * 2.0, now + 0.14);
+
+      sGain.gain.setValueAtTime(0.001, now);
+      sGain.gain.linearRampToValueAtTime(0.08, now + 0.012);
+      sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      shimmer.connect(sGain);
+      sGain.connect(this.getOutput(ctx));
+      shimmer.start(now);
+      shimmer.stop(now + 0.17);
+    }
   }
 
   /**
-   * Som ao atingir ou derrotar um "bicho" da poluição na arena
+   * E4-03 — Som progressivo ao atingir ou purificar inimigos:
+   * - Em >= 4.0x (Rank S/SS/SSS): acorde harmônico brilhante (3–4 notas)
+   * - Em 2.0x–3.0x: intervalo consonante nítido
+   * - Em 1.0x ou lixeira errada: golpe opaco/grave
    */
-  playEnemyHit(multiplier = 4.0, defeated = false) {
+  playEnemyHit(multiplier = 1.0, defeated = false, binId = null, isMatchingBin = true) {
     const ctx = this.ensureContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
+    const elem = binId ? CONAMA_ELEMENTS[binId] : null;
+    const rootFreq = elem ? elem.freq : 440;
+
+    if (!isMatchingBin) {
+      // Erro de lixeira: som opaco dissonante
+      const osc = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(360, now);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(170, now);
+      osc.frequency.linearRampToValueAtTime(98, now + 0.14);
+
+      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(now);
+      osc.stop(now + 0.16);
+      return;
+    }
+
+    if (multiplier >= 4.0) {
+      // E4-03: Multiplicador >= 4.0x toca um acorde brilhante (tríade/tétrade maior cintilante!)
+      const scaleBoost = multiplier >= 5.0 ? 1.125 : 1.0;
+      const chordRatios = defeated ? [1.0, 1.25, 1.5, 2.0] : [1.0, 1.25, 1.5];
+      chordRatios.forEach((ratio, idx) => {
+        const t0 = now + idx * 0.022;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === chordRatios.length - 1 ? 'sine' : 'triangle';
+        const f = rootFreq * ratio * scaleBoost;
+        osc.frequency.setValueAtTime(f, t0);
+        if (defeated) {
+          osc.frequency.exponentialRampToValueAtTime(f * 1.08, t0 + 0.24);
+        }
+
+        gain.gain.setValueAtTime(0.001, t0);
+        gain.gain.linearRampToValueAtTime(idx === 0 ? 0.12 : 0.085, t0 + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + (defeated ? 0.28 : 0.18));
+
+        osc.connect(gain);
+        gain.connect(this.getOutput(ctx));
+        osc.start(t0);
+        osc.stop(t0 + (defeated ? 0.3 : 0.19));
+      });
+      return;
+    }
+
+    if (multiplier >= 2.0) {
+      // Multiplicador intermediário (2.0x–3.0x): impacto nítido de 2 notas (tônica + quinta)
+      const ratios = defeated ? [1.0, 1.5] : [1.0, 1.25];
+      ratios.forEach((ratio, idx) => {
+        const t0 = now + idx * 0.025;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = defeated ? 'triangle' : 'square';
+        const f = rootFreq * ratio * (defeated ? 1.15 : 0.85);
+        osc.frequency.setValueAtTime(f, t0);
+        osc.frequency.exponentialRampToValueAtTime(defeated ? f * 1.22 : f * 0.72, t0 + (defeated ? 0.2 : 0.1));
+
+        gain.gain.setValueAtTime(0.001, t0);
+        gain.gain.linearRampToValueAtTime(idx === 0 ? 0.11 : 0.075, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + (defeated ? 0.22 : 0.11));
+
+        osc.connect(gain);
+        gain.connect(this.getOutput(ctx));
+        osc.start(t0);
+        osc.stop(t0 + (defeated ? 0.23 : 0.12));
+      });
+      return;
+    }
+
+    // Multiplicador baixo (1.0x–1.5x): som compacto (e filtrado/opaco em 1.0x)
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
     osc.type = defeated ? 'triangle' : 'square';
-    const base = defeated ? 520 : 300;
-    const target = defeated ? 880 * (multiplier >= 4 ? 1.2 : 1.0) : 160;
+    const base = defeated ? 440 : 250;
+    const target = defeated ? 660 : 135;
 
     osc.frequency.setValueAtTime(base, now);
-    osc.frequency.exponentialRampToValueAtTime(target, now + (defeated ? 0.22 : 0.09));
+    osc.frequency.exponentialRampToValueAtTime(target, now + (defeated ? 0.18 : 0.085));
 
-    gain.gain.setValueAtTime(0.14, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + (defeated ? 0.24 : 0.1));
+    gain.gain.setValueAtTime(0.11, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + (defeated ? 0.2 : 0.095));
 
-    osc.connect(gain);
+    if (multiplier <= 1.0) {
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(520, now);
+      osc.connect(filter);
+      filter.connect(gain);
+    } else {
+      osc.connect(gain);
+    }
     gain.connect(this.getOutput(ctx));
     osc.start(now);
-    osc.stop(now + (defeated ? 0.25 : 0.11));
+    osc.stop(now + (defeated ? 0.21 : 0.105));
   }
 
   /**

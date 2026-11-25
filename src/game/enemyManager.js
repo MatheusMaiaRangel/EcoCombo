@@ -660,7 +660,7 @@ export class EnemyManager {
     }
 
     if (hitCount > 0) {
-      this.sound.playEnemyHit(multiplier, false);
+      this.sound.playEnemyHit(multiplier, false, spell.binId, validControlHitCount > 0);
       this.comboSystem.registerOffensiveStyleHit();
       // Recompensa o uso tático de Controle de Grupo no Style Meter Devil May Cry com controle de variedade
       const repeat = castStyleMeta ? castStyleMeta.repeatCount : this.comboSystem.repeatCount;
@@ -1178,11 +1178,28 @@ export class EnemyManager {
             }
           }
 
+          // E4-03 — Partículas 3D progressivas conforme o multiplicador (dezenas de partículas em >= 4.0x!)
+          const progressiveHitCount = hitArmorBrokenCrit
+            ? 34
+            : !isMatchingBin
+              ? 6
+              : currentMultiplier >= 4.0
+                ? 36
+                : currentMultiplier >= 2.0
+                  ? 22
+                  : 12;
+          const progressiveIntensity =
+            isMatchingBin && currentMultiplier >= 4.0 ? 1.32 : isMatchingBin ? 1.0 : 0.72;
           this.comboSystem.spawnImpactParticles(
             enemy.group.position.clone().add(new THREE.Vector3(0, 1.0, 0)),
             hitArmoredIntact ? 0xc084fc : hitArmorBrokenCrit ? 0xffd166 : proj.recipe.colorA,
-            hitArmoredIntact ? 0xe2e8f0 : proj.recipe.colorB,
-            hitArmorBrokenCrit ? 26 : isMatchingBin ? 18 : 7
+            hitArmoredIntact
+              ? 0xe2e8f0
+              : currentMultiplier >= 4.0 && isMatchingBin
+                ? 0x00f5d4
+                : proj.recipe.colorB,
+            progressiveHitCount,
+            progressiveIntensity
           );
 
           if (hitArmoredIntact) {
@@ -1236,15 +1253,16 @@ export class EnemyManager {
           if (hitArmoredIntact && !defeated && typeof this.sound.playArmorDeflect === 'function') {
             this.sound.playArmorDeflect();
           } else {
-            this.sound.playEnemyHit(currentMultiplier, defeated);
+            this.sound.playEnemyHit(currentMultiplier, defeated, proj.recipe.binId, isMatchingBin);
           }
 
           if (defeated) {
             this.comboSystem.spawnImpactParticles(
               enemy.group.position.clone().add(new THREE.Vector3(0, 0.9, 0)),
               0x00f5d4,
-              proj.recipe.colorA,
-              24
+              currentMultiplier >= 4.0 ? 0xffd166 : proj.recipe.colorA,
+              currentMultiplier >= 4.0 ? 40 : 24,
+              currentMultiplier >= 4.0 ? 1.35 : 1.05
             );
             this.scene.remove(enemy.group);
             this.enemies.splice(ei, 1);

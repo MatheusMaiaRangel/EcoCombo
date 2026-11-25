@@ -189,6 +189,17 @@ export class ComboSystem {
       pill.classList.toggle('active-bin', pill.getAttribute('data-element') === binId);
     });
 
+    // E4-03 — Emite partículas 3D de canalização ao abrir a lixeira CONAMA
+    const binElem = CONAMA_ELEMENTS[binId];
+    if (binElem) {
+      this.spawnConjureParticles(
+        this.player.position.clone().add(new THREE.Vector3(0, 1.15, 0)),
+        binElem.hexNumber,
+        0xffffff,
+        this.activeMultiplier >= 4.0 ? 12 : 7
+      );
+    }
+
     // Mostra preview do objeto da lixeira nas mãos do protagonista
     const defaultSpell = resolveHweiSpell(binId, 'DAMAGE');
     this.player.setConjuredRecipePreview(defaultSpell, [binId]);
@@ -391,13 +402,29 @@ export class ComboSystem {
       }
     }
 
-    this.sound.playShoot(this.activeMultiplier);
+    const isStale =
+      this.repeatCount >= 3 || (this.repeatCount >= 2 && this.activeMultiplier <= 1.0);
+    this.sound.playShoot(this.activeMultiplier, isStale, spell.binId);
 
     const baseDir = this.player.aimDirection.clone().normalize();
     const spawnOrigin = this.player.position
       .clone()
       .add(new THREE.Vector3(baseDir.x * 0.9, 1.15, baseDir.z * 0.9));
     const targetPoint = this.player.aimPoint.clone();
+
+    // E4-03 — Partículas 3D progressivas ao conjurar/disparar (mais intensas em >= 4.0x, discretas em 1.0x/stale)
+    const castBurstCount = isStale || this.activeMultiplier <= 1.0
+      ? 4
+      : this.activeMultiplier >= 4.0
+        ? 18
+        : 10;
+    this.spawnImpactParticles(
+      spawnOrigin,
+      isStale ? 0x94a3b8 : spell.colorA,
+      this.activeMultiplier >= 4.0 && !isStale ? 0x00f5d4 : spell.colorB,
+      castBurstCount,
+      this.activeMultiplier >= 4.0 && !isStale ? 1.25 : 0.85
+    );
 
     if (spell.behavior === 'damage_paper') {
       // Papel (E + Q): Rajada tripla de lâminas de origami (compartilha castStyleMeta)
@@ -657,11 +684,55 @@ export class ComboSystem {
   }
 
   /**
-   * Emite partículas 3D nas cores da lixeira/habilidade
+   * E4-03 — Emite partículas 3D em espiral ascendente ao canalizar uma Lixeira CONAMA
    */
-  spawnImpactParticles(position, colorA, colorB, count = 14) {
+  spawnConjureParticles(centerPos, colorA, colorB, count = 8) {
+    const maxLive = 280;
     for (let i = 0; i < count; i++) {
-      const size = 0.1 + Math.random() * 0.12;
+      if (this.particles.length >= maxLive) break;
+      const size = 0.08 + Math.random() * 0.09;
+      const geo = new THREE.BoxGeometry(size, size, size);
+      const color = i % 2 === 0 ? colorA : colorB;
+      const mat = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.95,
+        toneMapped: false
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      const angle = (i / Math.max(1, count)) * Math.PI * 2 + Math.random() * 0.35;
+      const radius = 0.55 + Math.random() * 0.45;
+      mesh.position.set(
+        centerPos.x + Math.cos(angle) * radius,
+        centerPos.y + (Math.random() - 0.5) * 0.4,
+        centerPos.z + Math.sin(angle) * radius
+      );
+
+      const velocity = new THREE.Vector3(
+        Math.cos(angle) * (1.2 + Math.random() * 1.4),
+        2.2 + Math.random() * 2.2,
+        Math.sin(angle) * (1.2 + Math.random() * 1.4)
+      );
+
+      this.scene.add(mesh);
+      this.particles.push({
+        mesh,
+        mat,
+        velocity,
+        life: 0.28 + Math.random() * 0.18,
+        maxLife: 0.46
+      });
+    }
+  }
+
+  /**
+   * E4-03 — Emite partículas 3D nas cores da lixeira/habilidade com intensidade escalável por multiplicador
+   */
+  spawnImpactParticles(position, colorA, colorB, count = 14, intensity = 1.0) {
+    const maxLive = 280;
+    const safeCount = Math.min(count, Math.max(0, maxLive - this.particles.length));
+    for (let i = 0; i < safeCount; i++) {
+      const size = (0.09 + Math.random() * 0.13) * Math.min(1.45, Math.max(0.75, intensity));
       const geo = new THREE.BoxGeometry(size, size, size);
       const color = i % 2 === 0 ? colorA : colorB;
       const mat = new THREE.MeshBasicMaterial({
@@ -674,10 +745,10 @@ export class ComboSystem {
       mesh.position.copy(position);
 
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2.0 + Math.random() * 6.5;
+      const speed = (2.0 + Math.random() * 6.5) * intensity;
       const velocity = new THREE.Vector3(
         Math.cos(angle) * speed,
-        1.5 + Math.random() * 4.0,
+        (1.6 + Math.random() * 4.2) * intensity,
         Math.sin(angle) * speed
       );
 
@@ -686,8 +757,8 @@ export class ComboSystem {
         mesh,
         mat,
         velocity,
-        life: 0.35 + Math.random() * 0.25,
-        maxLife: 0.6
+        life: (0.34 + Math.random() * 0.28) * Math.min(1.3, Math.max(0.8, intensity)),
+        maxLife: 0.65 * Math.min(1.3, Math.max(0.8, intensity))
       });
     }
   }
