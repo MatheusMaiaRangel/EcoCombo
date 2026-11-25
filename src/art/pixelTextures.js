@@ -1049,6 +1049,49 @@ export function createEnemyBinBadgeTexture(binElement, itemNameOverride = null) 
 }
 
 /**
+ * E2-04 — Etiqueta especial para Inimigos Blindados (mostra escudo + dica "USE [E]")
+ */
+export function createArmoredEnemyBadgeTexture(binElement, itemNameOverride = null) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 224;
+  canvas.height = 42;
+  const ctx = canvas.getContext('2d');
+
+  // Fundo violeta metálico com borda dupla dourada/roxa
+  ctx.fillStyle = '#1e1035';
+  ctx.fillRect(1, 1, 222, 40);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#c084fc';
+  ctx.strokeRect(2, 2, 220, 38);
+
+  // Quadrado da Tecla da Lixeira à esquerda
+  ctx.fillStyle = binElement.hex;
+  ctx.fillRect(5, 5, 30, 32);
+
+  ctx.fillStyle = binElement.id === 'METAL' ? '#0f172a' : '#ffffff';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(binElement.keyAlt, 20, 21);
+
+  // Nome do item + subtítulo de quebra de blindagem
+  const displayName = (itemNameOverride || binElement.enemyItemName).toUpperCase();
+  ctx.fillStyle = '#f5d0fe';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`🛡 ${displayName}`, 41, 14, 176);
+
+  ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText(`BLINDADO · QUEBRE [${binElement.keyAlt}+E]`, 41, 30, 176);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/**
  * E1-02 — Retícula de Mira Isométrica no Chão (THREE.NearestFilter) com contorno forte
  */
 export function createReticleTexture() {

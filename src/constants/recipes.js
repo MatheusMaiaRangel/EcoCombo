@@ -90,10 +90,22 @@ export const CONAMA_ELEMENTS = {
 export const ELEMENT_ORDER = ['PLASTIC', 'PAPER', 'GLASS', 'METAL'];
 
 /**
- * E2-06 / RN20 — Tempo (em segundos de gameplay ativa) para ativar o Estágio 2:
- * Aos 01:30 (90s), a arena se expande e acumula +1 novo inimigo reciclável por lixeira CONAMA.
+ * E2-06 / E2-03 — Marcos de tempo (em segundos de gameplay ativa) dos Estágios da partida:
+ * - Estágio 1 (00:00): 4 itens recicláveis base
+ * - Estágio 2 (01:30 / 90s): arena expande, +4 novos itens (8 total), +15% HP e +8% velocidade
+ * - Estágio 3 (03:00 / 180s): onda final (+30% HP, +16% velocidade, alta incidência de blindados; prepara o terreno para o Boss do Épico E5)
  */
 export const STAGE_2_UNLOCK_TIME_SEC = 90;
+export const STAGE_3_UNLOCK_TIME_SEC = 180;
+export const MAX_STANDARD_STAGE = 3;
+
+export function getStageHpMultiplier(stage = 1) {
+  return 1 + Math.max(0, stage - 1) * 0.15;
+}
+
+export function getStageSpeedMultiplier(stage = 1) {
+  return 1 + Math.max(0, stage - 1) * 0.08;
+}
 
 /**
  * E2-05 / E2-06 — Catálogo dos Inimigos Recicláveis por Lixeira CONAMA:

@@ -1,6 +1,7 @@
 import {
   CONAMA_ELEMENTS,
   STAGE_2_UNLOCK_TIME_SEC,
+  STAGE_3_UNLOCK_TIME_SEC,
   getBinItemNamesForStage,
   resolveHweiSpell
 } from '../constants/recipes.js';
@@ -79,8 +80,19 @@ export class HUDController {
     this.enemiesAlivePill = document.getElementById('enemies-alive-pill');
     this.lastComboUsedLabel = document.getElementById('last-combo-used-label');
 
-    // Banner de transição do Estágio 2 (E2-06)
+    // Banner de transição de Estágio (E2-06 Estágio 2 / E2-03 Estágio 3)
+    this.arenaViewport = document.getElementById('arena-viewport');
+    this.damageFlashTimeout = null;
     this.stageTransitionBanner = document.getElementById('stage-transition-banner');
+    this.stageBannerBadge = this.stageTransitionBanner
+      ? this.stageTransitionBanner.querySelector('.stage-banner-badge')
+      : null;
+    this.stageBannerTitle = this.stageTransitionBanner
+      ? this.stageTransitionBanner.querySelector('.stage-banner-title')
+      : null;
+    this.stageBannerEnemies = this.stageTransitionBanner
+      ? this.stageTransitionBanner.querySelector('.stage-banner-enemies')
+      : null;
     this.stageBannerTimeout = null;
     this.currentStage = 1;
 
@@ -357,11 +369,59 @@ export class HUDController {
     this.currentStage = stage;
   }
 
-  showStageTransitionBanner(durationMs = 5200) {
+  /**
+   * E2-02 — Pulso visual breve na borda da arena ao sofrer dano de inimigo
+   */
+  triggerDamageFlash() {
+    if (!this.arenaViewport) return;
+    if (this.damageFlashTimeout) {
+      clearTimeout(this.damageFlashTimeout);
+    }
+    this.arenaViewport.classList.remove('damage-hit-flash');
+    void this.arenaViewport.offsetWidth;
+    this.arenaViewport.classList.add('damage-hit-flash');
+    this.damageFlashTimeout = setTimeout(() => {
+      if (this.arenaViewport) {
+        this.arenaViewport.classList.remove('damage-hit-flash');
+      }
+      this.damageFlashTimeout = null;
+    }, 360);
+  }
+
+  showStageTransitionBanner(stage = 2, durationMs = 5200) {
     if (!this.stageTransitionBanner) return;
     if (this.stageBannerTimeout) {
       clearTimeout(this.stageBannerTimeout);
     }
+
+    const isStage3 = stage >= 3;
+    this.stageTransitionBanner.classList.toggle('stage-3', isStage3);
+
+    if (this.stageBannerBadge) {
+      this.stageBannerBadge.textContent = isStage3
+        ? '🔥 ESTÁGIO 3 ATIVADO · 03:00 (ONDA FINAL)'
+        : '⚡ ESTÁGIO 2 ATIVADO · 01:30';
+    }
+    if (this.stageBannerTitle) {
+      this.stageBannerTitle.textContent = isStage3
+        ? 'DESAFIO MÁXIMO: +30% HP · +16% VELOCIDADE!'
+        : 'ARENA EXPANDIDA & +4 NOVOS INIMIGOS (+15% HP · +8% VEL)!';
+    }
+    if (this.stageBannerEnemies) {
+      this.stageBannerEnemies.innerHTML = isStage3
+        ? `
+          <span class="stage-enemy-chip armored">🛡 +INIMIGOS BLINDADOS (QUEBRE C/ [COR+E])</span>
+          <span class="stage-enemy-chip metal">⚡ RITMO ACELERADO</span>
+          <span class="stage-enemy-chip plastic">👑 CHEFÃO NO FIM DO ESTÁGIO (EM BREVE)</span>
+        `
+        : `
+          <span class="stage-enemy-chip plastic">[Q] Sacola Plástica</span>
+          <span class="stage-enemy-chip paper">[E] Jornal Velho</span>
+          <span class="stage-enemy-chip glass">[R] Pote de Vidro</span>
+          <span class="stage-enemy-chip metal">[F] Lata de Alumínio</span>
+        `;
+    }
+
     this.stageTransitionBanner.classList.remove('hidden');
     this.stageBannerTimeout = setTimeout(() => {
       this.hideStageTransitionBanner();
@@ -388,14 +448,24 @@ export class HUDController {
 
     if (this.matchTimerPill) {
       const timeStr = formatMatchTime(matchElapsedSec);
-      const targetStr = formatMatchTime(STAGE_2_UNLOCK_TIME_SEC);
-      if (stage >= 2) {
-        this.matchTimerPill.textContent = `⏱ ${timeStr} • EXPANDIDO`;
-        this.matchTimerPill.classList.remove('stage-soon');
+      const stage2Str = formatMatchTime(STAGE_2_UNLOCK_TIME_SEC);
+      const stage3Str = formatMatchTime(STAGE_3_UNLOCK_TIME_SEC);
+
+      if (stage >= 3) {
+        this.matchTimerPill.textContent = `⏱ ${timeStr} • EST. 3 FINAL`;
+        this.matchTimerPill.classList.remove('stage-soon', 'stage-expanded');
+        this.matchTimerPill.classList.add('stage-final');
+      } else if (stage === 2) {
+        this.matchTimerPill.textContent = `⏱ ${timeStr} / ${stage3Str} • EST. 2`;
+        this.matchTimerPill.classList.remove('stage-final');
         this.matchTimerPill.classList.add('stage-expanded');
+        this.matchTimerPill.classList.toggle(
+          'stage-soon',
+          matchElapsedSec >= STAGE_3_UNLOCK_TIME_SEC - 10
+        );
       } else {
-        this.matchTimerPill.textContent = `⏱ ${timeStr} / ${targetStr}`;
-        this.matchTimerPill.classList.remove('stage-expanded');
+        this.matchTimerPill.textContent = `⏱ ${timeStr} / ${stage2Str}`;
+        this.matchTimerPill.classList.remove('stage-expanded', 'stage-final');
         this.matchTimerPill.classList.toggle(
           'stage-soon',
           matchElapsedSec >= STAGE_2_UNLOCK_TIME_SEC - 10

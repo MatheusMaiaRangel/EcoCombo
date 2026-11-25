@@ -1639,6 +1639,13 @@ html, body {
   box-shadow: 0 0 10px rgba(0, 245, 212, 0.35);
 }
 
+.match-timer-pill.stage-final {
+  border-color: #f43f5e;
+  color: #fda4af;
+  background: rgba(76, 5, 25, 0.88);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45);
+}
+
 @keyframes pulseStageSoon {
   from {
     transform: scale(1);
@@ -1702,6 +1709,42 @@ html, body {
   border-radius: 4px;
   border: 2px solid currentColor;
   background: rgba(15, 23, 42, 0.85);
+}
+
+.stage-transition-banner.stage-3 {
+  border-color: #f43f5e;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.72),
+    0 0 26px rgba(244, 63, 94, 0.45);
+}
+
+.stage-transition-banner.stage-3 .stage-banner-badge {
+  background: #f43f5e;
+  color: #ffffff;
+}
+
+.stage-enemy-chip.armored {
+  color: #d8b4fe;
+}
+
+/* E2-02 — Pulso breve vermelho na borda da arena ao sofrer dano */
+#arena-viewport.damage-hit-flash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 19;
+  box-shadow: inset 0 0 54px rgba(255, 59, 48, 0.78);
+  animation: damageEdgeFlash 0.35s ease-out forwards;
+}
+
+@keyframes damageEdgeFlash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .stage-enemy-chip.plastic {

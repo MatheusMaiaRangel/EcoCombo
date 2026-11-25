@@ -294,14 +294,17 @@ export class SoundEngine {
   }
 
   /**
-   * E2-06 — Fanfarra ascendente sintetizada ao expandir o mapa e liberar o Estágio 2 (01:30)
+   * E2-06 / E2-03 — Fanfarra ascendente sintetizada ao avançar para o Estágio 2 (01:30) ou Estágio 3 (03:00)
    */
-  playStageTransition() {
+  playStageTransition(stage = 2) {
     const ctx = this.ensureContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5];
+    const notes =
+      stage >= 3
+        ? [440.0, 554.37, 659.25, 880.0, 1108.73]
+        : [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, idx) => {
       const t0 = now + idx * 0.085;
       const osc = ctx.createOscillator();
@@ -315,12 +318,66 @@ export class SoundEngine {
 
       gain.gain.setValueAtTime(0.001, t0);
       gain.gain.linearRampToValueAtTime(idx === notes.length - 1 ? 0.16 : 0.11, t0 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (idx === notes.length - 1 ? 0.42 : 0.16));
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (idx === notes.length - 1 ? 0.44 : 0.16));
 
       osc.connect(gain);
       gain.connect(this.getOutput(ctx));
       osc.start(t0);
-      osc.stop(t0 + (idx === notes.length - 1 ? 0.44 : 0.18));
+      osc.stop(t0 + (idx === notes.length - 1 ? 0.46 : 0.18));
+    });
+  }
+
+  /**
+   * E2-04 — Som metálico de resistência quando um ataque direto acerta um Inimigo Blindado (-50% dano)
+   */
+  playArmorDeflect() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    [320, 485].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx === 0 ? 'triangle' : 'square';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.62, now + 0.12);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(idx === 0 ? 0.12 : 0.06, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(now);
+      osc.stop(now + 0.14);
+    });
+  }
+
+  /**
+   * E2-04 — Som cristalino de quebra de blindagem ao usar Controle de Grupo [E]
+   */
+  playArmorBreak() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [587.33, 880.0, 1174.66];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.045;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.12, t0 + 0.16);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.14, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + 0.22);
     });
   }
 

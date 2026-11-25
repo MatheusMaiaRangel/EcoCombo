@@ -549,11 +549,20 @@ export class PlayerController {
 
     this.rootGroup.position.copy(this.position);
 
-    // Pisca visualmente se acabou de sofrer contato de um bicho
+    // E2-02 — Pisca visualmente e destaca o anel nos pés durante o 1 segundo de invencibilidade após dano
     if (this.invulnerableTimer > 0) {
-      this.spriteMesh.visible = Math.floor(elapsedTime * 18) % 2 === 0;
+      const blinkOn = Math.floor(elapsedTime * 18) % 2 === 0;
+      this.spriteMesh.visible = blinkOn;
+      if (this.footRing && this.footRing.material) {
+        this.footRing.material.color.setHex(blinkOn ? 0xff3b30 : 0xffffff);
+        this.footRing.scale.setScalar(1.18 + Math.sin(elapsedTime * 22) * 0.08);
+      }
     } else {
       this.spriteMesh.visible = true;
+      if (this.footRing && this.footRing.material) {
+        this.footRing.material.color.setHex(0x00f5d4);
+        this.footRing.scale.setScalar(1.0);
+      }
     }
 
     // 2. Mira Isométrica via THREE.Raycaster no Plano do Chão (E1-02)

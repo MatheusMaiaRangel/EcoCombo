@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {
   createEnemyTextures,
-  createEnemyBinBadgeTexture
+  createEnemyBinBadgeTexture,
+  createArmoredEnemyBadgeTexture
 } from '../art/pixelTextures.js';
 import {
   CONAMA_ELEMENTS,
@@ -9,6 +10,8 @@ import {
   ENEMY_VARIANT_LIST,
   STAGE_2_NEW_VARIANT_IDS,
   getUnlockedEnemyVariants,
+  getStageHpMultiplier,
+  getStageSpeedMultiplier,
   computeHitDamage,
   computeHitPoints
 } from '../constants/recipes.js';
@@ -50,19 +53,27 @@ export class EnemyManager {
 
     this.enemyTextureSets = createEnemyTextures();
     this.variantBadgeTextures = {};
+    this.armoredBadgeTextures = {};
     ENEMY_VARIANT_LIST.forEach((variant) => {
       this.variantBadgeTextures[variant.id] = createEnemyBinBadgeTexture(
+        CONAMA_ELEMENTS[variant.binId],
+        variant.name
+      );
+      this.armoredBadgeTextures[variant.id] = createArmoredEnemyBadgeTexture(
         CONAMA_ELEMENTS[variant.binId],
         variant.name
       );
     });
 
     this.enemies = [];
+    this.spawnedCountThisMatch = 0;
+    this.currentStage = 1;
 
     this.spawnTimer = 1.0;
     this.spawnInterval = 2.6;
     this.maxConcurrentEnemiesStage1 = 9;
     this.maxConcurrentEnemiesStage2 = 12;
+    this.maxConcurrentEnemiesStage3 = 15;
     this.difficultyMode = 'NORMAL';
     this.difficultySpeedMult = 1.0;
     this.difficultySpawnMult = 1.0;
@@ -234,6 +245,7 @@ export class EnemyManager {
   }
 
   getMaxConcurrentEnemies(stage = 1) {
+    if (stage >= 3) return this.maxConcurrentEnemiesStage3;
     return stage >= 2 ? this.maxConcurrentEnemiesStage2 : this.maxConcurrentEnemiesStage1;
   }
 
@@ -242,22 +254,50 @@ export class EnemyManager {
    */
   triggerStage2ArrivalWave() {
     STAGE_2_NEW_VARIANT_IDS.forEach((variantId, idx) => {
-      this.spawnEnemyAroundPerimeter(2, null, variantId, idx % 4, true);
+      this.spawnEnemyAroundPerimeter(2, null, variantId, idx % 4, true, idx === 0);
     });
   }
 
   /**
-   * E2-05 / E2-06 — Instancia um Item Reciclável vivo nas bordas da arena
-   * No Estágio 1 escolhe entre os 4 itens base; no Estágio 2 acumula os 8 itens (2 por lixeira CONAMA)
+   * E2-03 / E2-04 — Ao entrar no Estágio 3 (03:00 — Onda Final), lança uma leva reforçada com inimigos blindados
+   */
+  triggerStage3ArrivalWave() {
+    const waveVariants = ['PLASTIC_BAG', 'PAPER_NEWSPAPER', 'GLASS_JAR', 'METAL_CAN'];
+    waveVariants.forEach((variantId, idx) => {
+      const armored = idx % 2 === 0;
+      this.spawnEnemyAroundPerimeter(3, null, variantId, idx % 4, true, armored);
+    });
+  }
+
+  /**
+   * E2-05 / E2-06 / E2-03 / E2-04 — Instancia um Item Reciclável vivo nas bordas da arena
+   * - Estágio 1: 4 itens base (1x HP / 1x vel)
+   * - Estágio 2 (01:30+): 8 itens acumulados (+15% HP / +8% vel)
+   * - Estágio 3 (03:00+): 8 itens reforçados (+30% HP / +16% vel + maior chance de Blindados)
    */
   spawnEnemyAroundPerimeter(
     stage = 1,
     forcedCategory = null,
     forcedVariantId = null,
     forcedSide = null,
-    ignoreCap = false
+    ignoreCap = false,
+    forcedArmored = null
   ) {
     if (!ignoreCap && this.enemies.length >= this.getMaxConcurrentEnemies(stage)) return;
+
+    this.spawnedCountThisMatch += 1;
+    const activeArmoredCount = this.enemies.filter((e) => e.armorActive).length;
+    let isArmored = false;
+    if (forcedArmored !== null) {
+      isArmored = Boolean(forcedArmored);
+    } else if (stage >= 3) {
+      isArmored = Math.random() < 0.4;
+    } else if (stage === 2) {
+      isArmored = Math.random() < 0.25;
+    } else if (this.spawnedCountThisMatch >= 5 && activeArmoredCount < 1) {
+      // Estágio 1: poucos inimigos blindados (10% de chance, máx. 1 ativo por vez)
+      isArmored = Math.random() < 0.1;
+    }
 
     const borderDist = this.getArenaHalfSize() - 1.1;
     const side = forcedSide !== null ? forcedSide : Math.floor(Math.random() * 4);
@@ -359,23 +399,57 @@ export class EnemyManager {
     statusRing.position.y = 0.05;
     group.add(statusRing);
 
-    // Barra de Vida (HP) + Etiqueta da Lixeira ([Q] GARRAFA PET, [Q] SACOLA PLÁSTICA, [F] LATA DE ALUMÍNIO, etc.)
+    // E2-04 — Escudo hexagonal rotativo de blindagem para inimigos resistentes
+    let armorMesh = null;
+    if (isArmored) {
+      armorMesh = new THREE.Group();
+      armorMesh.position.y = 1.05;
+      const shellWire = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.96, 0),
+        new THREE.MeshBasicMaterial({
+          color: 0xd8b4fe,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.92,
+          toneMapped: false,
+          fog: false
+        })
+      );
+      const shellAura = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.9, 0),
+        new THREE.MeshBasicMaterial({
+          color: 0xa855f7,
+          transparent: true,
+          opacity: 0.16,
+          depthWrite: false,
+          toneMapped: false,
+          fog: false
+        })
+      );
+      armorMesh.add(shellWire, shellAura);
+      group.add(armorMesh);
+    }
+
+    // Barra de Vida (HP) + Etiqueta da Lixeira ([Q] GARRAFA PET, ou etiqueta Blindada se E2-04)
     const hpGroup = new THREE.Group();
-    hpGroup.position.set(0, 2.12, 0);
+    hpGroup.position.set(0, 2.15, 0);
     hpGroup.rotation.y = Math.PI / 4;
 
+    const badgeMat = new THREE.MeshBasicMaterial({
+      map: isArmored
+        ? this.armoredBadgeTextures[variant.id]
+        : this.variantBadgeTextures[variant.id],
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+      fog: false
+    });
     const badgeMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.12, 0.42),
-      new THREE.MeshBasicMaterial({
-        map: this.variantBadgeTextures[variant.id],
-        transparent: true,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-        toneMapped: false,
-        fog: false
-      })
+      new THREE.PlaneGeometry(isArmored ? 2.48 : 2.12, isArmored ? 0.48 : 0.42),
+      badgeMat
     );
-    badgeMesh.position.y = 0.35;
+    badgeMesh.position.y = isArmored ? 0.4 : 0.35;
 
     const hpBg = new THREE.Mesh(
       new THREE.PlaneGeometry(1.42, 0.22),
@@ -388,7 +462,7 @@ export class EnemyManager {
     );
     const hpFillGeo = new THREE.PlaneGeometry(1.32, 0.14);
     const hpFillMat = new THREE.MeshBasicMaterial({
-      color: binElem.hexNumber,
+      color: isArmored ? 0xc084fc : binElem.hexNumber,
       side: THREE.DoubleSide,
       toneMapped: false,
       fog: false
@@ -401,10 +475,12 @@ export class EnemyManager {
 
     this.scene.add(group);
 
-    // Atributos específicos por variante (Stage 1 + Stage 2)
-    const maxHp = Math.round((130 + (stage - 1) * 20) * variant.hpModifier);
+    // E2-03 — Escalonamento exato de +15% HP e +8% velocidade por Estágio (Estágio 1 -> 2 -> 3)
+    const stageHpMult = getStageHpMultiplier(stage);
+    const stageSpeedMult = getStageSpeedMultiplier(stage);
+    const maxHp = Math.round(130 * variant.hpModifier * stageHpMult * (isArmored ? 1.15 : 1.0));
     const baseSpeed =
-      (3.05 + Math.random() * 0.7 + Math.min(1.4, (stage - 1) * 0.24)) * variant.speedModifier;
+      (3.05 + Math.random() * 0.65) * variant.speedModifier * stageSpeedMult * (isArmored ? 0.93 : 1.0);
 
     this.enemies.push({
       id: NEXT_ENEMY_ID++,
@@ -420,6 +496,12 @@ export class EnemyManager {
       spriteMat,
       statusRing,
       texFrames,
+      badgeMesh,
+      badgeMat,
+      normalBadgeTex: this.variantBadgeTextures[variant.id],
+      armorMesh,
+      armorActive: isArmored,
+      armorBroken: false,
       hpFill,
       hpFillMat,
       hp: maxHp,
@@ -496,32 +578,75 @@ export class EnemyManager {
           enemy.knockbackVel.set(0, 0, 0);
         }
 
-        // Dano leve de controle (maior se for o item da mesma lixeira)
-        const damage = computeHitDamage(
+        // E2-04 — Apenas o Controle de Grupo [E] ESPECÍFICO do material quebra a blindagem!
+        let justBrokeArmor = false;
+        let deflectedWrongControl = false;
+        if (enemy.armorActive) {
+          if (isMatchingBin) {
+            enemy.armorActive = false;
+            enemy.armorBroken = true;
+            justBrokeArmor = true;
+            if (enemy.armorMesh) {
+              enemy.armorMesh.visible = false;
+            }
+            if (enemy.badgeMat && enemy.normalBadgeTex) {
+              enemy.badgeMat.map = enemy.normalBadgeTex;
+              enemy.badgeMat.needsUpdate = true;
+            }
+            if (enemy.hpFillMat) {
+              enemy.hpFillMat.color.setHex(enemy.binElem.hexNumber);
+            }
+            this.comboSystem.spawnImpactParticles(
+              enemy.group.position.clone().add(new THREE.Vector3(0, 1.1, 0)),
+              0xd8b4fe,
+              0xffd166,
+              24
+            );
+            if (this.sound && typeof this.sound.playArmorBreak === 'function') {
+              this.sound.playArmorBreak();
+            }
+            this.comboSystem.addStylePoints(110);
+          } else {
+            deflectedWrongControl = true;
+            if (this.sound && typeof this.sound.playArmorDeflect === 'function') {
+              this.sound.playArmorDeflect();
+            }
+          }
+        }
+
+        // Dano leve de controle (se blindagem continua intacta porque usou controle de outra cor, dano quase nulo!)
+        const armorDamageRatio = this.currentStage >= 2 ? 0.1 : 0.15;
+        let damage = computeHitDamage(
           spell.baseDamage,
           multiplier,
           isMatchingBin ? true : 0.6,
           enemy.fragileTimer > 0
         );
+        if (deflectedWrongControl) {
+          damage = Math.max(1, Math.round(damage * armorDamageRatio));
+        }
         enemy.hp -= damage;
         enemy.hitFlashTimer = 0.16;
         this.updateEnemyHpBar(enemy);
 
-        const ccTag =
-          spell.ccType === 'separate'
-            ? '↔ SEPARADO!'
-            : spell.ccType === 'gather'
-              ? '🌀 JUNTADO!'
-              : spell.ccType === 'slow_fragile'
-                ? '❄ LENTO + FRÁGIL!'
-                : '⚡ ESTUNADO (2.8s)!';
+        const ccTag = justBrokeArmor
+          ? `💥 BLINDAGEM QUEBRADA [${enemy.binElem.keyAlt}+E]! (2x CRÍTICO!)`
+          : deflectedWrongControl
+            ? `🛡 CONTROLE ERRADO! USE [${enemy.binElem.keyAlt}+E] (${enemy.binElem.ccShort})!`
+            : spell.ccType === 'separate'
+              ? '↔ SEPARADO!'
+              : spell.ccType === 'gather'
+                ? '🌀 JUNTADO!'
+                : spell.ccType === 'slow_fragile'
+                  ? '❄ LENTO + FRÁGIL!'
+                  : '⚡ ESTUNADO (2.8s)!';
 
         this.hud.spawnFloatingText(
           enemy.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
           this.camera,
           this.viewportEl,
           `${ccTag} · -${damage} HP`,
-          spell.primaryHex
+          justBrokeArmor ? '#ffd166' : deflectedWrongControl ? '#d8b4fe' : spell.primaryHex
         );
 
         if (enemy.hp <= 0) {
@@ -596,12 +721,14 @@ export class EnemyManager {
   }
 
   update(elapsedTime, dt, stage) {
-    // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-05 / E2-06; desativado no Tutorial E4-07)
+    this.currentStage = stage;
+    // 1. Temporizador de Geração Periódica (Spawner — E2-01 / E2-03 / E2-05 / E2-06; desativado no Tutorial E4-07)
     if (this.autoSpawnEnabled) {
       this.spawnTimer -= dt;
       if (this.spawnTimer <= 0) {
         this.spawnEnemyAroundPerimeter(stage);
-        const baseInterval = stage >= 2 ? 2.15 : this.spawnInterval;
+        const baseInterval =
+          stage >= 3 ? 1.85 : stage >= 2 ? 2.15 : this.spawnInterval;
         this.spawnTimer = baseInterval * this.difficultySpawnMult;
       }
     }
@@ -636,6 +763,14 @@ export class EnemyManager {
         enemy.statusRing.material.opacity = 0.7;
       } else {
         enemy.statusRing.material.opacity = 0.0;
+      }
+
+      // E2-04 — Rotaciona o escudo hexagonal de blindagem enquanto estiver ativo
+      if (enemy.armorActive && enemy.armorMesh) {
+        enemy.armorMesh.rotation.y += dt * 1.9;
+        enemy.armorMesh.rotation.x += dt * 0.9;
+        const armorPulse = 1.0 + Math.sin(elapsedTime * 5.0 + enemy.id) * 0.05;
+        enemy.armorMesh.scale.setScalar(armorPulse);
       }
 
       // Se não estiver estunado, anima o passo do item
@@ -788,7 +923,7 @@ export class EnemyManager {
           enemy.knockbackVel.copy(pushBack);
           if (this.player.invulnerableTimer <= 0 && this.player.shieldHitGrace <= 0) {
             const remainingCharges = this.player.consumeShieldCharge(1);
-            this.player.invulnerableTimer = 0.75;
+            this.player.invulnerableTimer = 1.0;
             this.sound.playPlayerHurt();
             this.comboSystem.addStylePoints(-65);
             const shieldMsg =
@@ -812,7 +947,7 @@ export class EnemyManager {
           enemy.knockbackVel.copy(pushBack);
 
           if (this.player.invulnerableTimer <= 0) {
-            this.player.invulnerableTimer = 0.85;
+            this.player.invulnerableTimer = 1.0;
             this.sound.playPlayerHurt();
             this.comboSystem.addStylePoints(-210);
             this.comboSystem.spawnImpactParticles(
@@ -899,13 +1034,26 @@ export class EnemyManager {
 
           const currentMultiplier = this.comboSystem.activeMultiplier;
           const currentRank = this.comboSystem.styleState.rank;
-          const damage = computeHitDamage(
+          let damage = computeHitDamage(
             proj.recipe.baseDamage,
             currentMultiplier,
             isMatchingBin,
             enemy.fragileTimer > 0
           );
-          const points = computeHitPoints(currentMultiplier, isMatchingBin);
+          let points = computeHitPoints(currentMultiplier, isMatchingBin);
+          const hitArmoredIntact = Boolean(enemy.armorActive);
+          const hitArmorBrokenCrit = Boolean(enemy.armorBroken && isMatchingBin);
+
+          // E2-04 — Blindagem intacta deixa o dano direto quase nulo (15% no Estágio 1, 10% no Estágio 2+); após quebrar com [Material+E], causa Crítico 2x!
+          const armorDamageRatio = stage >= 2 ? 0.1 : 0.15;
+          const armorDamagePctLabel = stage >= 2 ? '10%' : '15%';
+          if (hitArmoredIntact) {
+            damage = Math.max(1, Math.round(damage * armorDamageRatio));
+            points = Math.round(points * armorDamageRatio);
+          } else if (hitArmorBrokenCrit) {
+            damage = Math.round(damage * 2.0);
+            points = Math.round(points * 1.5);
+          }
 
           enemy.hp -= damage;
           enemy.hitFlashTimer = 0.15;
@@ -916,24 +1064,38 @@ export class EnemyManager {
               ? 12.5
               : isMatchingBin
                 ? 5.8
-                : 2.0) * (enemy.knockbackResist ?? 1.0);
+                : 2.0) *
+            (enemy.knockbackResist ?? 1.0) *
+            (hitArmoredIntact ? 0.35 : 1.0);
           enemy.knockbackVel.copy(proj.direction).multiplyScalar(knockStrength);
 
           this.comboSystem.spawnImpactParticles(
             enemy.group.position.clone().add(new THREE.Vector3(0, 1.0, 0)),
-            proj.recipe.colorA,
-            proj.recipe.colorB,
-            isMatchingBin ? 18 : 7
+            hitArmoredIntact ? 0xc084fc : hitArmorBrokenCrit ? 0xffd166 : proj.recipe.colorA,
+            hitArmoredIntact ? 0xe2e8f0 : proj.recipe.colorB,
+            hitArmorBrokenCrit ? 26 : isMatchingBin ? 18 : 7
           );
 
-          if (isMatchingBin) {
-            const comboTag = wasControlled ? 'COMBO HWEI!' : `RANK ${currentRank}`;
+          if (hitArmoredIntact) {
+            this.hud.spawnFloatingText(
+              enemy.group.position.clone().add(new THREE.Vector3(0, 2.25, 0)),
+              this.camera,
+              this.viewportEl,
+              `🛡 BLINDADO (SÓ ${armorDamagePctLabel} DANO)! QUEBRE COM [${enemy.binElem.keyAlt}+E]! · -${damage} HP`,
+              '#d8b4fe'
+            );
+          } else if (isMatchingBin) {
+            const comboTag = hitArmorBrokenCrit
+              ? '⚡ CRÍTICO 2x!'
+              : wasControlled
+                ? 'COMBO HWEI!'
+                : `RANK ${currentRank}`;
             this.hud.spawnFloatingText(
               enemy.group.position.clone().add(new THREE.Vector3(0, 2.1, 0)),
               this.camera,
               this.viewportEl,
               `✓ +${points} PTS [${comboTag} • ${currentMultiplier.toFixed(1)}x] · -${damage} HP`,
-              this.comboSystem.styleState.color
+              hitArmorBrokenCrit ? '#ffd166' : this.comboSystem.styleState.color
             );
           } else {
             this.hud.spawnFloatingText(
@@ -946,7 +1108,11 @@ export class EnemyManager {
           }
 
           const defeated = enemy.hp <= 0;
-          this.sound.playEnemyHit(currentMultiplier, defeated);
+          if (hitArmoredIntact && !defeated && typeof this.sound.playArmorDeflect === 'function') {
+            this.sound.playArmorDeflect();
+          } else {
+            this.sound.playEnemyHit(currentMultiplier, defeated);
+          }
 
           if (defeated) {
             this.comboSystem.spawnImpactParticles(
@@ -1019,6 +1185,8 @@ export class EnemyManager {
       this.scene.remove(e.group);
     }
     this.enemies = [];
+    this.spawnedCountThisMatch = 0;
+    this.currentStage = 1;
     this.spawnTimer = 0.6;
   }
 }

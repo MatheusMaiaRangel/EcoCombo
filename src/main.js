@@ -9,7 +9,10 @@ import { HUDController } from './ui/hudController.js';
 import { StartMenuAnimator } from './ui/startMenuAnimator.js';
 import { CutscenePlayer } from './ui/cutscenePlayer.js';
 import { SoundEngine } from './audio/soundEngine.js';
-import { STAGE_2_UNLOCK_TIME_SEC } from './constants/recipes.js';
+import {
+  STAGE_2_UNLOCK_TIME_SEC,
+  STAGE_3_UNLOCK_TIME_SEC
+} from './constants/recipes.js';
 
 const SETTINGS_STORAGE_KEY = 'ecocombo_settings_v1';
 
@@ -656,16 +659,36 @@ class EcoComboMVPApp {
   }
 
   /**
-   * E2-06 — Ativa o Estágio 2 aos 01:30: expande suavemente o mapa e acumula +1 novo inimigo por lixeira CONAMA
+   * E2-06 / E2-03 — Ativa o Estágio 2 aos 01:30: expande suavemente o mapa, acumula +1 inimigo por lixeira e aplica +15% HP / +8% vel
    */
   enterStage2() {
     if (this.stage >= 2) return;
     this.stage = 2;
     this.arena.setStageSize(2, false);
     this.hud.setCurrentStage(2);
-    this.hud.showStageTransitionBanner(5200);
-    this.sound.playStageTransition();
+    this.hud.showStageTransitionBanner(2, 5200);
+    this.sound.playStageTransition(2);
     this.enemyManager.triggerStage2ArrivalWave();
+    this.comboSystem.syncHUD();
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec
+    );
+  }
+
+  /**
+   * E2-03 / E2-04 — Ativa o Estágio 3 aos 03:00 (Onda Final): +30% HP, +16% velocidade e alta incidência de blindados
+   * (Base pronta para receber o Chefão ao final do Estágio 3 no Épico E5)
+   */
+  enterStage3() {
+    if (this.stage >= 3) return;
+    this.stage = 3;
+    this.hud.setCurrentStage(3);
+    this.hud.showStageTransitionBanner(3, 5600);
+    this.sound.playStageTransition(3);
+    this.enemyManager.triggerStage3ArrivalWave();
     this.comboSystem.syncHUD();
     this.hud.updateStageAndScore(
       this.stage,
@@ -680,6 +703,7 @@ class EcoComboMVPApp {
       // No Tutorial Interativo (E4-07), nunca ocorre Game Over e a Pureza permanece protegida
       this.purity = Math.max(85, this.purity - Math.min(5, purityLoss));
       this.sidebarCharacter.triggerHurt();
+      this.hud.triggerDamageFlash();
       this.hud.updatePurity(this.purity);
       return;
     }
@@ -687,6 +711,7 @@ class EcoComboMVPApp {
     if (this.gameState !== 'PLAYING' || this.isGameOver) return;
     this.purity = Math.max(0, this.purity - purityLoss);
     this.sidebarCharacter.triggerHurt();
+    this.hud.triggerDamageFlash();
     this.hud.updatePurity(this.purity);
     this.arena.setPurity(this.purity, false);
     if (this.purity < 30) {
@@ -798,6 +823,8 @@ class EcoComboMVPApp {
       this.matchElapsedSec += dt;
       if (this.stage === 1 && this.matchElapsedSec >= STAGE_2_UNLOCK_TIME_SEC) {
         this.enterStage2();
+      } else if (this.stage === 2 && this.matchElapsedSec >= STAGE_3_UNLOCK_TIME_SEC) {
+        this.enterStage3();
       }
 
       this.player.update(elapsedTime, dt);
