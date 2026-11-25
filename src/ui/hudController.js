@@ -70,6 +70,11 @@ export class HUDController {
 
     this.staleAlert = document.getElementById('stale-combo-alert');
 
+    // E3-04 — Medidor de Maestria Elemental (4 combos inéditos seguidos)
+    this.masteryBlock = document.getElementById('mastery-block');
+    this.masteryStatusLabel = document.getElementById('mastery-status-label');
+    this.masterySlots = Array.from(document.querySelectorAll('[data-mastery-slot]'));
+
     this.purityValue = document.getElementById('purity-value');
     this.purityFill = document.getElementById('purity-bar-fill');
 
@@ -345,6 +350,48 @@ export class HUDController {
       multiplier: displayMultiplier,
       repeatCount: displayRepeatCount,
       isStale
+    });
+  }
+
+  /**
+   * E3-04 — Atualiza os 4 slots de Maestria Elemental no painel lateral
+   */
+  updateMasteryHUD({ chain = [], masteryCount = 0, justTriggered = false, justReset = false } = {}) {
+    if (!this.masteryBlock || !this.masteryStatusLabel) return;
+
+    this.masteryBlock.classList.toggle('mastery-triggered', Boolean(justTriggered));
+    this.masteryBlock.classList.toggle('mastery-reset', Boolean(!justTriggered && justReset));
+
+    if (justTriggered) {
+      this.masteryStatusLabel.textContent = `🌟 +10% PUREZA! (×${masteryCount})`;
+    } else if (justReset) {
+      this.masteryStatusLabel.textContent = '↺ REPETIU — 0/4';
+    } else {
+      const suffix = masteryCount > 0 ? ` · ×${masteryCount}` : '';
+      this.masteryStatusLabel.textContent = `${chain.length}/4 INÉDITOS${suffix}`;
+    }
+
+    this.masterySlots.forEach((slotEl, idx) => {
+      const entry = chain[idx];
+      if (justTriggered) {
+        slotEl.classList.add('filled');
+        slotEl.style.background = '#00f5d4';
+        slotEl.style.borderColor = '#ffffff';
+        slotEl.style.color = '#062024';
+        slotEl.textContent = '★';
+      } else if (entry) {
+        slotEl.classList.add('filled');
+        slotEl.style.background = entry.colorHex;
+        slotEl.style.borderColor = '#ffffff';
+        slotEl.style.color = entry.binId === 'METAL' ? '#191708' : '#ffffff';
+        slotEl.textContent = entry.comboKeys.replace(/\s+/g, '');
+      } else {
+        slotEl.classList.remove('filled');
+        slotEl.style.background = '#12111a';
+        slotEl.style.borderColor = 'rgba(255, 255, 255, 0.16)';
+        slotEl.style.color = '#6c6a82';
+        slotEl.textContent = '·';
+      }
     });
   }
 

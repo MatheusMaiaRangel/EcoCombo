@@ -294,6 +294,34 @@ export class SoundEngine {
   }
 
   /**
+   * E3-04 — Fanfarra cristalina ao completar 4 combos inéditos seguidos (Maestria Elemental +10% Pureza)
+   */
+  playMasteryPulse() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [392.0, 493.88, 587.33, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.055;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx >= 3 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.04, t0 + 0.28);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(idx === notes.length - 1 ? 0.16 : 0.12, t0 + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (idx === notes.length - 1 ? 0.52 : 0.26));
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + (idx === notes.length - 1 ? 0.55 : 0.28));
+    });
+  }
+
+  /**
    * E2-06 / E2-03 — Fanfarra ascendente sintetizada ao avançar para o Estágio 2 (01:30) ou Estágio 3 (03:00)
    */
   playStageTransition(stage = 2) {

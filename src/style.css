@@ -438,6 +438,81 @@ html, body {
   }
 }
 
+/* E3-04 — Medidor de Maestria Elemental (4 combos inéditos seguidos = +10% Pureza + Pulso em Área) */
+.mastery-block {
+  background: #1d1c2b;
+  border: 2px solid #3c352d;
+  border-radius: 5px;
+  padding: 5px 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.mastery-block.mastery-triggered {
+  border-color: #00f5d4;
+  background: #103238;
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.75);
+}
+
+.mastery-block.mastery-reset {
+  border-color: #ff4d6d;
+  background: #2f1520;
+}
+
+.mastery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.mastery-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.46rem;
+  color: #ffd166;
+  letter-spacing: 0.4px;
+}
+
+.mastery-status {
+  font-family: 'VT323', monospace;
+  font-size: 0.92rem;
+  color: #a8dadc;
+}
+
+.mastery-block.mastery-triggered .mastery-status {
+  color: #00f5d4;
+  font-weight: 700;
+}
+
+.mastery-block.mastery-reset .mastery-status {
+  color: #ff8fa3;
+}
+
+.mastery-slots-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.mastery-slot {
+  height: 18px;
+  border-radius: 3px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  background: #12111a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  color: #6c6a82;
+  transition: all 0.16s ease;
+}
+
+.mastery-slot.filled {
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 0 8px currentColor;
+}
+
 /* Barra de Pureza Ambiental */
 .purity-block {
   background: #232232;

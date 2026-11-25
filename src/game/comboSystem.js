@@ -23,6 +23,7 @@ export class ComboSystem {
     viewportEl,
     camera,
     onShotFired,
+    onElementalMastery,
     isGameplayActive,
     getArenaHalfSize,
     findObstacleHit
@@ -34,6 +35,7 @@ export class ComboSystem {
     this.viewportEl = viewportEl;
     this.camera = camera;
     this.onShotFired = onShotFired;
+    this.onElementalMastery = onElementalMastery || null;
     this.isGameplayActive = isGameplayActive || (() => true);
     this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
     this.findObstacleHit = findObstacleHit || null;
@@ -47,6 +49,12 @@ export class ComboSystem {
     this.repeatCount = 0;
     this.recentSpellIds = [];
     this.consecutiveShieldBlocks = 0;
+
+    // E3-04 — Maestria Elemental (4 combos/habilidades distintos em sequência = +10% Pureza + Pulso em Área)
+    this.masteryChain = [];
+    this.masteryCount = 0;
+    this.masteryResetNoticeTimer = 0;
+    this.masteryTriggeredFlashTimer = 0;
 
     // Medidor de Estilo Devil May Cry (0 a 2000 pontos -> Ranks D, C, B, A, S, SS, SSS)
     this.stylePoints = 0; // Começa em D (1.0x): precisa jogar com variedade para escalar até SSS (6.0x)!
@@ -504,6 +512,92 @@ export class ComboSystem {
   }
 
   /**
+   * E3-04 — Registra uma habilidade válida na sequência de Maestria Elemental (4 combos inéditos seguidos).
+   * - Se repetir uma habilidade já presente na sequência (ou errar a lixeira no 1º hit), a contagem reinicia.
+   * - Ao atingir 4 distintos sem repetição, dispara o Pulso de Purificação (+10% Pureza Ambiental).
+   */
+  registerMasteryAction(spell, { isValid = true } = {}) {
+    if (!spell) return { triggered: false, reset: false, count: this.masteryChain.length };
+
+    if (!isValid) {
+      if (this.masteryChain.length > 0) {
+        this.masteryChain = [];
+        this.masteryResetNoticeTimer = 1.6;
+        this.syncHUD();
+        return { triggered: false, reset: true, count: 0 };
+      }
+      return { triggered: false, reset: false, count: 0 };
+    }
+
+    const alreadyInChain = this.masteryChain.some((entry) => entry.spellId === spell.id);
+    if (alreadyInChain) {
+      const hadProgress = this.masteryChain.length;
+      this.masteryChain = [];
+      this.masteryResetNoticeTimer = 1.6;
+      if (hadProgress >= 2 && this.viewportEl && this.camera) {
+        this.hud.spawnFloatingText(
+          this.player.position.clone().add(new THREE.Vector3(0, 2.75, 0)),
+          this.camera,
+          this.viewportEl,
+          '↺ MAESTRIA REINICIADA (COMBO REPETIDO)',
+          '#ff8fa3'
+        );
+      }
+      this.syncHUD();
+      return { triggered: false, reset: true, count: 0 };
+    }
+
+    this.masteryResetNoticeTimer = 0;
+    this.masteryTriggeredFlashTimer = 0;
+    this.masteryChain.push({
+      spellId: spell.id,
+      binId: spell.binId,
+      comboKeys: spell.comboKeys,
+      colorHex: spell.primaryHex
+    });
+
+    if (this.masteryChain.length >= 4) {
+      const completedChain = [...this.masteryChain];
+      this.masteryChain = [];
+      this.masteryCount += 1;
+      this.masteryTriggeredFlashTimer = 1.9;
+      this.triggerElementalMastery(completedChain);
+      return { triggered: true, reset: false, count: 4 };
+    }
+
+    this.syncHUD();
+    return { triggered: false, reset: false, count: this.masteryChain.length };
+  }
+
+  triggerElementalMastery(completedChain) {
+    const center = this.player.position.clone();
+    // Pulso visual duplo de purificação em área + explosão nas 4 cores CONAMA
+    this.spawnAreaWave(center, 0x00f5d4, 9.0);
+    this.spawnAreaWave(center, 0xffd166, 6.2);
+
+    const particleOrigin = center.clone().add(new THREE.Vector3(0, 1.15, 0));
+    this.spawnImpactParticles(particleOrigin, 0xff3b30, 0x007aff, 16);
+    this.spawnImpactParticles(particleOrigin, 0x34c759, 0xffcc00, 16);
+
+    if (this.sound && typeof this.sound.playMasteryPulse === 'function') {
+      this.sound.playMasteryPulse();
+    }
+
+    this.addStylePoints(180);
+
+    if (this.onElementalMastery) {
+      this.onElementalMastery({
+        chain: completedChain,
+        masteryCount: this.masteryCount,
+        purityBonus: 10,
+        scoreBonus: 400,
+        pulseRadius: 8.5
+      });
+    }
+    this.syncHUD();
+  }
+
+  /**
    * Calcula ganho de estilo para acertos de Dano (Modo Q) considerando:
    * - Variedade recente (últimos 4 comandos) e repetição consecutiva
    * - Bônus de combo Controle [E] -> Dano [Q]
@@ -612,6 +706,25 @@ export class ComboSystem {
       } else {
         this.hud.updateStyleMeterBarOnly(this.styleState);
       }
+    }
+
+    // Atualiza timers visuais do medidor de Maestria Elemental (E3-04)
+    let masteryVisualChanged = false;
+    if (this.masteryResetNoticeTimer > 0) {
+      this.masteryResetNoticeTimer = Math.max(0, this.masteryResetNoticeTimer - dt);
+      if (this.masteryResetNoticeTimer === 0) masteryVisualChanged = true;
+    }
+    if (this.masteryTriggeredFlashTimer > 0) {
+      this.masteryTriggeredFlashTimer = Math.max(0, this.masteryTriggeredFlashTimer - dt);
+      if (this.masteryTriggeredFlashTimer === 0) masteryVisualChanged = true;
+    }
+    if (masteryVisualChanged) {
+      this.hud.updateMasteryHUD({
+        chain: this.masteryChain,
+        masteryCount: this.masteryCount,
+        justTriggered: this.masteryTriggeredFlashTimer > 0,
+        justReset: this.masteryResetNoticeTimer > 0
+      });
     }
 
     // Atualiza indicador de duração/cargas/recarga do Escudo no HUD
@@ -743,6 +856,12 @@ export class ComboSystem {
       this.player.shieldCharges,
       this.player.shieldMaxCharges
     );
+    this.hud.updateMasteryHUD({
+      chain: this.masteryChain,
+      masteryCount: this.masteryCount,
+      justTriggered: this.masteryTriggeredFlashTimer > 0,
+      justReset: this.masteryResetNoticeTimer > 0
+    });
   }
 
   reset() {
@@ -767,6 +886,10 @@ export class ComboSystem {
     this.repeatCount = 0;
     this.recentSpellIds = [];
     this.consecutiveShieldBlocks = 0;
+    this.masteryChain = [];
+    this.masteryCount = 0;
+    this.masteryResetNoticeTimer = 0;
+    this.masteryTriggeredFlashTimer = 0;
     this.stylePoints = 0;
     this.styleState = getStyleRankFromPoints(this.stylePoints);
     this.activeMultiplier = this.styleState.multiplier;

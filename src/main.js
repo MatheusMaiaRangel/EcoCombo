@@ -76,6 +76,9 @@ class EcoComboMVPApp {
         (this.gameState === 'TUTORIAL' && !this.tutorialManager?.completed),
       onShotFired: () => {
         this.sidebarCharacter.triggerShootFlash();
+      },
+      onElementalMastery: (event) => {
+        this.handleElementalMastery(event);
       }
     });
 
@@ -690,6 +693,39 @@ class EcoComboMVPApp {
     this.sound.playStageTransition(3);
     this.enemyManager.triggerStage3ArrivalWave();
     this.comboSystem.syncHUD();
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec
+    );
+  }
+
+  /**
+   * E3-04 — Bônus de Maestria Elemental (4 combos inéditos seguidos):
+   * recupera +10% de Pureza Ambiental e dispara Pulso de Purificação em área!
+   */
+  handleElementalMastery({ purityBonus = 10, scoreBonus = 400, pulseRadius = 8.5 } = {}) {
+    if (this.gameState !== 'PLAYING' || this.isGameOver) return;
+
+    this.purity = Math.min(100, this.purity + purityBonus);
+    this.score += scoreBonus;
+    this.hud.updatePurity(this.purity);
+    this.arena.setPurity(this.purity, false);
+
+    this.enemyManager.applyMasteryPurificationPulse(
+      this.player.position.clone(),
+      pulseRadius
+    );
+
+    this.hud.spawnFloatingText(
+      this.player.position.clone().add(new THREE.Vector3(0, 2.8, 0)),
+      this.arena.camera,
+      this.viewportEl,
+      `🌟 MAESTRIA ELEMENTAL! +${purityBonus}% PUREZA · +${scoreBonus} PTS`,
+      '#00f5d4'
+    );
+
     this.hud.updateStageAndScore(
       this.stage,
       this.score,

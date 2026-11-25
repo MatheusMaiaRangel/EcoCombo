@@ -13,7 +13,8 @@ import {
   getStageHpMultiplier,
   getStageSpeedMultiplier,
   computeHitDamage,
-  computeHitPoints
+  computeHitPoints,
+  resolveHweiSpell
 } from '../constants/recipes.js';
 import { ARENA_HALF_SIZE } from './arenaScene.js';
 
@@ -538,6 +539,7 @@ export class EnemyManager {
 
     let hitCount = 0;
     let matchingCount = 0;
+    let validControlHitCount = 0;
 
     for (let ei = this.enemies.length - 1; ei >= 0; ei--) {
       const enemy = this.enemies[ei];
@@ -624,6 +626,8 @@ export class EnemyManager {
         );
         if (deflectedWrongControl) {
           damage = Math.max(1, Math.round(damage * armorDamageRatio));
+        } else {
+          validControlHitCount += 1;
         }
         enemy.hp -= damage;
         enemy.hitFlashTimer = 0.16;
@@ -672,10 +676,60 @@ export class EnemyManager {
       if (styleGain > 0) {
         this.comboSystem.addStylePoints(styleGain);
       }
+      // E3-04 — Registra Controle de Grupo na sequência de Maestria Elemental
+      this.comboSystem.registerMasteryAction(spell, { isValid: validControlHitCount > 0 });
     }
 
     if (this.onControlHit) {
       this.onControlHit({ spell, hitCount, matchingCount });
+    }
+  }
+
+  /**
+   * E3-04 — Pulso de Purificação em Área ao ativar a Maestria Elemental (4 combos inéditos seguidos)
+   */
+  applyMasteryPurificationPulse(centerPos, radius = 8.5) {
+    const mult = this.comboSystem.activeMultiplier;
+    for (let ei = this.enemies.length - 1; ei >= 0; ei--) {
+      const enemy = this.enemies[ei];
+      const offset = new THREE.Vector3()
+        .subVectors(enemy.group.position, centerPos)
+        .setY(0);
+      const dist = offset.length();
+      if (dist > radius) continue;
+
+      if (dist > 0.01) {
+        offset.normalize();
+      } else {
+        offset.set(1, 0, 0);
+      }
+
+      enemy.knockbackVel.copy(offset.multiplyScalar(14.0 * (enemy.knockbackResist ?? 1.0)));
+      enemy.stunTimer = Math.max(enemy.stunTimer, 1.0);
+      enemy.hitFlashTimer = 0.2;
+
+      const pulseDamage = enemy.armorActive ? 16 : 42;
+      enemy.hp -= pulseDamage;
+      this.updateEnemyHpBar(enemy);
+
+      this.comboSystem.spawnImpactParticles(
+        enemy.group.position.clone().add(new THREE.Vector3(0, 1.0, 0)),
+        0x00f5d4,
+        0xffd166,
+        10
+      );
+
+      this.hud.spawnFloatingText(
+        enemy.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
+        this.camera,
+        this.viewportEl,
+        `✦ PULSO PURIFICADOR · -${pulseDamage} HP`,
+        '#00f5d4'
+      );
+
+      if (enemy.hp <= 0) {
+        this.handleDefeatEnemy(ei, enemy, 0x00f5d4, mult, true);
+      }
     }
   }
 
@@ -889,6 +943,12 @@ export class EnemyManager {
               this.comboSystem.syncHUD();
             }
 
+            // E3-04 — Bloqueio seletivo bem-sucedido também conta na sequência de Maestria Elemental
+            const shieldSpell = resolveHweiSpell(enemy.binCategory, 'SHIELD');
+            if (shieldSpell) {
+              this.comboSystem.registerMasteryAction(shieldSpell, { isValid: true });
+            }
+
             this.comboSystem.spawnImpactParticles(
               playerPos.clone().add(new THREE.Vector3(0, 1.1, 0)),
               enemy.binElem.hexNumber,
@@ -1023,6 +1083,7 @@ export class EnemyManager {
 
           // Regra de Multi-Alvo (E3-03): apenas o 1º hit do disparo vale para o contador de estilo e penalidade!
           // Se o 1º hit acertou (ex.: Q+Q no Plástico) e ricocheteou/perfurou em outra lixeira, o jogador NÃO perde estilo!
+          let pendingMasteryCheck = null;
           if (isFirstHitOfCast) {
             meta.primaryHitResolved = true;
             meta.primaryMatchedBin = isMatchingBin;
@@ -1038,9 +1099,11 @@ export class EnemyManager {
               if (styleGain > 0) {
                 this.comboSystem.addStylePoints(styleGain);
               }
+              pendingMasteryCheck = { spell: proj.recipe, isValid: true };
             } else {
-              // ERROU A LIXEIRA NO 1º HIT! Derruba o Rank/Multiplicador e avisa qual lixeira usar!
+              // ERROU A LIXEIRA NO 1º HIT! Derruba o Rank/Multiplicador e reinicia Maestria Elemental!
               this.comboSystem.addStylePoints(-160);
+              pendingMasteryCheck = { spell: proj.recipe, isValid: false };
             }
           }
 
@@ -1231,6 +1294,13 @@ export class EnemyManager {
             proj.pierceCount = (proj.pierceCount || 0) + 1;
           } else {
             removeProjectile = true;
+          }
+
+          // E3-04 — Executa verificação de Maestria após atualizar/remover o inimigo atingido (evita mutação de índice)
+          if (pendingMasteryCheck) {
+            this.comboSystem.registerMasteryAction(pendingMasteryCheck.spell, {
+              isValid: pendingMasteryCheck.isValid
+            });
           }
 
           break;
