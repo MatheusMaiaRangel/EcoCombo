@@ -481,29 +481,41 @@
           </div>
         </div>
 
-        <!-- Overlay quando Pureza chega a 0% (RN11) -->
-        <div id="purity-depleted-overlay" class="arena-modal-overlay hidden">
-          <div class="arena-modal-card">
-            <div class="modal-badge">PUREZA AMBIENTAL ESGOTADA (0%)</div>
-            <h2>ARENA CONTAMINADA</h2>
-            <p id="gameover-summary-text">Use a Lixeira correta para cada item (Garrafa PET = Q, Papelão = E, Vidro = R, Porca de Metal = F) e combine Controle [E] + Escudo [R] + Dano [Q] para alcançar o Rank SSS!</p>
-            <div class="modal-stats-grid">
+        <!-- Overlay de Fim de Partida quando Pureza chega a 0% (RN11 / E4-04) -->
+        <div id="purity-depleted-overlay" class="arena-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameover-modal-title">
+          <div class="arena-modal-card gameover-modal-card">
+            <div class="modal-badge">FIM DE PARTIDA // PUREZA AMBIENTAL 0%</div>
+            <h2 id="gameover-modal-title">ARENA CONTAMINADA</h2>
+            <p id="gameover-summary-text">Use a Lixeira correta para cada item (Garrafa PET = Q, Papelão = E, Vidro = R, Porca de Metal = F) e varie entre Dano [Q], Controle [E] e Escudo [R] para manter o Rank alto!</p>
+            <div class="modal-stats-grid gameover-stats-grid">
               <div class="modal-stat-item">
-                <span class="stat-label">SCORE FINAL</span>
+                <span class="stat-label">PONTUAÇÃO FINAL</span>
                 <span id="final-score-val" class="stat-num">0</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">INIMIGOS DERROTADOS</span>
+                <span id="final-kills-val" class="stat-num">0</span>
               </div>
               <div class="modal-stat-item">
                 <span class="stat-label">STAGE ALCANÇADO</span>
                 <span id="final-stage-val" class="stat-num">1</span>
               </div>
               <div class="modal-stat-item">
-                <span class="stat-label">ITENS RECICLADOS</span>
-                <span id="final-kills-val" class="stat-num">0</span>
+                <span class="stat-label">TEMPO NA ARENA</span>
+                <span id="final-time-val" class="stat-num">00:00</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">MELHOR RANK DMC</span>
+                <span id="final-best-rank-val" class="stat-num">D</span>
+              </div>
+              <div class="modal-stat-item">
+                <span class="stat-label">MAESTRIAS (4/4)</span>
+                <span id="final-masteries-val" class="stat-num">0</span>
               </div>
             </div>
             <div class="menu-actions-stack">
               <button id="btn-restart-match" type="button" class="btn-primary-retro">
-                🔄 REINICIAR PARTIDA (TECLA ENTER)
+                🔄 JOGAR NOVAMENTE (ENTER)
               </button>
               <button id="btn-gameover-to-menu" type="button" class="btn-secondary-retro">
                 🏠 VOLTAR AO MENU INICIAL

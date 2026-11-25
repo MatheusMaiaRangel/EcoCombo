@@ -113,6 +113,10 @@ export class HUDController {
     this.finalScoreVal = document.getElementById('final-score-val');
     this.finalStageVal = document.getElementById('final-stage-val');
     this.finalKillsVal = document.getElementById('final-kills-val');
+    this.finalTimeVal = document.getElementById('final-time-val');
+    this.finalBestRankVal = document.getElementById('final-best-rank-val');
+    this.finalMasteriesVal = document.getElementById('final-masteries-val');
+    this.gameoverSummaryText = document.getElementById('gameover-summary-text');
 
     // Menu Inicial e Menu de Pausa com Opções (ESC — E4-06)
     this.startMenuOverlay = document.getElementById('start-menu-overlay');
@@ -649,11 +653,45 @@ export class HUDController {
     }
   }
 
-  showPurityDepletedModal({ score, stage, kills }) {
-    this.finalScoreVal.textContent = String(score);
-    this.finalStageVal.textContent = String(stage);
-    this.finalKillsVal.textContent = String(kills);
-    this.purityOverlay.classList.remove('hidden');
+  clearFloatingTexts() {
+    if (this.floatingLayer) {
+      this.floatingLayer.innerHTML = '';
+    }
+  }
+
+  showPurityDepletedModal({
+    score = 0,
+    stage = 1,
+    kills = 0,
+    elapsedSec = 0,
+    bestRank = 'D',
+    bestRankColor = '#8d99ae',
+    masteryCount = 0
+  } = {}) {
+    if (this.finalScoreVal) this.finalScoreVal.textContent = String(score);
+    if (this.finalStageVal) this.finalStageVal.textContent = String(stage);
+    if (this.finalKillsVal) this.finalKillsVal.textContent = String(kills);
+    if (this.finalTimeVal) this.finalTimeVal.textContent = formatMatchTime(elapsedSec);
+    if (this.finalBestRankVal) {
+      this.finalBestRankVal.textContent = bestRank;
+      this.finalBestRankVal.style.color = bestRankColor;
+    }
+    if (this.finalMasteriesVal) this.finalMasteriesVal.textContent = String(masteryCount);
+
+    if (this.gameoverSummaryText) {
+      if (stage >= 3 || ['S', 'SS', 'SSS'].includes(bestRank)) {
+        this.gameoverSummaryText.textContent = `Excelente desempenho! Você alcançou o Rank ${bestRank} e purificou ${kills} itens recicláveis em ${formatMatchTime(elapsedSec)}. Clique em "Jogar Novamente" para superar sua marca!`;
+      } else if (kills > 0) {
+        this.gameoverSummaryText.textContent = `Você reciclou ${kills} itens em ${formatMatchTime(elapsedSec)}. Dica: alterne 4 combos inéditos para ativar a Maestria Elemental (+10% Pureza) e use Escudo [R] para bloquear aproximações!`;
+      } else {
+        this.gameoverSummaryText.textContent =
+          'Abra a lixeira da cor do item (Q = Plástico, E = Papel, R = Vidro, F = Metal) e escolha Q (Dano), E (Controle) ou R (Escudo) para defender a arena!';
+      }
+    }
+
+    if (this.purityOverlay) {
+      this.purityOverlay.classList.remove('hidden');
+    }
   }
 
   hidePurityDepletedModal() {

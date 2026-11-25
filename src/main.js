@@ -31,6 +31,9 @@ class EcoComboMVPApp {
     this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
+    this.bestRankIndex = 0;
+    this.bestRank = 'D';
+    this.bestRankColor = '#8d99ae';
     this.isGameOver = false;
 
     this.settings = this.loadSettings();
@@ -401,7 +404,10 @@ class EcoComboMVPApp {
     // ==================== EVENTOS DE FIM DE PARTIDA (PUREZA 0%) ====================
     const restartBtn = document.getElementById('btn-restart-match');
     if (restartBtn) {
-      restartBtn.addEventListener('click', () => this.restartMatch());
+      restartBtn.addEventListener('click', () => {
+        this.sound.playMenuClick(true);
+        this.restartMatch();
+      });
     }
 
     const gameoverToMenuBtn = document.getElementById('btn-gameover-to-menu');
@@ -468,6 +474,7 @@ class EcoComboMVPApp {
    * E4-08 — Reproduz a Cutscene Inicial em Pixel Art (legendada e pulável)
    */
   startCutscene({ thenPlayMatch = true } = {}) {
+    this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
@@ -494,6 +501,7 @@ class EcoComboMVPApp {
    */
   startTutorialFromMenu() {
     this.sound.playMenuClick(true);
+    this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
@@ -504,6 +512,9 @@ class EcoComboMVPApp {
     this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
+    this.bestRankIndex = 0;
+    this.bestRank = 'D';
+    this.bestRankColor = '#8d99ae';
     this.isGameOver = false;
     this.gameState = 'TUTORIAL';
 
@@ -531,6 +542,7 @@ class EcoComboMVPApp {
    * Inicia efetivamente o loop de combate na arena (usado após a cutscene ou diretamente nas partidas seguintes)
    */
   beginPlayMatch() {
+    this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
@@ -544,6 +556,9 @@ class EcoComboMVPApp {
     this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
+    this.bestRankIndex = 0;
+    this.bestRank = 'D';
+    this.bestRankColor = '#8d99ae';
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
@@ -642,9 +657,13 @@ class EcoComboMVPApp {
     this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
+    this.bestRankIndex = 0;
+    this.bestRank = 'D';
+    this.bestRankColor = '#8d99ae';
     this.isGameOver = false;
     this.gameState = 'MENU';
 
+    this.hud.clearFloatingTexts();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
@@ -765,10 +784,17 @@ class EcoComboMVPApp {
       if (this.comboSystem.openBinId) {
         this.comboSystem.closeBin(false);
       }
+      if (typeof this.sound.playGameOver === 'function') {
+        this.sound.playGameOver();
+      }
       this.hud.showPurityDepletedModal({
         score: this.score,
         stage: this.stage,
-        kills: this.kills
+        kills: this.kills,
+        elapsedSec: this.matchElapsedSec,
+        bestRank: this.bestRank,
+        bestRankColor: this.bestRankColor,
+        masteryCount: this.comboSystem.masteryCount || 0
       });
     }
   }
@@ -825,9 +851,13 @@ class EcoComboMVPApp {
     this.matchElapsedSec = 0;
     this.purity = 100;
     this.kills = 0;
+    this.bestRankIndex = 0;
+    this.bestRank = 'D';
+    this.bestRankColor = '#8d99ae';
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
+    this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
@@ -870,6 +900,12 @@ class EcoComboMVPApp {
       this.player.update(elapsedTime, dt);
       this.comboSystem.update(dt);
       this.enemyManager.update(elapsedTime, dt, this.stage);
+      const currentStyle = this.comboSystem.styleState;
+      if (currentStyle && currentStyle.index > this.bestRankIndex) {
+        this.bestRankIndex = currentStyle.index;
+        this.bestRank = currentStyle.rank;
+        this.bestRankColor = currentStyle.color;
+      }
       this.hud.updateStageAndScore(
         this.stage,
         this.score,

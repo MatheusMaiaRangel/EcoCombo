@@ -390,6 +390,43 @@ export class SoundEngine {
   }
 
   /**
+   * E4-04 — Cadência descendente sintetizada ao encerrar a partida (Pureza Ambiental 0%)
+   */
+  playGameOver() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [392.0, 349.23, 311.13, 261.63];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.14;
+      const isLast = idx === notes.length - 1;
+      const osc = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(isLast ? 620 : 950, t0);
+
+      osc.type = isLast ? 'sawtooth' : 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+      if (isLast) {
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.88, t0 + 0.55);
+      }
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(isLast ? 0.16 : 0.12, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (isLast ? 0.62 : 0.24));
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + (isLast ? 0.65 : 0.26));
+    });
+  }
+
+  /**
    * Som quando um bicho encosta no protagonista (-15% Pureza)
    */
   playPlayerHurt() {
