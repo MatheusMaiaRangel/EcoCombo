@@ -277,11 +277,17 @@ export class ComboSystem {
       return true;
     }
 
-    // Metadados compartilhados entre todos os projéteis/hits deste mesmo disparo (evita triplicar pontos!)
+    // Metadados compartilhados entre todos os projéteis/hits deste mesmo disparo:
+    // apenas o 1º hit conta para o Style Meter e validação de lixeira (evita penalizar ricochete/perfuração/leque!)
     const castStyleMeta = {
+      spellId: spell.id,
+      binId: spell.binId,
+      modeId: spell.modeId,
       repeatCount: this.repeatCount,
       recentCount,
-      hitsScored: 0
+      hitsScored: 0,
+      primaryHitResolved: false,
+      primaryMatchedBin: null
     };
 
     // Para Q (Mais Dano) e E (Controle de Grupo), dispara na direção mirada pelo Mouse!
@@ -445,6 +451,8 @@ export class ComboSystem {
       life: 2.6,
       pierceLeft: spell.behavior === 'damage_glass' ? 2 : 0,
       ricochetLeft: spell.behavior === 'damage_plastic' ? 1 : 0,
+      isRicochetBounce: false,
+      pierceCount: 0,
       hitEnemyIds: new Set(),
       trailTimer: 0
     });

@@ -1008,28 +1008,40 @@ export class EnemyManager {
             enemy.fragileTimer > 0 ||
             enemy.pullTimer > 0;
 
-          if (isMatchingBin) {
-            // ACERTO NA LIXEIRA CERTA! Sobe o Style Meter Devil May Cry com régua exigente de variedade!
-            this.comboSystem.registerOffensiveStyleHit();
-            const meta = proj.castStyleMeta || {
-              repeatCount: this.comboSystem.repeatCount,
-              recentCount: 0,
-              hitsScored: 0
-            };
-            const isSecondaryHit = meta.hitsScored > 0;
-            meta.hitsScored += 1;
-            const styleGain = this.comboSystem.computeDamageStyleGain({
-              repeatCount: meta.repeatCount,
-              recentCount: meta.recentCount,
-              wasControlled,
-              isSecondaryHit
-            });
-            if (styleGain > 0) {
-              this.comboSystem.addStylePoints(styleGain);
+          const meta = proj.castStyleMeta || {
+            spellId: proj.recipe.id,
+            binId: proj.recipe.binId,
+            modeId: proj.recipe.modeId,
+            repeatCount: this.comboSystem.repeatCount,
+            recentCount: 0,
+            hitsScored: 0,
+            primaryHitResolved: false,
+            primaryMatchedBin: null
+          };
+          const isFirstHitOfCast = !meta.primaryHitResolved;
+          const isSecondaryHit = !isFirstHitOfCast;
+
+          // Regra de Multi-Alvo (E3-03): apenas o 1º hit do disparo vale para o contador de estilo e penalidade!
+          // Se o 1º hit acertou (ex.: Q+Q no Plástico) e ricocheteou/perfurou em outra lixeira, o jogador NÃO perde estilo!
+          if (isFirstHitOfCast) {
+            meta.primaryHitResolved = true;
+            meta.primaryMatchedBin = isMatchingBin;
+            if (isMatchingBin) {
+              this.comboSystem.registerOffensiveStyleHit();
+              meta.hitsScored += 1;
+              const styleGain = this.comboSystem.computeDamageStyleGain({
+                repeatCount: meta.repeatCount,
+                recentCount: meta.recentCount,
+                wasControlled,
+                isSecondaryHit: false
+              });
+              if (styleGain > 0) {
+                this.comboSystem.addStylePoints(styleGain);
+              }
+            } else {
+              // ERROU A LIXEIRA NO 1º HIT! Derruba o Rank/Multiplicador e avisa qual lixeira usar!
+              this.comboSystem.addStylePoints(-160);
             }
-          } else {
-            // ERROU A LIXEIRA DO ITEM! Derruba o Rank/Multiplicador e avisa qual lixeira usar!
-            this.comboSystem.addStylePoints(-160);
           }
 
           const currentMultiplier = this.comboSystem.activeMultiplier;
@@ -1059,15 +1071,49 @@ export class EnemyManager {
           enemy.hitFlashTimer = 0.15;
           this.updateEnemyHpBar(enemy);
 
+          // E3-03 — Efeitos Elementais Secundários por Habilidade
+          let secondaryEffectTag = '';
           const knockStrength =
             (proj.recipe.behavior === 'damage_metal'
-              ? 12.5
+              ? 14.5
               : isMatchingBin
                 ? 5.8
                 : 2.0) *
             (enemy.knockbackResist ?? 1.0) *
             (hitArmoredIntact ? 0.35 : 1.0);
           enemy.knockbackVel.copy(proj.direction).multiplyScalar(knockStrength);
+
+          if (isMatchingBin && !hitArmoredIntact) {
+            if (proj.recipe.behavior === 'damage_metal') {
+              // Metal (F+Q): Empurrão Pesado + Onda de Choque Metálica em área curta
+              secondaryEffectTag = '💥 EMPURRÃO!';
+              const hitPos = enemy.group.position.clone();
+              this.comboSystem.spawnAreaWave(hitPos, 0xffcc00, 2.5);
+              for (const other of this.enemies) {
+                if (other.id === enemy.id) continue;
+                const offset = new THREE.Vector3()
+                  .subVectors(other.group.position, hitPos)
+                  .setY(0);
+                const d = offset.length();
+                if (d > 0.01 && d <= 2.5) {
+                  offset.normalize();
+                  other.knockbackVel.addScaledVector(offset, 7.5 * (other.knockbackResist ?? 1.0));
+                }
+              }
+            } else if (proj.recipe.behavior === 'damage_glass') {
+              // Vidro (R+Q): Perfuração + Lentidão Cristalina (1.6s)
+              enemy.slowTimer = Math.max(enemy.slowTimer, 1.6);
+              secondaryEffectTag =
+                proj.pierceCount > 0 ? '💎 PERFURAÇÃO + LENTIDÃO!' : '❄ LENTIDÃO!';
+            } else if (proj.recipe.behavior === 'damage_plastic' && proj.isRicochetBounce) {
+              secondaryEffectTag = '↩ RICOCHETE!';
+            } else if (proj.recipe.behavior === 'damage_paper') {
+              // Papel (E+Q): Corte aerodinâmico que puxa levemente alvos de papel para o eixo do leque
+              if (isSecondaryHit) {
+                secondaryEffectTag = '✂ RAJADA!';
+              }
+            }
+          }
 
           this.comboSystem.spawnImpactParticles(
             enemy.group.position.clone().add(new THREE.Vector3(0, 1.0, 0)),
@@ -1087,15 +1133,31 @@ export class EnemyManager {
           } else if (isMatchingBin) {
             const comboTag = hitArmorBrokenCrit
               ? '⚡ CRÍTICO 2x!'
-              : wasControlled
-                ? 'COMBO HWEI!'
-                : `RANK ${currentRank}`;
+              : secondaryEffectTag
+                ? secondaryEffectTag
+                : wasControlled
+                  ? 'COMBO HWEI!'
+                  : `RANK ${currentRank}`;
             this.hud.spawnFloatingText(
               enemy.group.position.clone().add(new THREE.Vector3(0, 2.1, 0)),
               this.camera,
               this.viewportEl,
               `✓ +${points} PTS [${comboTag} • ${currentMultiplier.toFixed(1)}x] · -${damage} HP`,
               hitArmorBrokenCrit ? '#ffd166' : this.comboSystem.styleState.color
+            );
+          } else if (isSecondaryHit) {
+            // Hit secundário (ex.: ricochete/perfuração/leque) em outro material: sem penalidade no contador!
+            const bounceLabel = proj.isRicochetBounce
+              ? '↩ RICOCHETE'
+              : proj.pierceCount > 0
+                ? '💎 PERFURAÇÃO'
+                : '✂ RESPINGO';
+            this.hud.spawnFloatingText(
+              enemy.group.position.clone().add(new THREE.Vector3(0, 2.1, 0)),
+              this.camera,
+              this.viewportEl,
+              `${bounceLabel} (SEM PENALIDADE) · -${damage} HP`,
+              '#cbd5e1'
             );
           } else {
             this.hud.spawnFloatingText(
@@ -1135,22 +1197,38 @@ export class EnemyManager {
             });
           }
 
-          // Ricochete (Plástico Q+Q) ou Perfuração (Vidro R+Q)
+          // E3-03 — Ricochete (Plástico Q+Q) priorizando outro Plástico próximo, ou Perfuração (Vidro R+Q)
           if (proj.ricochetLeft > 0 && isMatchingBin) {
             proj.ricochetLeft -= 1;
-            const nextTarget = this.findNearestEnemy(proj.mesh.position, proj.hitEnemyIds);
+            proj.isRicochetBounce = true;
+            const nextTarget = this.findNearestEnemy(
+              proj.mesh.position,
+              proj.hitEnemyIds,
+              proj.recipe.binId,
+              14
+            );
             if (nextTarget) {
               const newDir = new THREE.Vector3()
                 .subVectors(nextTarget.group.position, proj.mesh.position)
                 .setY(0)
                 .normalize();
               proj.direction.copy(newDir);
+              proj.mesh.rotation.y = Math.atan2(newDir.x, newDir.z);
+              proj.life = Math.max(proj.life, 1.2);
+              this.comboSystem.spawnImpactParticles(
+                proj.mesh.position.clone(),
+                0xff3b30,
+                0xffd166,
+                10
+              );
             } else {
               proj.direction.x *= -1;
               proj.direction.z *= -1;
+              proj.mesh.rotation.y = Math.atan2(proj.direction.x, proj.direction.z);
             }
           } else if (proj.pierceLeft > 0 && isMatchingBin) {
             proj.pierceLeft -= 1;
+            proj.pierceCount = (proj.pierceCount || 0) + 1;
           } else {
             removeProjectile = true;
           }
@@ -1166,18 +1244,25 @@ export class EnemyManager {
     }
   }
 
-  findNearestEnemy(fromPos, excludeIds) {
-    let best = null;
-    let bestDist = Infinity;
+  findNearestEnemy(fromPos, excludeIds, preferredBinId = null, preferredMaxDist = 14) {
+    let bestPreferred = null;
+    let bestPreferredDist = Infinity;
+    let bestAny = null;
+    let bestAnyDist = Infinity;
+
     for (const e of this.enemies) {
       if (excludeIds.has(e.id)) continue;
       const d = fromPos.distanceTo(e.group.position);
-      if (d < bestDist) {
-        bestDist = d;
-        best = e;
+      if (preferredBinId && e.binCategory === preferredBinId && d <= preferredMaxDist && d < bestPreferredDist) {
+        bestPreferredDist = d;
+        bestPreferred = e;
+      }
+      if (d < bestAnyDist) {
+        bestAnyDist = d;
+        bestAny = e;
       }
     }
-    return best;
+    return bestPreferred || bestAny;
   }
 
   reset() {
