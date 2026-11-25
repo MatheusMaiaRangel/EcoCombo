@@ -127,12 +127,15 @@ export class HUDController {
     this.pausePurityVal = document.getElementById('pause-purity-val');
     this.pauseRankVal = document.getElementById('pause-rank-val');
 
-    // E5-01 — Barra de HP do Chefão Colosso de Entulho
+    // E5-01 / E5-02 — Barra de HP e Escudo do Chefão Colosso de Entulho
     this.bossHudBar = document.getElementById('boss-hud-bar');
     this.bossHudName = document.getElementById('boss-hud-name');
     this.bossHudHpText = document.getElementById('boss-hud-hp-text');
     this.bossHpFill = document.getElementById('boss-hp-fill');
     this.bossHudSubtitle = document.getElementById('boss-hud-subtitle');
+    this.bossShieldRow = document.getElementById('boss-shield-row');
+    this.bossShieldText = document.getElementById('boss-shield-text');
+    this.bossShieldFill = document.getElementById('boss-shield-fill');
   }
 
   /**
@@ -566,9 +569,18 @@ export class HUDController {
   }
 
   /**
-   * E5-01 — Atualiza a Barra de HP Destacada do Chefão Colosso de Entulho
+   * E5-01 / E5-02 — Atualiza a Barra de HP e Escudo Destacada do Chefão Colosso de Entulho
    */
-  updateBossHUD({ name = 'COLOSSO DE ENTULHO', stage = 3, hp = 0, maxHp = 1850, subtitle = '' } = {}) {
+  updateBossHUD({
+    name = 'COLOSSO DE ENTULHO',
+    stage = 3,
+    hp = 0,
+    maxHp = 1850,
+    shieldHp = 0,
+    shieldMaxHp = 0,
+    shieldActive = false,
+    subtitle = ''
+  } = {}) {
     if (!this.bossHudBar) return;
     this.bossHudBar.classList.remove('hidden');
     if (this.bossHudName) {
@@ -583,6 +595,23 @@ export class HUDController {
       const pct = Math.max(0, Math.min(100, (clampedHp / safeMax) * 100));
       this.bossHpFill.style.width = `${pct}%`;
     }
+
+    if (this.bossShieldRow) {
+      const showShield = Boolean(shieldActive && shieldMaxHp > 0);
+      this.bossShieldRow.classList.toggle('hidden', !showShield);
+      if (showShield) {
+        const clampedSh = Math.max(0, Math.round(shieldHp));
+        const safeMaxSh = Math.max(1, Math.round(shieldMaxHp));
+        if (this.bossShieldText) {
+          this.bossShieldText.textContent = `${clampedSh} / ${safeMaxSh}`;
+        }
+        if (this.bossShieldFill) {
+          const shPct = Math.max(0, Math.min(100, (clampedSh / safeMaxSh) * 100));
+          this.bossShieldFill.style.width = `${shPct}%`;
+        }
+      }
+    }
+
     if (this.bossHudSubtitle && subtitle) {
       this.bossHudSubtitle.textContent = subtitle;
     }

@@ -150,6 +150,31 @@ export class BossManager {
     });
     group.add(debrisOrbit);
 
+    // E5-02 — Escudo 3D de Entulho Compactado (exige combos variados M >= 2.5x para quebrar!)
+    const shieldGroup = new THREE.Group();
+    shieldGroup.position.y = 2.2;
+    const shieldWireMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.78,
+      toneMapped: false,
+      fog: false
+    });
+    const shieldWire = new THREE.Mesh(new THREE.IcosahedronGeometry(2.35, 1), shieldWireMat);
+    const shieldShellMat = new THREE.MeshBasicMaterial({
+      color: 0xa855f7,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      fog: false
+    });
+    const shieldShell = new THREE.Mesh(new THREE.IcosahedronGeometry(2.26, 1), shieldShellMat);
+    shieldGroup.add(shieldWire, shieldShell);
+    group.add(shieldGroup);
+
     // Luz roxa dramática acompanhando o Chefão
     const bossLight = new THREE.PointLight(0xc084fc, 2.2, 11);
     bossLight.position.set(0, 2.8, 0);
@@ -158,6 +183,7 @@ export class BossManager {
     this.scene.add(group);
 
     const maxHp = Math.round(1850 * (1 + (bossTier - 1) * 0.38));
+    const shieldMaxHp = Math.round(620 * (1 + (bossTier - 1) * 0.35));
     const speed = 2.75 + Math.min(0.8, (bossTier - 1) * 0.22);
 
     this.boss = {
@@ -174,9 +200,16 @@ export class BossManager {
       telegraphMat,
       debrisOrbit,
       debrisChunks,
+      shieldGroup,
+      shieldWireMat,
+      shieldShellMat,
       bossLight,
       hp: maxHp,
       maxHp,
+      shieldHp: shieldMaxHp,
+      shieldMaxHp,
+      shieldActive: true,
+      shieldDeflectFlash: 0,
       radius: 1.85,
       speed,
       animTimer: 0,
@@ -227,7 +260,12 @@ export class BossManager {
       stage: this.boss.stage,
       hp: this.boss.hp,
       maxHp: this.boss.maxHp,
-      subtitle: 'CHEFÃO ATIVO • DESVIE DOS DISPAROS E USE COMBOS VARIADOS!'
+      shieldHp: this.boss.shieldHp,
+      shieldMaxHp: this.boss.shieldMaxHp,
+      shieldActive: this.boss.shieldActive,
+      subtitle: this.boss.shieldActive
+        ? '🛡 ESCUDO ATIVO: USE COMBOS VARIADOS (M ≥ 2.5x / RANK A+)! REPETIDOS PERDEM 80% DE DANO!'
+        : '💥 ESCUDO QUEBRADO! ATINGE O NÚCLEO DO COLOSSO COM DANO TOTAL!'
     });
   }
 
@@ -317,24 +355,132 @@ export class BossManager {
   applyDamageToBoss(damage, points, multiplier, spell, castStyleMeta = null, isControl = false) {
     if (!this.boss) return;
 
-    this.boss.hp = Math.max(0, this.boss.hp - damage);
-    this.boss.hitFlashTimer = 0.16;
+    const b = this.boss;
+    const repeatCount = castStyleMeta ? castStyleMeta.repeatCount : this.comboSystem.repeatCount;
+
+    // E5-02 — Escudo do Chefão exige combos variados (M >= 2.5x)!
+    // Repetidos ou em 1.0x sofrem redução de 80% no dano com aviso "VARIE O COMBO!".
+    if (b.shieldActive && b.shieldHp > 0) {
+      const isRepeatedOrOneX = multiplier <= 1.0 || repeatCount >= 2;
+      const isHighVariety = multiplier >= 2.5 && !isRepeatedOrOneX;
+
+      let shieldDamage = damage;
+      let earnedPoints = points;
+      let msg = '';
+      let msgColor = '#38bdf8';
+
+      if (isHighVariety) {
+        // M >= 2.5x (Rank A / S / SS / SSS): dano TOTAL no escudo!
+        shieldDamage = damage;
+        msg = `💥 ESCUDO DO COLOSSO -${shieldDamage} (${multiplier.toFixed(1)}x DANO TOTAL!)`;
+        msgColor = '#00f5d4';
+        this.sound.playEnemyHit(multiplier, false, spell ? spell.binId : null, true);
+        this.comboSystem.spawnImpactParticles(
+          b.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
+          0x00f5d4,
+          spell ? spell.colorA : 0x38bdf8,
+          multiplier >= 4.0 ? 32 : 20,
+          1.25
+        );
+      } else if (isRepeatedOrOneX) {
+        // Combo repetido / 1.0x: dano reduzido em 80% com aviso explícito "VARIE O COMBO!"
+        shieldDamage = Math.max(1, Math.round(damage * 0.2));
+        earnedPoints = Math.round(points * 0.2);
+        b.shieldDeflectFlash = 0.35;
+        msg = `🛡 VARIE O COMBO! (-80% DANO · EXIGE M ≥ 2.5x) · -${shieldDamage}`;
+        msgColor = '#ff4d6d';
+        if (typeof this.sound.playArmorDeflect === 'function') {
+          this.sound.playArmorDeflect();
+        }
+        this.comboSystem.spawnImpactParticles(
+          b.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
+          0xa855f7,
+          0xff4d6d,
+          8,
+          0.75
+        );
+      } else {
+        // Combo fresco em 1.5x–2.0x (subindo para Rank A): dano parcial enquanto carrega estilo
+        shieldDamage = Math.max(1, Math.round(damage * 0.45));
+        earnedPoints = Math.round(points * 0.6);
+        b.shieldDeflectFlash = 0.2;
+        msg = `🛡 ESCUDO RESISTIU! SUBA PARA M ≥ 2.5x (RANK A+) · -${shieldDamage}`;
+        msgColor = '#ffd166';
+        if (typeof this.sound.playArmorDeflect === 'function') {
+          this.sound.playArmorDeflect();
+        }
+        this.comboSystem.spawnImpactParticles(
+          b.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
+          0x38bdf8,
+          0xffd166,
+          12,
+          0.9
+        );
+      }
+
+      b.shieldHp = Math.max(0, b.shieldHp - shieldDamage);
+      b.hitFlashTimer = 0.12;
+
+      if (b.shieldHp <= 0) {
+        // QUEBRA DO ESCUDO DO COLOSSO!
+        b.shieldActive = false;
+        if (b.shieldGroup) {
+          b.shieldGroup.visible = false;
+        }
+        b.stunTimer = Math.max(b.stunTimer, 2.2);
+        this.comboSystem.spawnAreaWave(b.group.position.clone(), 0x00f5d4, 8.5);
+        this.comboSystem.spawnImpactParticles(
+          b.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
+          0x38bdf8,
+          0xffd166,
+          42,
+          1.45
+        );
+        if (typeof this.sound.playArmorBreak === 'function') {
+          this.sound.playArmorBreak();
+        }
+        this.comboSystem.addStylePoints(160);
+        msg = '💥 ESCUDO DO COLOSSO QUEBRADO! ATORDOADO + DANO TOTAL!';
+        msgColor = '#ffd166';
+      }
+
+      this.syncBossHUD();
+
+      if (this.viewportEl && this.camera) {
+        this.hud.spawnFloatingText(
+          b.group.position.clone().add(new THREE.Vector3(0, 4.4, 0)),
+          this.camera,
+          this.viewportEl,
+          msg,
+          msgColor
+        );
+      }
+
+      if (this.onBossHit) {
+        this.onBossHit({ points: earnedPoints, damage: shieldDamage, multiplier, defeated: false });
+      }
+      return;
+    }
+
+    // Escudo já quebrado: dano direto na vida principal do Colosso!
+    b.hp = Math.max(0, b.hp - damage);
+    b.hitFlashTimer = 0.16;
     this.syncBossHUD();
 
     this.comboSystem.spawnImpactParticles(
-      this.boss.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
+      b.group.position.clone().add(new THREE.Vector3(0, 2.2, 0)),
       spell ? spell.colorA : 0x00f5d4,
       multiplier >= 4.0 ? 0xffd166 : spell ? spell.colorB : 0xffffff,
       multiplier >= 4.0 ? 32 : 18,
       multiplier >= 4.0 ? 1.3 : 1.0
     );
 
-    const defeated = this.boss.hp <= 0;
+    const defeated = b.hp <= 0;
     this.sound.playEnemyHit(multiplier, defeated, spell ? spell.binId : null, true);
 
     if (this.viewportEl && this.camera) {
       this.hud.spawnFloatingText(
-        this.boss.group.position.clone().add(new THREE.Vector3(0, 4.3, 0)),
+        b.group.position.clone().add(new THREE.Vector3(0, 4.3, 0)),
         this.camera,
         this.viewportEl,
         `${isControl ? '✦ CONTROLE' : '💥 COLOSSO'} · -${damage} HP (${multiplier.toFixed(1)}x)`,
@@ -386,6 +532,24 @@ export class BossManager {
     if (b.stunTimer > 0) b.stunTimer = Math.max(0, b.stunTimer - dt);
     if (b.slowTimer > 0) b.slowTimer = Math.max(0, b.slowTimer - dt);
     if (b.fragileTimer > 0) b.fragileTimer = Math.max(0, b.fragileTimer - dt);
+    if (b.shieldDeflectFlash > 0) b.shieldDeflectFlash = Math.max(0, b.shieldDeflectFlash - dt);
+
+    // E5-02 — Anima o Escudo 3D de Entulho enquanto ativo
+    if (b.shieldActive && b.shieldGroup) {
+      b.shieldGroup.rotation.y += dt * 1.15;
+      b.shieldGroup.rotation.x += dt * 0.55;
+      const pulse = 1.0 + Math.sin(elapsedTime * 4.2) * 0.04;
+      b.shieldGroup.scale.setScalar(pulse);
+      if (b.shieldDeflectFlash > 0) {
+        b.shieldWireMat.color.setHex(0xff4d6d);
+        b.shieldShellMat.color.setHex(0xff3b30);
+        b.shieldShellMat.opacity = 0.34;
+      } else {
+        b.shieldWireMat.color.setHex(0x38bdf8);
+        b.shieldShellMat.color.setHex(0xa855f7);
+        b.shieldShellMat.opacity = 0.16;
+      }
+    }
 
     // Animação dos detritos orbitando e do sprite 2.5D
     b.debrisOrbit.rotation.y += dt * 1.4;
