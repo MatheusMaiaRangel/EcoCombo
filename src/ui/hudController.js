@@ -2,6 +2,7 @@ import {
   CONAMA_ELEMENTS,
   STAGE_2_UNLOCK_TIME_SEC,
   STAGE_3_UNLOCK_TIME_SEC,
+  STAGE_3_BOSS_UNLOCK_TIME_SEC,
   getBinItemNamesForStage,
   resolveHweiSpell
 } from '../constants/recipes.js';
@@ -125,6 +126,13 @@ export class HUDController {
     this.pauseStageVal = document.getElementById('pause-stage-val');
     this.pausePurityVal = document.getElementById('pause-purity-val');
     this.pauseRankVal = document.getElementById('pause-rank-val');
+
+    // E5-01 — Barra de HP do Chefão Colosso de Entulho
+    this.bossHudBar = document.getElementById('boss-hud-bar');
+    this.bossHudName = document.getElementById('boss-hud-name');
+    this.bossHudHpText = document.getElementById('boss-hud-hp-text');
+    this.bossHpFill = document.getElementById('boss-hp-fill');
+    this.bossHudSubtitle = document.getElementById('boss-hud-subtitle');
   }
 
   /**
@@ -531,7 +539,7 @@ export class HUDController {
         ? `
           <span class="stage-enemy-chip armored">🛡 +INIMIGOS BLINDADOS (QUEBRE C/ [COR+E])</span>
           <span class="stage-enemy-chip metal">⚡ RITMO ACELERADO</span>
-          <span class="stage-enemy-chip plastic">👑 CHEFÃO NO FIM DO ESTÁGIO (EM BREVE)</span>
+          <span class="stage-enemy-chip plastic">👑 COLOSSO DE ENTULHO AOS 04:00!</span>
         `
         : `
           <span class="stage-enemy-chip plastic">[Q] Sacola Plástica</span>
@@ -558,22 +566,65 @@ export class HUDController {
   }
 
   /**
+   * E5-01 — Atualiza a Barra de HP Destacada do Chefão Colosso de Entulho
+   */
+  updateBossHUD({ name = 'COLOSSO DE ENTULHO', stage = 3, hp = 0, maxHp = 1850, subtitle = '' } = {}) {
+    if (!this.bossHudBar) return;
+    this.bossHudBar.classList.remove('hidden');
+    if (this.bossHudName) {
+      this.bossHudName.textContent = `👑 ${name} · EST. ${stage}`;
+    }
+    const clampedHp = Math.max(0, Math.round(hp));
+    const safeMax = Math.max(1, Math.round(maxHp));
+    if (this.bossHudHpText) {
+      this.bossHudHpText.textContent = `${clampedHp} / ${safeMax} HP`;
+    }
+    if (this.bossHpFill) {
+      const pct = Math.max(0, Math.min(100, (clampedHp / safeMax) * 100));
+      this.bossHpFill.style.width = `${pct}%`;
+    }
+    if (this.bossHudSubtitle && subtitle) {
+      this.bossHudSubtitle.textContent = subtitle;
+    }
+  }
+
+  hideBossHUD() {
+    if (this.bossHudBar) {
+      this.bossHudBar.classList.add('hidden');
+    }
+  }
+
+  /**
    * Atualiza STAGE, cronômetro de partida, SCORE e contagem de itens recicláveis na barra inferior
    */
-  updateStageAndScore(stage, score, enemiesAlive, matchElapsedSec = 0) {
+  updateStageAndScore(
+    stage,
+    score,
+    enemiesAlive,
+    matchElapsedSec = 0,
+    { bossActive = false, nextBossTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC } = {}
+  ) {
     this.stageCounter.textContent = String(stage);
     this.scoreCounter.textContent = String(score);
-    this.enemiesAlivePill.textContent = `ITENS NA ARENA: ${enemiesAlive}`;
+    this.enemiesAlivePill.textContent = bossActive
+      ? `👑 CHEFÃO + ${enemiesAlive} ITENS`
+      : `ITENS NA ARENA: ${enemiesAlive}`;
 
     if (this.matchTimerPill) {
       const timeStr = formatMatchTime(matchElapsedSec);
       const stage2Str = formatMatchTime(STAGE_2_UNLOCK_TIME_SEC);
       const stage3Str = formatMatchTime(STAGE_3_UNLOCK_TIME_SEC);
 
-      if (stage >= 3) {
-        this.matchTimerPill.textContent = `⏱ ${timeStr} • EST. 3 FINAL`;
-        this.matchTimerPill.classList.remove('stage-soon', 'stage-expanded');
+      if (bossActive) {
+        this.matchTimerPill.textContent = `👑 ${timeStr} • CHEFÃO ATIVO!`;
+        this.matchTimerPill.classList.remove('stage-expanded');
+        this.matchTimerPill.classList.add('stage-final', 'stage-soon');
+      } else if (stage >= 3) {
+        const targetBossStr = formatMatchTime(nextBossTimeSec);
+        this.matchTimerPill.textContent = `⏱ ${timeStr} / ${targetBossStr} • CHEFÃO`;
+        this.matchTimerPill.classList.remove('stage-expanded');
         this.matchTimerPill.classList.add('stage-final');
+        this.matchTimerPill.classList.toggle('stage-soon', matchElapsedSec >= nextBossTimeSec - 10);
       } else if (stage === 2) {
         this.matchTimerPill.textContent = `⏱ ${timeStr} / ${stage3Str} • EST. 2`;
         this.matchTimerPill.classList.remove('stage-final');

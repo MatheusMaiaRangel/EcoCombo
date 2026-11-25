@@ -3,6 +3,7 @@ import { ArenaScene } from './game/arenaScene.js';
 import { PlayerController } from './game/playerController.js';
 import { ComboSystem } from './game/comboSystem.js';
 import { EnemyManager } from './game/enemyManager.js';
+import { BossManager } from './game/bossManager.js';
 import { TutorialManager } from './game/tutorialManager.js';
 import { SidebarCharacterRenderer } from './ui/sidebarCharacter.js';
 import { HUDController } from './ui/hudController.js';
@@ -11,7 +12,9 @@ import { CutscenePlayer } from './ui/cutscenePlayer.js';
 import { SoundEngine } from './audio/soundEngine.js';
 import {
   STAGE_2_UNLOCK_TIME_SEC,
-  STAGE_3_UNLOCK_TIME_SEC
+  STAGE_3_UNLOCK_TIME_SEC,
+  STAGE_3_BOSS_UNLOCK_TIME_SEC,
+  BOSS_CYCLE_INTERVAL_SEC
 } from './constants/recipes.js';
 
 const SETTINGS_STORAGE_KEY = 'ecocombo_settings_v1';
@@ -34,6 +37,8 @@ class EcoComboMVPApp {
     this.bestRankIndex = 0;
     this.bestRank = 'D';
     this.bestRankColor = '#8d99ae';
+    this.bossDefeatedCount = 0;
+    this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
     this.isGameOver = false;
 
     this.settings = this.loadSettings();
@@ -99,6 +104,25 @@ class EcoComboMVPApp {
       onPlayerTouch: (purityLoss) => this.handlePlayerHit(purityLoss),
       onEnemyKilled: (hitEvent) => this.handleEnemyHitOrKilled(hitEvent)
     });
+
+    // 6b. Gerenciador do Chefão "Colosso de Entulho" (Épico E5)
+    this.bossManager = new BossManager({
+      scene: this.arena.scene,
+      player: this.player,
+      comboSystem: this.comboSystem,
+      hud: this.hud,
+      sound: this.sound,
+      camera: this.arena.camera,
+      viewportEl: this.viewportEl,
+      getArenaHalfSize,
+      resolveObstacleCollision,
+      onPlayerHit: (purityLoss) => this.handlePlayerHit(purityLoss),
+      onBossHit: ({ points }) => this.handleBossHitPoints(points),
+      onBossDefeated: (event) => this.handleBossDefeated(event)
+    });
+
+    this.enemyManager.onControlWaveExtraTarget = (centerPos, spell, multiplier, castStyleMeta) =>
+      this.bossManager.handleControlWave(centerPos, spell, multiplier, castStyleMeta);
 
     // 7. Tutorial Interativo Guiado na Arena (E4-07) e Cutscene Inicial Legendada em Pixel Art (E4-08)
     this.tutorialManager = new TutorialManager({
@@ -173,6 +197,7 @@ class EcoComboMVPApp {
     this.sound.setVolumePercent(this.settings.volumePercent);
     this.arena.setBloomEnabled(this.settings.bloomEnabled);
     this.enemyManager.setDifficulty(this.settings.difficulty);
+    this.bossManager.setDifficulty(this.settings.difficulty);
     this.hud.setFloatingTextEnabled(this.settings.floatingTextEnabled);
     this.syncOptionsUI();
   }
@@ -373,6 +398,7 @@ class EcoComboMVPApp {
         if (!mode) return;
         this.settings.difficulty = mode;
         this.enemyManager.setDifficulty(mode);
+        this.bossManager.setDifficulty(mode);
         this.saveSettings();
         this.syncOptionsUI();
         this.sound.playMenuClick(true);
@@ -515,6 +541,8 @@ class EcoComboMVPApp {
     this.bestRankIndex = 0;
     this.bestRank = 'D';
     this.bestRankColor = '#8d99ae';
+    this.bossDefeatedCount = 0;
+    this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
     this.isGameOver = false;
     this.gameState = 'TUTORIAL';
 
@@ -522,6 +550,8 @@ class EcoComboMVPApp {
     this.arena.randomizeObstacles({ mode: 'tutorial' });
     this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
+    this.enemyManager.setMaxConcurrentOverride(null);
+    this.bossManager.reset();
     this.tutorialManager.start();
 
     this.hud.updatePurity(this.purity);
@@ -559,6 +589,8 @@ class EcoComboMVPApp {
     this.bestRankIndex = 0;
     this.bestRank = 'D';
     this.bestRankColor = '#8d99ae';
+    this.bossDefeatedCount = 0;
+    this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
@@ -568,8 +600,10 @@ class EcoComboMVPApp {
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
+    this.enemyManager.setMaxConcurrentOverride(null);
     this.enemyManager.setAutoSpawnEnabled(true);
     this.enemyManager.reset();
+    this.bossManager.reset();
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'PLASTIC');
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'METAL');
 
@@ -660,6 +694,8 @@ class EcoComboMVPApp {
     this.bestRankIndex = 0;
     this.bestRank = 'D';
     this.bestRankColor = '#8d99ae';
+    this.bossDefeatedCount = 0;
+    this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
     this.isGameOver = false;
     this.gameState = 'MENU';
 
@@ -672,8 +708,10 @@ class EcoComboMVPApp {
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
+    this.enemyManager.setMaxConcurrentOverride(null);
     this.enemyManager.setAutoSpawnEnabled(true);
     this.enemyManager.reset();
+    this.bossManager.reset();
 
     this.hud.updatePurity(this.purity);
     this.hud.updateStageAndScore(this.stage, this.score, 0, this.matchElapsedSec);
@@ -717,6 +755,53 @@ class EcoComboMVPApp {
       this.score,
       this.enemyManager.enemies.length,
       this.matchElapsedSec
+    );
+  }
+
+  /**
+   * E5-01 — Instancia o Chefão Colosso de Entulho ao final do Estágio 3 (e a cada novo ciclo de 3 ondas)
+   */
+  spawnStageBoss() {
+    if (this.bossManager.isActive()) return;
+    const bossTier = this.bossDefeatedCount + 1;
+    // Durante o Chefão, limita inimigos comuns a 5 para permitir gerar Rank DMC sem lotar a arena
+    this.enemyManager.setMaxConcurrentOverride(5);
+    this.bossManager.spawnColossus({ stage: this.stage, bossTier });
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec,
+      { bossActive: true, nextBossTimeSec: this.nextBossSpawnTimeSec }
+    );
+  }
+
+  handleBossHitPoints(points = 0) {
+    if (this.gameState !== 'PLAYING' || this.isGameOver) return;
+    this.score += points;
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec,
+      { bossActive: this.bossManager.isActive(), nextBossTimeSec: this.nextBossSpawnTimeSec }
+    );
+  }
+
+  handleBossDefeated() {
+    if (this.gameState !== 'PLAYING' || this.isGameOver) return;
+    this.bossDefeatedCount += 1;
+    this.kills += 1;
+    this.stage += 1;
+    this.nextBossSpawnTimeSec = this.matchElapsedSec + BOSS_CYCLE_INTERVAL_SEC;
+    this.enemyManager.setMaxConcurrentOverride(null);
+    this.hud.setCurrentStage(this.stage);
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec,
+      { bossActive: false, nextBossTimeSec: this.nextBossSpawnTimeSec }
     );
   }
 
@@ -854,6 +939,8 @@ class EcoComboMVPApp {
     this.bestRankIndex = 0;
     this.bestRank = 'D';
     this.bestRankColor = '#8d99ae';
+    this.bossDefeatedCount = 0;
+    this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
@@ -869,8 +956,10 @@ class EcoComboMVPApp {
     this.hud.setCurrentStage(1);
     this.player.reset();
     this.comboSystem.reset();
+    this.enemyManager.setMaxConcurrentOverride(null);
     this.enemyManager.setAutoSpawnEnabled(true);
     this.enemyManager.reset();
+    this.bossManager.reset();
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'PLASTIC');
     this.enemyManager.spawnEnemyAroundPerimeter(1, 'METAL');
 
@@ -895,11 +984,18 @@ class EcoComboMVPApp {
         this.enterStage2();
       } else if (this.stage === 2 && this.matchElapsedSec >= STAGE_3_UNLOCK_TIME_SEC) {
         this.enterStage3();
+      } else if (
+        this.stage >= 3 &&
+        !this.bossManager.isActive() &&
+        this.matchElapsedSec >= this.nextBossSpawnTimeSec
+      ) {
+        this.spawnStageBoss();
       }
 
       this.player.update(elapsedTime, dt);
       this.comboSystem.update(dt);
       this.enemyManager.update(elapsedTime, dt, this.stage);
+      this.bossManager.update(elapsedTime, dt);
       const currentStyle = this.comboSystem.styleState;
       if (currentStyle && currentStyle.index > this.bestRankIndex) {
         this.bestRankIndex = currentStyle.index;
@@ -910,7 +1006,11 @@ class EcoComboMVPApp {
         this.stage,
         this.score,
         this.enemyManager.enemies.length,
-        this.matchElapsedSec
+        this.matchElapsedSec,
+        {
+          bossActive: this.bossManager.isActive(),
+          nextBossTimeSec: this.nextBossSpawnTimeSec
+        }
       );
       this.arena.update(elapsedTime, dt, this.player.position, false);
     } else if (this.gameState === 'TUTORIAL') {

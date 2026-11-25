@@ -97,6 +97,8 @@ export const ELEMENT_ORDER = ['PLASTIC', 'PAPER', 'GLASS', 'METAL'];
  */
 export const STAGE_2_UNLOCK_TIME_SEC = 90;
 export const STAGE_3_UNLOCK_TIME_SEC = 180;
+export const STAGE_3_BOSS_UNLOCK_TIME_SEC = 240;
+export const BOSS_CYCLE_INTERVAL_SEC = 120;
 export const MAX_STANDARD_STAGE = 3;
 
 export function getStageHpMultiplier(stage = 1) {

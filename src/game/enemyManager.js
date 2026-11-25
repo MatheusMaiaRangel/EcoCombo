@@ -75,14 +75,16 @@ export class EnemyManager {
     this.maxConcurrentEnemiesStage1 = 9;
     this.maxConcurrentEnemiesStage2 = 12;
     this.maxConcurrentEnemiesStage3 = 15;
+    this.maxConcurrentOverride = null;
     this.difficultyMode = 'NORMAL';
     this.difficultySpeedMult = 1.0;
     this.difficultySpawnMult = 1.0;
     this.autoSpawnEnabled = true;
 
-    // Callbacks opcionais usados pelo Tutorial Interativo (E4-07)
+    // Callbacks opcionais usados pelo Tutorial Interativo (E4-07) e Chefão (E5-01)
     this.onControlHit = null;
     this.onShieldBlock = null;
+    this.onControlWaveExtraTarget = null;
 
     // Registra o callback de detonação de Controle de Grupo (Modo E) no ComboSystem
     this.comboSystem.onControlWaveDetonated = (centerPos, spell, multiplier, castStyleMeta) => {
@@ -245,7 +247,14 @@ export class EnemyManager {
     return enemy;
   }
 
+  setMaxConcurrentOverride(limit = null) {
+    this.maxConcurrentOverride = limit;
+  }
+
   getMaxConcurrentEnemies(stage = 1) {
+    if (typeof this.maxConcurrentOverride === 'number') {
+      return this.maxConcurrentOverride;
+    }
     if (stage >= 3) return this.maxConcurrentEnemiesStage3;
     return stage >= 2 ? this.maxConcurrentEnemiesStage2 : this.maxConcurrentEnemiesStage1;
   }
@@ -656,6 +665,14 @@ export class EnemyManager {
         if (enemy.hp <= 0) {
           this.handleDefeatEnemy(ei, enemy, spell.colorA, multiplier, true);
         }
+      }
+    }
+
+    if (this.onControlWaveExtraTarget) {
+      const hitBoss = this.onControlWaveExtraTarget(centerPos, spell, multiplier, castStyleMeta);
+      if (hitBoss) {
+        hitCount += 1;
+        validControlHitCount += 1;
       }
     }
 

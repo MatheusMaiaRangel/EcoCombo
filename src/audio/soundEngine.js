@@ -390,6 +390,66 @@ export class SoundEngine {
   }
 
   /**
+   * E5-01 — Fanfarra grave e ameaçadora ao instanciar o Chefão Colosso de Entulho
+   */
+  playBossSpawn() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [146.83, 138.59, 130.81, 98.0];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.14;
+      const isLast = idx === notes.length - 1;
+      const osc = ctx.createOscillator();
+      const sub = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      sub.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+      sub.frequency.setValueAtTime(freq * 0.5, t0);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(isLast ? 0.18 : 0.12, t0 + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (isLast ? 0.65 : 0.22));
+
+      osc.connect(gain);
+      sub.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      sub.start(t0);
+      osc.stop(t0 + (isLast ? 0.68 : 0.24));
+      sub.stop(t0 + (isLast ? 0.68 : 0.24));
+    });
+  }
+
+  /**
+   * E5-01 — Som de ataque de alcance médio do Chefão Colosso de Entulho
+   */
+  playBossAttack() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(72, now + 0.22);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.14, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+
+    osc.connect(gain);
+    gain.connect(this.getOutput(ctx));
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  /**
    * E4-04 — Cadência descendente sintetizada ao encerrar a partida (Pureza Ambiental 0%)
    */
   playGameOver() {

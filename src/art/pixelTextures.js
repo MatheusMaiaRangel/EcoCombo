@@ -1343,3 +1343,100 @@ export function createParkObstacleTextures() {
     foliage
   };
 }
+
+/**
+ * E5-01 — Sprite Pixel Art 48×48 (2 frames) do Chefão "Colosso de Entulho"
+ * Gigante montado com sucata dos 4 materiais CONAMA (Plástico, Papelão, Vidro e Metal) + núcleo tóxico
+ */
+export function createBossColossusTextures() {
+  const frames = [0, 1].map((frameIdx) => {
+    const W = 48;
+    const H = 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    const stomp = frameIdx === 1 ? 1 : 0;
+    const armShift = frameIdx === 1 ? -2 : 1;
+    const px = (x, y, w, h, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    };
+
+    // Contorno escuro externo da silhueta imponente
+    px(10, 8 + stomp, 28, 30, '#140c1f');
+    px(5, 14 + armShift, 8, 22, '#140c1f');
+    px(35, 14 - armShift, 8, 22, '#140c1f');
+    px(12, 36, 9, 11, '#140c1f');
+    px(27, 36, 9, 11, '#140c1f');
+
+    // Pernas pesadas de entulho compacto + engrenagens metálicas
+    px(13, 36, 7, 10, '#334155');
+    px(14, 38, 5, 5, '#475569');
+    px(13, 44, 8, 2, '#f59e0b'); // Sapata metálica amarela
+    px(28, 36, 7, 10, '#334155');
+    px(29, 38, 5, 5, '#475569');
+    px(27, 44, 8, 2, '#f59e0b');
+
+    // Tronco colossal de lixo compactado (carcaça roxa/ardósia com placas CONAMA encravadas)
+    px(11, 10 + stomp, 26, 27, '#312e47');
+    px(13, 12 + stomp, 22, 23, '#474363');
+    px(15, 14 + stomp, 18, 19, '#2b2640');
+
+    // Placa de Papelão (Azul) no ombro esquerdo + Garrafas PET (Vermelho) no ombro direito
+    px(10, 10 + stomp, 10, 7, '#007aff');
+    px(12, 11 + stomp, 6, 4, '#60a5fa');
+    px(28, 10 + stomp, 10, 7, '#ff3b30');
+    px(30, 11 + stomp, 6, 4, '#ff857d');
+
+    // Cacos de Vidro (Verde) cravados na coroa/costas
+    px(15, 4 + stomp, 4, 7, '#16a34a');
+    px(16, 5 + stomp, 2, 5, '#86efac');
+    px(22, 2 + stomp, 4, 9, '#22c55e');
+    px(23, 3 + stomp, 2, 7, '#bbf7d0');
+    px(29, 5 + stomp, 4, 6, '#16a34a');
+    px(30, 6 + stomp, 2, 4, '#86efac');
+
+    // Engrenagem / Armadura de Metal (Amarelo) no peitoral inferior
+    px(17, 29 + stomp, 14, 6, '#d97706');
+    px(19, 30 + stomp, 10, 4, '#ffcc00');
+    px(22, 31 + stomp, 4, 2, '#451a03');
+
+    // Cabeça / Visor ameaçador com olhos tóxicos brilhantes
+    px(16, 12 + stomp, 16, 9, '#1e1b2e');
+    px(18, 15 + stomp, 4, 3, '#a3e635');
+    px(19, 16 + stomp, 2, 1, '#ffffff');
+    px(26, 15 + stomp, 4, 3, '#a3e635');
+    px(27, 16 + stomp, 2, 1, '#ffffff');
+    // Boca dentada metálica
+    px(18, 19 + stomp, 12, 2, '#c084fc');
+    px(20, 19 + stomp, 2, 2, '#1e1b2e');
+    px(24, 19 + stomp, 2, 2, '#1e1b2e');
+
+    // Núcleo Tóxico Pulsante no centro do peito
+    const coreGlow = frameIdx === 1 ? '#d946ef' : '#a855f7';
+    px(19, 22 + stomp, 10, 6, '#581c87');
+    px(21, 23 + stomp, 6, 4, coreGlow);
+    px(22, 24 + stomp, 4, 2, '#f0abfc');
+
+    // Braço Esquerdo (Garra de Plástico + Metal)
+    px(6, 15 + armShift, 6, 19, '#475569');
+    px(7, 17 + armShift, 4, 6, '#ff3b30');
+    px(6, 29 + armShift, 6, 6, '#ffcc00');
+    px(5, 33 + armShift, 2, 3, '#f8fafc');
+    px(9, 34 + armShift, 2, 3, '#f8fafc');
+
+    // Braço Direito (Martelo de Papelão + Vidro)
+    px(36, 15 - armShift, 6, 19, '#475569');
+    px(37, 17 - armShift, 4, 6, '#007aff');
+    px(36, 29 - armShift, 6, 6, '#34c759');
+    px(37, 34 - armShift, 2, 3, '#bbf7d0');
+    px(41, 33 - armShift, 2, 3, '#bbf7d0');
+
+    const tex = new THREE.CanvasTexture(canvas);
+    return applyNearestPixelFilter(tex);
+  });
+  return frames;
+}
