@@ -20,6 +20,7 @@ export class BossManager {
     getArenaHalfSize,
     resolveObstacleCollision,
     onPlayerHit,
+    onPlayerToxicTick,
     onBossHit,
     onBossDefeated
   }) {
@@ -33,12 +34,15 @@ export class BossManager {
     this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
     this.resolveObstacleCollision = resolveObstacleCollision || null;
     this.onPlayerHit = onPlayerHit || null;
+    this.onPlayerToxicTick = onPlayerToxicTick || onPlayerHit || null;
     this.onBossHit = onBossHit || null;
     this.onBossDefeated = onBossDefeated || null;
 
     this.bossTextures = createBossColossusTextures();
     this.boss = null;
     this.bossProjectiles = [];
+    this.toxicPuddles = [];
+    this.toxicTickTimer = 0;
     this.difficultySpeedMult = 1.0;
   }
 
@@ -219,6 +223,7 @@ export class BossManager {
       fragileTimer: 0,
       knockbackVel: new THREE.Vector3(),
       rangedAttackCooldown: 2.8,
+      puddleAttackCooldown: 4.5,
       telegraphTimer: 0,
       pendingAttackDir: new THREE.Vector3(0, 0, 1)
     };
@@ -267,6 +272,266 @@ export class BossManager {
         ? '🛡 ESCUDO ATIVO: USE COMBOS VARIADOS (M ≥ 2.5x / RANK A+)! REPETIDOS PERDEM 80% DE DANO!'
         : '💥 ESCUDO QUEBRADO! ATINGE O NÚCLEO DO COLOSSO COM DANO TOTAL!'
     });
+  }
+
+  /**
+   * E5-03 — Lança 2 a 3 poças tóxicas telegrafadas no chão da arena isométrica:
+   * primeiro surge um círculo de aviso (1.25s) para o jogador desviar no WASD;
+   * em seguida a poça tóxica ativa (6.5s), aplicando lentidão e perda gradual de pureza!
+   */
+  launchToxicPuddleBarrage() {
+    if (!this.boss) return;
+    const limit = this.getArenaHalfSize() - 2.4;
+    const puddleCount = this.boss.bossTier >= 2 ? 3 : 2;
+    const playerPos = this.player.position;
+
+    if (this.sound && typeof this.sound.playToxicWarning === 'function') {
+      this.sound.playToxicWarning();
+    }
+
+    const targets = [];
+    // Poça 1: diretamente na posição atual do jogador (força desvio no WASD!)
+    targets.push(
+      new THREE.Vector3(
+        THREE.MathUtils.clamp(playerPos.x, -limit, limit),
+        0,
+        THREE.MathUtils.clamp(playerPos.z, -limit, limit)
+      )
+    );
+
+    // Poças extras: posicionadas ao redor para testar leitura de espaço isométrico
+    for (let i = 1; i < puddleCount; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 4.2 + Math.random() * 2.6;
+      targets.push(
+        new THREE.Vector3(
+          THREE.MathUtils.clamp(playerPos.x + Math.cos(ang) * dist, -limit, limit),
+          0,
+          THREE.MathUtils.clamp(playerPos.z + Math.sin(ang) * dist, -limit, limit)
+        )
+      );
+    }
+
+    targets.forEach((pos) => {
+      this.spawnToxicPuddleZone(pos, 2.35, 1.25, 6.5);
+    });
+
+    if (this.viewportEl && this.camera) {
+      this.hud.spawnFloatingText(
+        this.boss.group.position.clone().add(new THREE.Vector3(0, 4.5, 0)),
+        this.camera,
+        this.viewportEl,
+        '☣ POÇAS TÓXICAS NO CHÃO! DESVIE NO WASD!',
+        '#a3e635'
+      );
+    }
+  }
+
+  spawnToxicPuddleZone(position, radius = 2.35, warningDuration = 1.25, activeDuration = 6.5) {
+    const group = new THREE.Group();
+    group.position.set(position.x, 0.04, position.z);
+
+    // Anel externo de aviso (vermelho/amarelo durante o telégrafo -> roxo/ácido quando ativa)
+    const rimMat = new THREE.MeshBasicMaterial({
+      color: 0xff4d6d,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.92,
+      toneMapped: false,
+      fog: false
+    });
+    const rimMesh = new THREE.Mesh(
+      new THREE.RingGeometry(radius - 0.16, radius, 32),
+      rimMat
+    );
+    rimMesh.rotation.x = -Math.PI / 2;
+    group.add(rimMesh);
+
+    // Disco interno de preenchimento progressivo durante o aviso
+    const fillMat = new THREE.MeshBasicMaterial({
+      color: 0xff3b30,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+      toneMapped: false,
+      fog: false
+    });
+    const fillMesh = new THREE.Mesh(new THREE.CircleGeometry(radius - 0.14, 32), fillMat);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = 0.005;
+    fillMesh.scale.setScalar(0.08);
+    group.add(fillMesh);
+
+    // Bolhas tóxicas internas (visíveis quando a poça fica ativa)
+    const bubbleGroup = new THREE.Group();
+    bubbleGroup.visible = false;
+    const bubbleMeshes = [];
+    for (let i = 0; i < 4; i++) {
+      const bMat = new THREE.MeshBasicMaterial({
+        color: i % 2 === 0 ? 0xd9f99d : 0xa3e635,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85,
+        toneMapped: false,
+        fog: false
+      });
+      const bMesh = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.26, 12), bMat);
+      bMesh.rotation.x = -Math.PI / 2;
+      const bAng = (i / 4) * Math.PI * 2 + 0.4;
+      const bDist = radius * (0.32 + (i % 2) * 0.26);
+      bMesh.position.set(Math.cos(bAng) * bDist, 0.015, Math.sin(bAng) * bDist);
+      bubbleGroup.add(bMesh);
+      bubbleMeshes.push({ mesh: bMesh, mat: bMat, phase: i * 1.4 });
+    }
+    group.add(bubbleGroup);
+
+    this.scene.add(group);
+
+    this.toxicPuddles.push({
+      group,
+      rimMesh,
+      rimMat,
+      fillMesh,
+      fillMat,
+      bubbleGroup,
+      bubbleMeshes,
+      position: position.clone(),
+      radius,
+      state: 'WARNING',
+      age: 0,
+      warningDuration,
+      activeDuration,
+      particleTimer: 0
+    });
+  }
+
+  updateToxicPuddles(elapsedTime, dt) {
+    const playerPos = this.player.position;
+    let playerInAnyPuddle = false;
+
+    for (let i = this.toxicPuddles.length - 1; i >= 0; i--) {
+      const p = this.toxicPuddles[i];
+      p.age += dt;
+
+      if (p.state === 'WARNING') {
+        const progress = Math.min(1, p.age / p.warningDuration);
+        p.fillMesh.scale.setScalar(0.08 + progress * 0.92);
+        p.rimMat.opacity = 0.65 + Math.sin(elapsedTime * 22) * 0.3;
+
+        if (p.age >= p.warningDuration) {
+          // Ativa a poça tóxica no chão!
+          p.state = 'ACTIVE';
+          p.age = 0;
+          p.fillMesh.scale.setScalar(1.0);
+          p.rimMat.color.setHex(0x6b21a8);
+          p.rimMat.opacity = 0.95;
+          p.fillMat.color.setHex(0x84cc16);
+          p.fillMat.opacity = 0.56;
+          p.bubbleGroup.visible = true;
+
+          if (this.sound && typeof this.sound.playToxicSplash === 'function') {
+            this.sound.playToxicSplash();
+          }
+          this.comboSystem.spawnImpactParticles(
+            p.position.clone().add(new THREE.Vector3(0, 0.25, 0)),
+            0xa3e635,
+            0x9333ea,
+            12,
+            0.85
+          );
+        }
+        continue;
+      }
+
+      // Estado ACTIVE: anima bolhas tóxicas, partículas e checa se o jogador pisou na poça
+      const remaining = p.activeDuration - p.age;
+      const fadeRatio = remaining < 1.0 ? Math.max(0, remaining) : 1.0;
+
+      p.fillMat.opacity = (0.48 + Math.sin(elapsedTime * 6.5 + i) * 0.1) * fadeRatio;
+      p.rimMat.opacity = 0.92 * fadeRatio;
+      p.bubbleMeshes.forEach((b) => {
+        const s = 0.75 + Math.sin(elapsedTime * 5.2 + b.phase) * 0.35;
+        b.mesh.scale.setScalar(s);
+        b.mat.opacity = 0.8 * fadeRatio;
+      });
+
+      p.particleTimer += dt;
+      if (p.particleTimer >= 0.42 && fadeRatio > 0.3) {
+        p.particleTimer = 0;
+        const ang = Math.random() * Math.PI * 2;
+        const r = Math.random() * (p.radius * 0.75);
+        this.comboSystem.spawnImpactParticles(
+          new THREE.Vector3(
+            p.position.x + Math.cos(ang) * r,
+            0.2,
+            p.position.z + Math.sin(ang) * r
+          ),
+          0xa3e635,
+          0xa855f7,
+          2,
+          0.55
+        );
+      }
+
+      const distPlayer = Math.hypot(
+        playerPos.x - p.position.x,
+        playerPos.z - p.position.z
+      );
+      if (distPlayer <= p.radius - 0.1) {
+        playerInAnyPuddle = true;
+      }
+
+      if (p.age >= p.activeDuration) {
+        this.disposeToxicPuddle(p);
+        this.toxicPuddles.splice(i, 1);
+      }
+    }
+
+    if (playerInAnyPuddle) {
+      // E5-03 — Lentidão + perda gradual de pureza enquanto pisa na poça tóxica
+      this.player.applyMovementSlow(0.25, 0.52);
+      this.toxicTickTimer -= dt;
+      if (this.toxicTickTimer <= 0) {
+        this.toxicTickTimer = 0.85;
+        this.sound.playPlayerHurt();
+        if (this.viewportEl && this.camera) {
+          this.hud.spawnFloatingText(
+            playerPos.clone().add(new THREE.Vector3(0, 2.35, 0)),
+            this.camera,
+            this.viewportEl,
+            '☣ POÇA TÓXICA! -5% PUREZA · LENTIDÃO!',
+            '#a3e635'
+          );
+        }
+        if (this.onPlayerToxicTick) {
+          this.onPlayerToxicTick(5);
+        }
+      }
+    } else {
+      // Ao sair da poça, reduz o delay para próximo tick caso volte a pisar depois
+      this.toxicTickTimer = Math.min(this.toxicTickTimer, 0.2);
+    }
+  }
+
+  disposeToxicPuddle(p) {
+    this.scene.remove(p.group);
+    p.rimMesh.geometry.dispose();
+    p.rimMat.dispose();
+    p.fillMesh.geometry.dispose();
+    p.fillMat.dispose();
+    p.bubbleMeshes.forEach((b) => {
+      b.mesh.geometry.dispose();
+      b.mat.dispose();
+    });
+  }
+
+  clearToxicPuddles() {
+    for (const p of this.toxicPuddles) {
+      this.disposeToxicPuddle(p);
+    }
+    this.toxicPuddles = [];
+    this.toxicTickTimer = 0;
   }
 
   /**
@@ -508,6 +773,7 @@ export class BossManager {
     this.scene.remove(defeatedBoss.group);
     this.boss = null;
     this.clearBossProjectiles();
+    this.clearToxicPuddles();
     this.hud.hideBossHUD();
 
     if (this.onBossDefeated) {
@@ -522,6 +788,7 @@ export class BossManager {
 
   update(elapsedTime, dt) {
     this.updateBossProjectiles(dt);
+    this.updateToxicPuddles(elapsedTime, dt);
 
     if (!this.boss) return;
 
@@ -601,6 +868,13 @@ export class BossManager {
       if (b.rangedAttackCooldown <= 0 && distToPlayer <= 15.5 && distToPlayer >= 3.2) {
         b.telegraphTimer = 0.65;
         b.pendingAttackDir.copy(toPlayer);
+      }
+
+      // E5-03 — Temporizador de ataque de área (poças tóxicas telegrafadas no chão)
+      b.puddleAttackCooldown -= dt;
+      if (b.puddleAttackCooldown <= 0) {
+        this.launchToxicPuddleBarrage();
+        b.puddleAttackCooldown = Math.max(4.4, 5.8 - (b.bossTier - 1) * 0.45);
       }
     }
 
@@ -822,6 +1096,7 @@ export class BossManager {
       this.boss = null;
     }
     this.clearBossProjectiles();
+    this.clearToxicPuddles();
     this.hud.hideBossHUD();
   }
 }

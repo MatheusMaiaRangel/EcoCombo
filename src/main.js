@@ -117,6 +117,7 @@ class EcoComboMVPApp {
       getArenaHalfSize,
       resolveObstacleCollision,
       onPlayerHit: (purityLoss) => this.handlePlayerHit(purityLoss),
+      onPlayerToxicTick: (purityLoss) => this.handlePlayerHit(purityLoss),
       onBossHit: ({ points }) => this.handleBossHitPoints(points),
       onBossDefeated: (event) => this.handleBossDefeated(event)
     });

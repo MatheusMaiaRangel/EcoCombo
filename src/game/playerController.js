@@ -166,6 +166,8 @@ export class PlayerController {
     this.mouseNDC = new THREE.Vector2(0, 0);
 
     this.invulnerableTimer = 0;
+    this.externalSlowTimer = 0;
+    this.externalSlowFactor = 1.0;
     this.canUseMoveKey = () => true;
     this.onBlockedMoveKey = null;
     this.walkAnimTimer = 0;
@@ -475,9 +477,23 @@ export class PlayerController {
     });
   }
 
+  /**
+   * E5-03 — Aplica lentidão temporária ao pisar em poças tóxicas do Chefão
+   */
+  applyMovementSlow(duration = 0.25, factor = 0.52) {
+    this.externalSlowTimer = Math.max(this.externalSlowTimer, duration);
+    this.externalSlowFactor = Math.min(this.externalSlowFactor, factor);
+  }
+
   update(elapsedTime, dt) {
     if (this.invulnerableTimer > 0) {
       this.invulnerableTimer = Math.max(0, this.invulnerableTimer - dt);
+    }
+    if (this.externalSlowTimer > 0) {
+      this.externalSlowTimer = Math.max(0, this.externalSlowTimer - dt);
+      if (this.externalSlowTimer === 0) {
+        this.externalSlowFactor = 1.0;
+      }
     }
 
     if (this.shieldCooldown > 0) {
@@ -523,7 +539,9 @@ export class PlayerController {
       const isoZ = -inputX - inputY;
       const moveVec = new THREE.Vector3(isoX, 0, isoZ).normalize();
 
-      this.position.addScaledVector(moveVec, this.moveSpeed * dt);
+      const effectiveSpeed =
+        this.moveSpeed * (this.externalSlowTimer > 0 ? this.externalSlowFactor : 1.0);
+      this.position.addScaledVector(moveVec, effectiveSpeed * dt);
 
       // Respeita rigorosamente os limites dinâmicos da arena isométrica (Estágio 1 -> Estágio 2)
       const limit = this.getArenaHalfSize() - 0.9;
@@ -556,6 +574,12 @@ export class PlayerController {
       if (this.footRing && this.footRing.material) {
         this.footRing.material.color.setHex(blinkOn ? 0xff3b30 : 0xffffff);
         this.footRing.scale.setScalar(1.18 + Math.sin(elapsedTime * 22) * 0.08);
+      }
+    } else if (this.externalSlowTimer > 0) {
+      this.spriteMesh.visible = true;
+      if (this.footRing && this.footRing.material) {
+        this.footRing.material.color.setHex(0xa3e635);
+        this.footRing.scale.setScalar(1.12 + Math.sin(elapsedTime * 14) * 0.08);
       }
     } else {
       this.spriteMesh.visible = true;
@@ -657,6 +681,8 @@ export class PlayerController {
     this.position.set(0, 0, 0);
     this.rootGroup.position.set(0, 0, 0);
     this.invulnerableTimer = 0;
+    this.externalSlowTimer = 0;
+    this.externalSlowFactor = 1.0;
     this.clearShield(false);
     this.shieldCooldown = 0;
     this.spriteMesh.visible = true;

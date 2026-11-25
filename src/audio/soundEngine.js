@@ -450,6 +450,63 @@ export class SoundEngine {
   }
 
   /**
+   * E5-03 — Alerta sonoro curto ao surgir círculo de aviso de poça tóxica no chão
+   */
+  playToxicWarning() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    [330, 440].forEach((freq, idx) => {
+      const t0 = now + idx * 0.075;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(0.08, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + 0.1);
+    });
+  }
+
+  /**
+   * E5-03 — Som borbulhante/ácido quando a poça tóxica ativa no chão
+   */
+  playToxicSplash() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(520, now);
+    filter.frequency.exponentialRampToValueAtTime(190, now + 0.24);
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(75, now + 0.24);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.13, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.getOutput(ctx));
+    osc.start(now);
+    osc.stop(now + 0.27);
+  }
+
+  /**
    * E4-04 — Cadência descendente sintetizada ao encerrar a partida (Pureza Ambiental 0%)
    */
   playGameOver() {
