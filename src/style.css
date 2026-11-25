@@ -178,7 +178,36 @@ html, body {
 
 .portrait-frame-bezel.state-hit {
   border-color: #ff3b30;
-  background: #ff9999;
+  background: #ff8585;
+  box-shadow: 0 0 14px rgba(255, 59, 48, 0.9);
+  animation: portraitShake 0.32s ease-in-out 2;
+}
+
+.portrait-frame-bezel.state-energized {
+  border-color: #00f5d4;
+  background: #d8fbf5;
+  box-shadow: inset 0 2px 0 #ffffff, 0 0 14px rgba(0, 245, 212, 0.7);
+}
+
+.portrait-frame-bezel.state-mastery {
+  border-color: #ffd166;
+  background: #fff3c4;
+  box-shadow: inset 0 2px 0 #ffffff, 0 0 18px rgba(255, 209, 102, 0.95);
+}
+
+@keyframes portraitShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateX(4px) rotate(1.5deg);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
 }
 
 #character-portrait-canvas {

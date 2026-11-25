@@ -710,6 +710,8 @@ class EcoComboMVPApp {
 
     this.purity = Math.min(100, this.purity + purityBonus);
     this.score += scoreBonus;
+    this.sidebarCharacter.triggerMasteryFlash();
+    this.hud.triggerPortraitMastery();
     this.hud.updatePurity(this.purity);
     this.arena.setPurity(this.purity, false);
 
@@ -739,6 +741,7 @@ class EcoComboMVPApp {
       // No Tutorial Interativo (E4-07), nunca ocorre Game Over e a Pureza permanece protegida
       this.purity = Math.max(85, this.purity - Math.min(5, purityLoss));
       this.sidebarCharacter.triggerHurt();
+      this.hud.triggerPortraitHurt();
       this.hud.triggerDamageFlash();
       this.hud.updatePurity(this.purity);
       return;
@@ -747,6 +750,7 @@ class EcoComboMVPApp {
     if (this.gameState !== 'PLAYING' || this.isGameOver) return;
     this.purity = Math.max(0, this.purity - purityLoss);
     this.sidebarCharacter.triggerHurt();
+    this.hud.triggerPortraitHurt();
     this.hud.triggerDamageFlash();
     this.hud.updatePurity(this.purity);
     this.arena.setPurity(this.purity, false);

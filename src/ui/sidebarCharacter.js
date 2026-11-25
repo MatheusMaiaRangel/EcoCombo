@@ -26,11 +26,13 @@ export class SidebarCharacterRenderer {
     this.state = {
       slots: [],
       recipe: null,
-      multiplier: 4.0,
+      multiplier: 1.0,
       repeatCount: 0,
       isStale: false,
+      purity: 100,
       hurtTimer: 0,
-      shootFlashTimer: 0
+      shootFlashTimer: 0,
+      masteryFlashTimer: 0
     };
   }
 
@@ -39,11 +41,15 @@ export class SidebarCharacterRenderer {
   }
 
   triggerHurt() {
-    this.state.hurtTimer = 0.65;
+    this.state.hurtTimer = 0.75;
   }
 
   triggerShootFlash() {
     this.state.shootFlashTimer = 0.25;
+  }
+
+  triggerMasteryFlash() {
+    this.state.masteryFlashTimer = 1.5;
   }
 
   render(elapsedTime, dt) {
@@ -52,6 +58,9 @@ export class SidebarCharacterRenderer {
     }
     if (this.state.shootFlashTimer > 0) {
       this.state.shootFlashTimer = Math.max(0, this.state.shootFlashTimer - dt);
+    }
+    if (this.state.masteryFlashTimer > 0) {
+      this.state.masteryFlashTimer = Math.max(0, this.state.masteryFlashTimer - dt);
     }
 
     this.drawUpperCharacter(elapsedTime);
@@ -70,12 +79,32 @@ export class SidebarCharacterRenderer {
     ctx.clearRect(0, 0, W, H);
 
     const breathe = Math.sin(t * 3.2) > 0.3 ? -1 : 0;
-    const { slots, recipe, isStale, hurtTimer, shootFlashTimer } = this.state;
+    const { slots, recipe, multiplier, isStale, hurtTimer, shootFlashTimer, masteryFlashTimer } =
+      this.state;
+    const isEnergized = !isStale && hurtTimer <= 0 && (multiplier >= 4.0 || masteryFlashTimer > 0);
+    const hurtShakeX = hurtTimer > 0 ? Math.round(Math.sin(t * 60) * 1.5) : 0;
 
     const px = (x, y, w, h, color) => {
       ctx.fillStyle = color;
-      ctx.fillRect(Math.round(x), Math.round(y + breathe), Math.round(w), Math.round(h));
+      ctx.fillRect(
+        Math.round(x + hurtShakeX),
+        Math.round(y + breathe),
+        Math.round(w),
+        Math.round(h)
+      );
     };
+
+    // E4-02 — Aura cintilante atrás do personagem quando energizado (>= 4.0x) ou em Maestria Elemental
+    if (isEnergized) {
+      const auraColor = masteryFlashTimer > 0 ? '#ffd166' : '#00f5d4';
+      for (let i = 0; i < 6; i++) {
+        const phase = (t * 2.4 + i * 0.45) % 1;
+        const sx = 14 + ((i * 11) % 38);
+        const sy = Math.round(54 - phase * 48);
+        ctx.fillStyle = i % 2 === 0 ? auraColor : '#ffffff';
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+    }
 
     // 1. Mochila azul escolar nas costas (Until Then)
     px(14, 24, 9, 22, '#164b96');
@@ -136,20 +165,48 @@ export class SidebarCharacterRenderer {
     px(31, 8, 4, 2, '#5c3626');
     px(37, 8, 4, 3, '#42261b');
 
-    // Expressão nos olhos do palco superior
+    // Expressão nos olhos do palco superior (E4-02)
     if (hurtTimer > 0) {
-      px(28, 12, 3, 2, '#ff3b30');
-      px(36, 12, 3, 2, '#ff3b30');
-      px(31, 17, 4, 2, '#7a2020');
+      // Olhos cerrados de dor (> <) + boca aberta de impacto + marca de alerta
+      px(27, 11, 2, 1, '#2b1912');
+      px(29, 12, 2, 1, '#2b1912');
+      px(27, 13, 2, 1, '#2b1912');
+      px(37, 11, 2, 1, '#2b1912');
+      px(35, 12, 2, 1, '#2b1912');
+      px(37, 13, 2, 1, '#2b1912');
+      px(31, 16, 4, 3, '#8f1d24');
+      px(32, 17, 2, 1, '#ffccd5');
+      // Alerta vermelho perto da cabeça
+      px(45, 5, 2, 4, '#ff3b30');
+      px(45, 10, 2, 2, '#ffd166');
     } else if (isStale) {
-      // Olhar cansado de combo repetido (1x)
+      // Olhar cansado/fadiga de combo repetido (1.0x) + gota de suor
       px(27, 11, 4, 1, '#2b1912');
       px(35, 11, 4, 1, '#2b1912');
       px(28, 13, 3, 1, '#1c1518');
       px(36, 13, 3, 1, '#1c1518');
-      px(31, 17, 4, 1, '#8c584c');
+      // Boca cansada/tensa
+      px(30, 17, 6, 1, '#8c584c');
+      // Gota de suor animada
+      const dropY = 9 + (Math.floor(t * 4) % 2);
+      px(41, dropY, 2, 3, '#38bdf8');
+      px(41, dropY, 1, 1, '#e0f2fe');
+    } else if (isEnergized) {
+      // Olhar energizado/confiante (>= 4.0x / Ranks S-SSS / Maestria)
+      px(27, 10, 4, 1, '#2b1912');
+      px(35, 10, 4, 1, '#2b1912');
+      px(28, 11, 3, 3, '#1c1518');
+      px(36, 11, 3, 3, '#1c1518');
+      const eyeGlow = masteryFlashTimer > 0 ? '#ffd166' : '#00f5d4';
+      px(28, 11, 2, 1, eyeGlow);
+      px(36, 11, 2, 1, eyeGlow);
+      px(30, 13, 1, 1, '#ffffff');
+      px(38, 13, 1, 1, '#ffffff');
+      // Sorriso amplo e confiante
+      px(30, 16, 6, 2, '#b55645');
+      px(31, 16, 4, 1, '#ffffff');
     } else {
-      // Olhar determinado/feliz e sorriso alegre
+      // Olhar determinado/focado
       px(27, 11, 4, 1, '#2b1912');
       px(35, 11, 4, 1, '#2b1912');
       px(28, 12, 3, 2, '#1c1518');
@@ -235,7 +292,7 @@ export class SidebarCharacterRenderer {
   }
 
   /**
-   * Desenha o Retrato 2D Reativo no quadro inferior esquerdo (E4-01)
+   * Desenha o Retrato 2D Reativo no quadro inferior esquerdo (E4-01 / E4-02)
    */
   drawPortrait(t) {
     const ctx = this.pbCtx;
@@ -243,122 +300,155 @@ export class SidebarCharacterRenderer {
     const H = this.portraitBuffer.height;
     ctx.imageSmoothingEnabled = false;
 
-    const { multiplier, isStale, hurtTimer } = this.state;
+    const { multiplier, isStale, purity, hurtTimer, masteryFlashTimer } = this.state;
+    const isEnergized = !isStale && hurtTimer <= 0 && (multiplier >= 4.0 || masteryFlashTimer > 0);
+    const shakeX = hurtTimer > 0 ? (Math.floor(t * 36) % 2 === 0 ? -1 : 1) : 0;
 
-    // Fundo ensolarado e alegre reativo ao estado do multiplicador
+    // Fundo reativo ao estado do multiplicador, fadiga (1x), dano ou maestria
     if (hurtTimer > 0) {
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = Math.floor(t * 20) % 2 === 0 ? '#ef4444' : '#b91c1c';
     } else if (isStale) {
-      ctx.fillStyle = '#fb923c';
-    } else if (multiplier >= 4.0) {
+      ctx.fillStyle = '#c2410c';
+    } else if (masteryFlashTimer > 0) {
+      ctx.fillStyle = '#0d9488';
+    } else if (isEnergized) {
       ctx.fillStyle = '#06b6d4';
+    } else if (purity < 30) {
+      ctx.fillStyle = '#581c87';
     } else {
       ctx.fillStyle = '#38bdf8';
     }
     ctx.fillRect(0, 0, W, H);
 
-    // Solzinho dourado, nuvem branca e colina verde no fundo do retrato
-    if (hurtTimer <= 0 && !isStale) {
-      // Sol dourado no canto superior esquerdo
+    // Detalhes de fundo reativos (E4-02)
+    if (hurtTimer > 0) {
+      // Linhas de choque vermelho-amarelo de impacto
+      ctx.fillStyle = '#7f1d1d';
+      ctx.fillRect(0, 3, W, 2);
+      ctx.fillRect(0, 23, W, 2);
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(2, 2, 2, 5);
+      ctx.fillRect(2, 8, 2, 2);
+    } else if (isStale) {
+      // Faixas de fadiga / alerta laranja escuro
+      ctx.fillStyle = '#9a3412';
+      ctx.fillRect(0, 4, W, 2);
+      ctx.fillRect(0, 12, W, 1);
+      ctx.fillRect(0, 22, W, 2);
+    } else if (isEnergized) {
+      // Estrelas e brilho energético de Rank S / SS / SSS (>= 4.0x)
+      const starCol = masteryFlashTimer > 0 ? '#fde047' : '#a5f3fc';
+      const blink = Math.floor(t * 8) % 2 === 0;
       ctx.fillStyle = '#fde047';
       ctx.fillRect(2, 2, 4, 4);
-      // Nuvem branca fofinha no topo direito
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = starCol;
+      ctx.fillRect(blink ? 22 : 21, 3, 2, 2);
+      ctx.fillRect(3, blink ? 12 : 13, 2, 2);
+      ctx.fillRect(23, blink ? 14 : 13, 2, 2);
+      // Gramado luminoso
+      ctx.fillStyle = '#34d399';
+      ctx.fillRect(0, 20, W, 8);
+    } else {
+      // Solzinho dourado, nuvem branca e colina verde no fundo do retrato
+      ctx.fillStyle = purity < 30 ? '#c084fc' : '#fde047';
+      ctx.fillRect(2, 2, 4, 4);
+      ctx.fillStyle = purity < 30 ? '#7e22ce' : '#ffffff';
       ctx.fillRect(19, 3, 7, 3);
       ctx.fillRect(21, 2, 4, 2);
-      // Gramado verde alegre na base do retrato
-      ctx.fillStyle = '#4ade80';
+      ctx.fillStyle = purity < 30 ? '#3b0764' : '#4ade80';
       ctx.fillRect(0, 19, W, 9);
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = purity < 30 ? '#2e1065' : '#22c55e';
       ctx.fillRect(0, 22, W, 6);
-    } else {
-      ctx.fillStyle = isStale ? '#ea580c' : '#b91c1c';
-      ctx.fillRect(0, 4, W, 2);
-      ctx.fillRect(0, 22, W, 2);
     }
 
+    const r = (x, y, w, h, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x + shakeX, y, w, h);
+    };
+
     // Ombros da camisa branca + alças azuis da mochila
-    ctx.fillStyle = '#e8ecf2';
-    ctx.fillRect(4, 21, 20, 7);
-    ctx.fillStyle = '#1d5bb8';
-    ctx.fillRect(6, 21, 3, 7);
-    ctx.fillRect(19, 21, 3, 7);
-    ctx.fillStyle = '#526661';
-    ctx.fillRect(13, 22, 2, 6);
+    r(4, 21, 20, 7, '#e8ecf2');
+    r(6, 21, 3, 7, '#1d5bb8');
+    r(19, 21, 3, 7, '#1d5bb8');
+    r(13, 22, 2, 6, '#526661');
 
     // Pescoço e Rosto
-    ctx.fillStyle = '#cf9474';
-    ctx.fillRect(11, 18, 6, 4);
-    ctx.fillStyle = '#ebba9a';
-    ctx.fillRect(7, 7, 14, 12);
-    ctx.fillStyle = '#d9a182';
-    ctx.fillRect(7, 16, 14, 3);
+    r(11, 18, 6, 4, '#cf9474');
+    r(7, 7, 14, 12, '#ebba9a');
+    r(7, 16, 14, 3, '#d9a182');
     // Rim light quente lateral
-    ctx.fillStyle = '#ffe3b8';
-    ctx.fillRect(19, 8, 2, 9);
+    r(19, 8, 2, 9, '#ffe3b8');
 
     // Cabelo castanho bagunçado (Until Then)
-    ctx.fillStyle = '#42261b';
-    ctx.fillRect(6, 2, 16, 5);
-    ctx.fillStyle = '#5c3626';
-    ctx.fillRect(5, 4, 18, 4);
-    ctx.fillRect(5, 7, 3, 6);
-    ctx.fillRect(20, 7, 3, 6);
+    r(6, 2, 16, 5, '#42261b');
+    r(5, 4, 18, 4, '#5c3626');
+    r(5, 7, 3, 6, '#5c3626');
+    r(20, 7, 3, 6, '#5c3626');
     // Franja
-    ctx.fillRect(8, 7, 4, 2);
-    ctx.fillRect(15, 7, 4, 2);
+    r(8, 7, 4, 2, '#5c3626');
+    r(15, 7, 4, 2, '#5c3626');
 
-    // Expressão Facial Reativa
+    // Expressão Facial Reativa (E4-02)
     if (hurtTimer > 0) {
-      // Dano sofrido (> <)
-      ctx.fillStyle = '#2b1912';
-      ctx.fillRect(9, 11, 3, 2);
-      ctx.fillRect(16, 11, 3, 2);
-      ctx.fillStyle = '#9e2a2b';
-      ctx.fillRect(12, 15, 4, 3);
+      // Dano sofrido (> <) bem nítido + boca aberta de susto
+      r(9, 10, 2, 1, '#2b1912');
+      r(11, 11, 1, 1, '#2b1912');
+      r(9, 12, 2, 1, '#2b1912');
+
+      r(17, 10, 2, 1, '#2b1912');
+      r(16, 11, 1, 1, '#2b1912');
+      r(17, 12, 2, 1, '#2b1912');
+
+      // Bochechas avermelhadas de impacto + boca aberta
+      r(8, 14, 2, 1, '#f87171');
+      r(18, 14, 2, 1, '#f87171');
+      r(12, 15, 4, 3, '#7f1d1d');
+      r(13, 16, 2, 1, '#fca5a5');
     } else if (isStale) {
-      // Desgastado em 1.0x (olhos semicerrados + gota de suor)
-      ctx.fillStyle = '#2b1912';
-      ctx.fillRect(9, 11, 4, 1);
-      ctx.fillRect(15, 11, 4, 1);
-      ctx.fillStyle = '#1c1518';
-      ctx.fillRect(10, 12, 2, 1);
-      ctx.fillRect(16, 12, 2, 1);
-      // Boca tensa
-      ctx.fillStyle = '#8c4f43';
-      ctx.fillRect(11, 16, 6, 1);
-      // Gota de suor azul
-      ctx.fillStyle = '#00bbf9';
-      ctx.fillRect(19, 10 + (Math.floor(t * 4) % 2), 2, 3);
-    } else if (multiplier >= 4.0) {
-      // 4.0x: Confiante e energizado!
-      ctx.fillStyle = '#2b1912';
-      ctx.fillRect(9, 10, 4, 1);
-      ctx.fillRect(15, 10, 4, 1);
-      ctx.fillStyle = '#1c1518';
-      ctx.fillRect(10, 11, 2, 3);
-      ctx.fillRect(16, 11, 2, 3);
+      // Desgastado em 1.0x / combo repetido (pálpebras pesadas + sobrancelha caída + gota de suor)
+      r(9, 10, 4, 1, '#2b1912');
+      r(15, 10, 4, 1, '#2b1912');
+      // Pálpebra pesada
+      r(9, 11, 4, 1, '#d9a182');
+      r(15, 11, 4, 1, '#d9a182');
+      // Pupila semicerrada
+      r(10, 12, 2, 1, '#1c1518');
+      r(16, 12, 2, 1, '#1c1518');
+      // Boca cansada/ondulada
+      r(11, 16, 2, 1, '#8c4f43');
+      r(13, 15, 2, 1, '#8c4f43');
+      r(15, 16, 2, 1, '#8c4f43');
+      // Gota de suor azul animada
+      const dropY = 9 + (Math.floor(t * 4) % 3);
+      r(19, dropY, 2, 3, '#38bdf8');
+      r(19, dropY, 1, 1, '#ffffff');
+    } else if (isEnergized) {
+      // 4.0x+ / Ranks S-SSS / Maestria: Confiante e energizado!
+      r(9, 9, 3, 1, '#2b1912');
+      r(12, 10, 1, 1, '#2b1912');
+      r(16, 9, 3, 1, '#2b1912');
+      r(15, 10, 1, 1, '#2b1912');
+
+      r(10, 11, 2, 3, '#1c1518');
+      r(16, 11, 2, 3, '#1c1518');
       // Brilho cyan/dourado nos olhos
-      ctx.fillStyle = '#00f5d4';
-      ctx.fillRect(10, 11, 1, 1);
-      ctx.fillRect(16, 11, 1, 1);
-      // Sorriso confiante
-      ctx.fillStyle = '#9e5847';
-      ctx.fillRect(11, 15, 5, 1);
-      ctx.fillRect(16, 14, 1, 1);
+      const eyeSpark = masteryFlashTimer > 0 ? '#ffd166' : '#00f5d4';
+      r(10, 11, 1, 1, eyeSpark);
+      r(16, 11, 1, 1, eyeSpark);
+      r(11, 13, 1, 1, '#ffffff');
+      r(17, 13, 1, 1, '#ffffff');
+      // Sorriso confiante e radiante
+      r(11, 15, 6, 2, '#9e5847');
+      r(12, 15, 4, 1, '#ffffff');
     } else {
-      // 2.5x / 1.5x: Focado
-      ctx.fillStyle = '#2b1912';
-      ctx.fillRect(9, 10, 4, 1);
-      ctx.fillRect(15, 10, 4, 1);
-      ctx.fillStyle = '#1c1518';
-      ctx.fillRect(10, 11, 2, 2);
-      ctx.fillRect(16, 11, 2, 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(10, 11, 1, 1);
-      ctx.fillRect(16, 11, 1, 1);
-      ctx.fillStyle = '#8c4f43';
-      ctx.fillRect(12, 15, 4, 1);
+      // 1.0x–3.0x: Focado (ou tenso se pureza < 30%)
+      r(9, 10, 4, 1, '#2b1912');
+      r(15, 10, 4, 1, '#2b1912');
+      r(10, 11, 2, 2, '#1c1518');
+      r(16, 11, 2, 2, '#1c1518');
+      r(10, 11, 1, 1, '#ffffff');
+      r(16, 11, 1, 1, '#ffffff');
+      r(12, 15, 4, 1, '#8c4f43');
     }
 
     this.portraitCtx.imageSmoothingEnabled = false;

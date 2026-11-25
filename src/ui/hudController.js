@@ -26,6 +26,10 @@ export class HUDController {
 
     this.portraitBezel = document.getElementById('portrait-bezel');
     this.portraitMoodTag = document.getElementById('portrait-mood-tag');
+    this.portraitHurtTimeout = null;
+    this.portraitMasteryTimeout = null;
+    this.lastNormalMoodText = 'PRONTO';
+    this.lastNormalMoodColor = '#64dfdf';
 
     // Medidor Devil May Cry no Painel Lateral
     this.multiplierBox = document.getElementById('multiplier-box');
@@ -205,7 +209,9 @@ export class HUDController {
     activeShieldBin
   }) {
     const binElem = openBinId ? CONAMA_ELEMENTS[openBinId] : null;
-    const isStale = displayRepeatCount >= 3;
+    // E4-02 — Considera fadiga/alerta ao repetir 3+ vezes ou repetir com multiplicador desgastado em 1.0x
+    const isStale =
+      displayRepeatCount >= 3 || (displayRepeatCount >= 2 && displayMultiplier <= 1.0);
 
     // 1. Atualiza o Leque Hwei (no Painel Lateral e na Arena)
     if (binElem) {
@@ -317,25 +323,32 @@ export class HUDController {
       this.repeatCounterTag.textContent = `REPETIDO (R=${displayRepeatCount})`;
       this.multiplierBox.classList.add('state-stale');
       this.portraitBezel.classList.add('state-stale');
+      this.portraitBezel.classList.remove('state-energized');
       this.staleAlert.classList.remove('hidden');
-      this.portraitMoodTag.textContent = 'VARIE O MODO!';
-      this.portraitMoodTag.style.color = '#ff4d6d';
+      this.lastNormalMoodText = displayMultiplier <= 1.0 ? 'FADIGA 1.0x!' : 'VARIE O MODO!';
+      this.lastNormalMoodColor = '#ff4d6d';
     } else {
       this.portraitBezel.classList.remove('state-stale');
+      this.portraitBezel.classList.toggle('state-energized', displayMultiplier >= 4.0);
       this.staleAlert.classList.add('hidden');
       this.repeatCounterTag.textContent =
         displayRepeatCount === 0 ? 'ESTILO LIVRE!' : `R=${displayRepeatCount}`;
 
       if (displayMultiplier >= 4.0) {
-        this.portraitMoodTag.textContent = `RANK ${styleState?.rank || 'S'}!`;
-        this.portraitMoodTag.style.color = '#00f5d4';
+        this.lastNormalMoodText = `RANK ${styleState?.rank || 'S'}!`;
+        this.lastNormalMoodColor = '#00f5d4';
       } else if (displayMultiplier >= 2.0) {
-        this.portraitMoodTag.textContent = `RANK ${styleState?.rank || 'B'}`;
-        this.portraitMoodTag.style.color = '#ffd166';
+        this.lastNormalMoodText = `RANK ${styleState?.rank || 'B'}`;
+        this.lastNormalMoodColor = '#ffd166';
       } else {
-        this.portraitMoodTag.textContent = `RANK ${styleState?.rank || 'C'}`;
-        this.portraitMoodTag.style.color = '#4cc9f0';
+        this.lastNormalMoodText = `RANK ${styleState?.rank || 'D'}`;
+        this.lastNormalMoodColor = '#4cc9f0';
       }
+    }
+
+    if (!this.portraitHurtTimeout && !this.portraitMasteryTimeout && this.portraitMoodTag) {
+      this.portraitMoodTag.textContent = this.lastNormalMoodText;
+      this.portraitMoodTag.style.color = this.lastNormalMoodColor;
     }
 
     if (lastRecipe) {
@@ -396,12 +409,67 @@ export class HUDController {
   }
 
   /**
+   * E4-02 — Ativa alerta visual e tremor no retrato lateral quando o protagonista sofre dano
+   */
+  triggerPortraitHurt(durationMs = 750) {
+    if (!this.portraitBezel || !this.portraitMoodTag) return;
+    if (this.portraitHurtTimeout) {
+      clearTimeout(this.portraitHurtTimeout);
+    }
+    this.portraitBezel.classList.remove('state-hit');
+    void this.portraitBezel.offsetWidth;
+    this.portraitBezel.classList.add('state-hit');
+    this.portraitMoodTag.textContent = '⚠ DANO!';
+    this.portraitMoodTag.style.color = '#ff4d6d';
+
+    this.portraitHurtTimeout = setTimeout(() => {
+      this.portraitHurtTimeout = null;
+      if (this.portraitBezel) {
+        this.portraitBezel.classList.remove('state-hit');
+      }
+      if (!this.portraitMasteryTimeout && this.portraitMoodTag) {
+        this.portraitMoodTag.textContent = this.lastNormalMoodText;
+        this.portraitMoodTag.style.color = this.lastNormalMoodColor;
+      }
+    }, durationMs);
+  }
+
+  /**
+   * E4-02 / E3-04 — Realce comemorativo no retrato ao ativar Maestria Elemental
+   */
+  triggerPortraitMastery(durationMs = 1500) {
+    if (!this.portraitBezel || !this.portraitMoodTag) return;
+    if (this.portraitMasteryTimeout) {
+      clearTimeout(this.portraitMasteryTimeout);
+    }
+    this.portraitBezel.classList.add('state-mastery');
+    if (!this.portraitHurtTimeout) {
+      this.portraitMoodTag.textContent = '✦ MAESTRIA!';
+      this.portraitMoodTag.style.color = '#ffd166';
+    }
+
+    this.portraitMasteryTimeout = setTimeout(() => {
+      this.portraitMasteryTimeout = null;
+      if (this.portraitBezel) {
+        this.portraitBezel.classList.remove('state-mastery');
+      }
+      if (!this.portraitHurtTimeout && this.portraitMoodTag) {
+        this.portraitMoodTag.textContent = this.lastNormalMoodText;
+        this.portraitMoodTag.style.color = this.lastNormalMoodColor;
+      }
+    }, durationMs);
+  }
+
+  /**
    * Atualiza a Barra de Pureza Ambiental (100% até 0%)
    */
   updatePurity(purity) {
     const clamped = Math.max(0, Math.min(100, Math.round(purity)));
     this.purityValue.textContent = `${clamped}%`;
     this.purityFill.style.width = `${clamped}%`;
+    if (this.sidebarCharacter) {
+      this.sidebarCharacter.updateState({ purity: clamped });
+    }
 
     if (clamped > 60) {
       this.purityFill.style.background = 'linear-gradient(90deg, #34c759 0%, #00f5d4 100%)';
