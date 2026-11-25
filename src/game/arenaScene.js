@@ -13,8 +13,7 @@ import {
   createPixelConamaBinTextures,
   createPixelParkBenchTexture,
   createPixelParkLampTexture,
-  createPixelStonePillarTextures,
-  createPixelUrbanBinTextures
+  createParkObstacleTextures
 } from '../art/pixelTextures.js';
 import { ELEMENT_ORDER } from '../constants/recipes.js';
 
@@ -92,6 +91,8 @@ export class ArenaScene {
     this.perimeterProps = [];
     this.trees = [];
     this.obstacles = [];
+    this.obstacleMaterials = null;
+    this.currentStage = 1;
 
     // E1-04 — Estado atmosférico dinâmico ligado à Pureza Ambiental (0% a 100%)
     this.targetPurity = 100;
@@ -117,10 +118,11 @@ export class ArenaScene {
     // 5. Iluminação Solar de Dia para o Parque 2D Pixel Art (Reativa à Pureza — E1-04)
     this.setupLighting();
 
-    // 6. Construção do Chão de Praça, Mobiliário de Parque e Obstáculos 3D com Colisão (E1-03)
+    // 6. Construção do Chão de Praça, Mobiliário de Parque e Obstáculos 3D Diversos e Aleatórios (E1-03)
     this.buildArenaGeometry();
     this.buildParkScenery();
-    this.buildObstacles();
+    this.initObstacleMaterials();
+    this.randomizeObstacles({ mode: 'match' });
     this.applyArenaSize(ARENA_STAGE1_HALF_SIZE);
     this.applyPurityAtmosphere(100, 0);
 
@@ -138,9 +140,24 @@ export class ArenaScene {
    */
   setStageSize(stage = 1, immediate = false) {
     const isStage2 = stage >= 2;
+    this.currentStage = isStage2 ? 2 : 1;
     this.targetHalfSize = isStage2 ? ARENA_STAGE2_HALF_SIZE : ARENA_STAGE1_HALF_SIZE;
     this.targetCameraOffset.copy(isStage2 ? this.stage2CameraOffset : this.stage1CameraOffset);
     this.targetFollowFactor = isStage2 ? 0.56 : 0.32;
+
+    // E1-03 — Revela os obstáculos extras do anel externo ao expandir para o Estágio 2
+    for (const obs of this.obstacles) {
+      const shouldBeActive = obs.stageUnlock <= this.currentStage;
+      obs.active = shouldBeActive;
+      obs.group.visible = shouldBeActive;
+      if (immediate) {
+        obs.emergeProgress = shouldBeActive ? 1 : 0;
+        obs.group.scale.y = shouldBeActive ? 1 : 0.01;
+      } else if (shouldBeActive && obs.emergeProgress < 0.05) {
+        obs.emergeProgress = 0.02;
+        obs.group.scale.y = 0.02;
+      }
+    }
 
     if (immediate) {
       this.currentHalfSize = this.targetHalfSize;
@@ -413,127 +430,332 @@ export class ArenaScene {
   }
 
   /**
-   * E1-03 — Constrói 4 Obstáculos 3D sólidos nos 4 quadrantes da praça (2 Pilares de Pedra + 2 Lixeiras Urbanas 3D)
-   * com texturas Pixel Art (NearestFilter), projeção de sombra real e caixas de colisão (AABB)
+   * E1-03 — Inicializa materiais Pixel Art compartilhados pelos 6 arquétipos de obstáculos do parque
    */
-  buildObstacles() {
-    const pillarTex = createPixelStonePillarTextures();
-    const binTex = createPixelUrbanBinTextures();
-
-    const makeBoxMaterials = (texSet) => {
-      const sideMat = new THREE.MeshStandardMaterial({
-        map: texSet.side,
-        roughness: 0.85,
-        metalness: 0.08
-      });
-      const topMat = new THREE.MeshStandardMaterial({
-        map: texSet.top,
-        roughness: 0.8,
+  initObstacleMaterials() {
+    const tex = createParkObstacleTextures();
+    this.obstacleMaterials = {
+      brick: new THREE.MeshStandardMaterial({ map: tex.brickPlanter, roughness: 0.88, metalness: 0.04 }),
+      soil: new THREE.MeshStandardMaterial({ map: tex.planterSoil, roughness: 0.92, metalness: 0.0 }),
+      wood: new THREE.MeshStandardMaterial({ map: tex.woodSlats, roughness: 0.82, metalness: 0.04 }),
+      roof: new THREE.MeshStandardMaterial({ map: tex.roofTiles, roughness: 0.72, metalness: 0.08 }),
+      rock: new THREE.MeshStandardMaterial({ map: tex.mossyRock, roughness: 0.9, metalness: 0.05 }),
+      solar: new THREE.MeshStandardMaterial({ map: tex.solarPanel, roughness: 0.35, metalness: 0.35 }),
+      screen: new THREE.MeshStandardMaterial({
+        map: tex.ecoScreen,
+        emissive: 0x0f766e,
+        emissiveIntensity: 0.35,
+        roughness: 0.35,
         metalness: 0.1
-      });
-      return [sideMat, sideMat, topMat, topMat, sideMat, sideMat];
+      }),
+      foliage: new THREE.MeshStandardMaterial({ map: tex.foliage, roughness: 0.88, metalness: 0.0 }),
+      iron: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.55, metalness: 0.45 }),
+      stoneTrim: new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.82, metalness: 0.05 }),
+      water: new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.3,
+        roughness: 0.18,
+        metalness: 0.1
+      }),
+      terracotta: new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.85, metalness: 0.04 }),
+      binColors: [
+        new THREE.MeshStandardMaterial({ color: 0xff3b30, roughness: 0.6, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: 0x007aff, roughness: 0.6, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: 0x34c759, roughness: 0.6, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.6, metalness: 0.1 })
+      ],
+      flowerColors: [
+        new THREE.MeshStandardMaterial({ color: 0xfb7185, roughness: 0.75 }),
+        new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.75 }),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.75 }),
+        new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.75 })
+      ]
     };
-
-    const pillarMats = makeBoxMaterials(pillarTex);
-    const binMats = makeBoxMaterials(binTex);
-    const basePlinthMat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
-      roughness: 0.9,
-      metalness: 0.05
-    });
-    const capStoneMat = new THREE.MeshStandardMaterial({
-      color: 0xcbd5e1,
-      roughness: 0.8,
-      metalness: 0.05
-    });
-    const binLidMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.65,
-      metalness: 0.25
-    });
-
-    // Posicionados nos 4 canteiros/quadrantes, mantendo o pátio central e as 4 alamedas 100% livres
-    const configs = [
-      { id: 'pillar-nw', kind: 'pillar', baseX: -6.8, baseZ: -6.8, halfX: 0.85, halfZ: 0.85, height: 2.55 },
-      { id: 'urban-bin-ne', kind: 'urban_bin', baseX: 6.8, baseZ: -6.8, halfX: 0.85, halfZ: 0.85, height: 2.05 },
-      { id: 'urban-bin-sw', kind: 'urban_bin', baseX: -6.8, baseZ: 6.8, halfX: 0.85, halfZ: 0.85, height: 2.05 },
-      { id: 'pillar-se', kind: 'pillar', baseX: 6.8, baseZ: 6.8, halfX: 0.85, halfZ: 0.85, height: 2.55 }
-    ];
-
-    configs.forEach((cfg) => {
-      const group = new THREE.Group();
-      group.position.set(cfg.baseX, 0, cfg.baseZ);
-
-      // Base sólida de pedra no chão para ancoragem visual e leitura clara da hitbox
-      const plinth = new THREE.Mesh(
-        new THREE.BoxGeometry(cfg.halfX * 2, 0.24, cfg.halfZ * 2),
-        basePlinthMat
-      );
-      plinth.position.y = 0.12;
-      plinth.castShadow = true;
-      plinth.receiveShadow = true;
-      group.add(plinth);
-
-      if (cfg.kind === 'pillar') {
-        const shaft = new THREE.Mesh(
-          new THREE.BoxGeometry(1.36, 2.08, 1.36),
-          pillarMats
-        );
-        shaft.position.y = 0.24 + 1.04;
-        shaft.castShadow = true;
-        shaft.receiveShadow = true;
-        group.add(shaft);
-
-        const cap = new THREE.Mesh(
-          new THREE.BoxGeometry(1.62, 0.24, 1.62),
-          capStoneMat
-        );
-        cap.position.y = 0.24 + 2.08 + 0.12;
-        cap.castShadow = true;
-        cap.receiveShadow = true;
-        group.add(cap);
-      } else {
-        const body = new THREE.Mesh(
-          new THREE.BoxGeometry(1.48, 1.56, 1.48),
-          binMats
-        );
-        body.position.y = 0.24 + 0.78;
-        body.castShadow = true;
-        body.receiveShadow = true;
-        group.add(body);
-
-        const hood = new THREE.Mesh(
-          new THREE.BoxGeometry(1.6, 0.26, 1.6),
-          binLidMat
-        );
-        hood.position.y = 0.24 + 1.56 + 0.13;
-        hood.castShadow = true;
-        hood.receiveShadow = true;
-        group.add(hood);
-      }
-
-      this.scene.add(group);
-      this.obstacles.push({
-        id: cfg.id,
-        kind: cfg.kind,
-        group,
-        baseX: cfg.baseX,
-        baseZ: cfg.baseZ,
-        x: cfg.baseX,
-        z: cfg.baseZ,
-        halfX: cfg.halfX,
-        halfZ: cfg.halfZ,
-        height: cfg.height
-      });
-    });
-  }
-
-  getObstacles() {
-    return this.obstacles;
   }
 
   /**
-   * E1-03 — Resolve colisão Círculo vs AABB no plano (X, Z) contra todos os obstáculos 3D da arena
+   * E1-03 — Constrói a malha 3D estilizada de cada um dos 6 obstáculos temáticos da praça
+   */
+  createObstacleMesh(kind) {
+    const m = this.obstacleMaterials;
+    const group = new THREE.Group();
+    const animatedParts = [];
+
+    const addPart = (geo, mat, [x, y, z], [rx, ry, rz] = [0, 0, 0]) => {
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      mesh.rotation.set(rx, ry, rz);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      return mesh;
+    };
+
+    if (kind === 'fountain_planter') {
+      // 1. Canteiro Circular de Tijolinho com Flores e Mini Chafariz
+      addPart(new THREE.CylinderGeometry(1.08, 1.16, 0.56, 8), m.brick, [0, 0.28, 0]);
+      addPart(new THREE.CylinderGeometry(1.14, 1.14, 0.1, 8), m.stoneTrim, [0, 0.58, 0]);
+      addPart(new THREE.CylinderGeometry(0.96, 0.96, 0.08, 8), m.soil, [0, 0.61, 0]);
+      // Bacia central de pedra + água cristalina
+      addPart(new THREE.CylinderGeometry(0.24, 0.34, 0.68, 6), m.stoneTrim, [0, 0.95, 0]);
+      addPart(new THREE.CylinderGeometry(0.62, 0.42, 0.22, 8), m.stoneTrim, [0, 1.32, 0]);
+      addPart(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 8), m.water, [0, 1.42, 0]);
+      const spout = addPart(new THREE.OctahedronGeometry(0.16, 0), m.water, [0, 1.66, 0]);
+      animatedParts.push({ mesh: spout, baseY: 1.66, kind: 'fountain_drop' });
+      // Tufos de flores ao redor
+      for (let i = 0; i < 4; i++) {
+        const ang = (i * Math.PI) / 2 + 0.4;
+        addPart(new THREE.BoxGeometry(0.32, 0.28, 0.32), m.foliage, [Math.cos(ang) * 0.66, 0.76, Math.sin(ang) * 0.66]);
+        addPart(new THREE.BoxGeometry(0.14, 0.12, 0.14), m.flowerColors[i], [Math.cos(ang) * 0.66, 0.94, Math.sin(ang) * 0.66]);
+      }
+      return { group, baseHalfX: 1.08, baseHalfZ: 1.08, height: 1.85, animatedParts };
+    }
+
+    if (kind === 'eco_kiosk') {
+      // 2. Ecoponto Coberto de Coleta Seletiva (4 mini lixeiras CONAMA sob telhadinho de parque)
+      addPart(new THREE.BoxGeometry(2.26, 0.18, 1.42), m.stoneTrim, [0, 0.09, 0]);
+      // 4 mini lixeiras CONAMA alinhadas
+      const binXs = [-0.72, -0.24, 0.24, 0.72];
+      binXs.forEach((bx, idx) => {
+        addPart(new THREE.BoxGeometry(0.38, 0.92, 0.72), m.binColors[idx], [bx, 0.64, 0.02]);
+        addPart(new THREE.BoxGeometry(0.42, 0.12, 0.78), m.iron, [bx, 1.12, 0.02]);
+        addPart(new THREE.BoxGeometry(0.24, 0.18, 0.06), m.iron, [bx, 0.88, 0.38]);
+      });
+      // Postes de madeira + telhado inclinado azul-petróleo
+      [[-1.02, -0.58], [1.02, -0.58], [-1.02, 0.58], [1.02, 0.58]].forEach(([px, pz]) => {
+        addPart(new THREE.BoxGeometry(0.12, 1.82, 0.12), m.wood, [px, 1.08, pz]);
+      });
+      addPart(new THREE.BoxGeometry(2.44, 0.18, 1.68), m.roof, [0, 2.04, 0], [0.16, 0, 0]);
+      return { group, baseHalfX: 1.16, baseHalfZ: 0.76, height: 2.25, animatedParts };
+    }
+
+    if (kind === 'park_bench_cluster') {
+      // 3. Banco de Praça 3D em Madeira e Ferro + Vaso Florido de Terracota ao lado
+      // Pés de ferro e assento/encosto de madeira ripada
+      addPart(new THREE.BoxGeometry(1.56, 0.14, 0.64), m.wood, [-0.28, 0.52, 0.06]);
+      addPart(new THREE.BoxGeometry(1.56, 0.54, 0.12), m.wood, [-0.28, 0.88, -0.26], [-0.18, 0, 0]);
+      [[-0.92, 0.25], [-0.92, -0.2], [0.36, 0.25], [0.36, -0.2]].forEach(([lx, lz]) => {
+        addPart(new THREE.BoxGeometry(0.1, 0.5, 0.1), m.iron, [lx, 0.25, lz]);
+      });
+      addPart(new THREE.BoxGeometry(0.1, 0.26, 0.64), m.iron, [-1.04, 0.66, 0.04]);
+      addPart(new THREE.BoxGeometry(0.1, 0.26, 0.64), m.iron, [0.46, 0.66, 0.04]);
+      // Vaso grande de terracota com arbusto florido ao lado do banco
+      addPart(new THREE.CylinderGeometry(0.38, 0.28, 0.58, 6), m.terracotta, [0.88, 0.29, 0]);
+      addPart(new THREE.DodecahedronGeometry(0.46, 0), m.foliage, [0.88, 0.88, 0]);
+      addPart(new THREE.BoxGeometry(0.14, 0.14, 0.14), m.flowerColors[0], [0.76, 1.24, 0.18]);
+      addPart(new THREE.BoxGeometry(0.14, 0.14, 0.14), m.flowerColors[1], [1.02, 1.18, -0.12]);
+      return { group, baseHalfX: 1.22, baseHalfZ: 0.62, height: 1.45, animatedParts };
+    }
+
+    if (kind === 'boulder_bush') {
+      // 4. Conjunto Orgânico de Rochas Musgosas + Arbusto Florido + Placa de Madeira Ecológica
+      addPart(new THREE.DodecahedronGeometry(0.86, 0), m.rock, [-0.12, 0.58, 0.04], [0.2, 0.5, 0.1]);
+      addPart(new THREE.DodecahedronGeometry(0.58, 0), m.rock, [0.54, 0.42, -0.24], [0.4, 1.1, 0.2]);
+      addPart(new THREE.DodecahedronGeometry(0.52, 0), m.foliage, [-0.46, 0.52, -0.44]);
+      addPart(new THREE.DodecahedronGeometry(0.42, 0), m.foliage, [0.42, 0.92, 0.24]);
+      addPart(new THREE.BoxGeometry(0.16, 0.16, 0.16), m.flowerColors[3], [-0.46, 0.98, -0.42]);
+      // Plaquinha rústica de parque
+      addPart(new THREE.BoxGeometry(0.1, 1.05, 0.1), m.wood, [0.52, 0.52, 0.52]);
+      addPart(new THREE.BoxGeometry(0.62, 0.36, 0.08), m.wood, [0.52, 1.08, 0.52], [0, -0.35, 0]);
+      addPart(new THREE.BoxGeometry(0.44, 0.2, 0.09), m.screen, [0.52, 1.08, 0.52], [0, -0.35, 0]);
+      return { group, baseHalfX: 0.96, baseHalfZ: 0.92, height: 1.5, animatedParts };
+    }
+
+    if (kind === 'compost_garden') {
+      // 5. Horta / Composteira Comunitária de Madeira com Mudas Verdes
+      addPart(new THREE.BoxGeometry(1.78, 0.78, 1.32), m.wood, [0, 0.39, 0]);
+      addPart(new THREE.BoxGeometry(1.62, 0.1, 1.16), m.soil, [0, 0.8, 0]);
+      // Cantoneiras de ferro escuro
+      [[-0.88, -0.64], [0.88, -0.64], [-0.88, 0.64], [0.88, 0.64]].forEach(([cx, cz]) => {
+        addPart(new THREE.BoxGeometry(0.12, 0.84, 0.12), m.iron, [cx, 0.42, cz]);
+      });
+      // 3 mudas crescendo com botões coloridos
+      [[-0.48, -0.12, 0], [0.04, 0.16, 1], [0.52, -0.08, 2]].forEach(([sx, sz, ci]) => {
+        addPart(new THREE.BoxGeometry(0.12, 0.48, 0.12), m.wood, [sx, 1.02, sz]);
+        addPart(new THREE.DodecahedronGeometry(0.32, 0), m.foliage, [sx, 1.34, sz]);
+        addPart(new THREE.BoxGeometry(0.13, 0.13, 0.13), m.flowerColors[ci], [sx, 1.62, sz]);
+      });
+      return { group, baseHalfX: 0.94, baseHalfZ: 0.72, height: 1.72, animatedParts };
+    }
+
+    // 6. Totem Solar Ecológico da Praça (painel fotovoltaico inclinado + visor verde-água)
+    addPart(new THREE.BoxGeometry(1.44, 0.24, 1.44), m.stoneTrim, [0, 0.12, 0]);
+    addPart(new THREE.BoxGeometry(1.08, 1.32, 0.76), m.wood, [0, 0.9, 0]);
+    addPart(new THREE.BoxGeometry(0.84, 0.84, 0.8), m.screen, [0, 0.96, 0]);
+    // Hastes metálicas + telhado de painel solar inclinado
+    addPart(new THREE.BoxGeometry(0.12, 0.56, 0.12), m.iron, [-0.36, 1.72, 0]);
+    addPart(new THREE.BoxGeometry(0.12, 0.56, 0.12), m.iron, [0.36, 1.72, 0]);
+    addPart(new THREE.BoxGeometry(1.66, 0.12, 1.24), m.solar, [0, 2.04, 0], [0.3, 0, 0]);
+    return { group, baseHalfX: 0.82, baseHalfZ: 0.82, height: 2.25, animatedParts };
+  }
+
+  /**
+   * E1-03 — Limpa os obstáculos atuais e sorteia um layout diverso e aleatório para cada partida
+   * - Estágio 1: 5 a 6 obstáculos variados com distância segura do spawn central e sem becos sem saída
+   * - Estágio 2: +4 obstáculos aleatórios no anel externo que emergem ao expandir a praça
+   */
+  randomizeObstacles({ mode = 'match' } = {}) {
+    for (const obs of this.obstacles) {
+      this.scene.remove(obs.group);
+      obs.group.traverse((child) => {
+        if (child.isMesh && child.geometry) {
+          child.geometry.dispose();
+        }
+      });
+    }
+    this.obstacles = [];
+
+    const allKinds = [
+      'fountain_planter',
+      'eco_kiosk',
+      'park_bench_cluster',
+      'boulder_bush',
+      'compost_garden',
+      'solar_totem'
+    ];
+
+    const shuffle = (arr) => {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+
+    const placeObstacle = (kind, x, z, rotSteps, stageUnlock) => {
+      const built = this.createObstacleMesh(kind);
+      const isRotated90 = rotSteps % 2 === 1;
+      const halfX = isRotated90 ? built.baseHalfZ : built.baseHalfX;
+      const halfZ = isRotated90 ? built.baseHalfX : built.baseHalfZ;
+
+      built.group.position.set(x, 0, z);
+      built.group.rotation.y = rotSteps * (Math.PI / 2);
+
+      const isActive = stageUnlock <= this.currentStage;
+      built.group.visible = isActive;
+      built.group.scale.y = isActive ? 1 : 0.01;
+      this.scene.add(built.group);
+
+      this.obstacles.push({
+        id: `${kind}-${this.obstacles.length + 1}`,
+        kind,
+        group: built.group,
+        x,
+        z,
+        halfX,
+        halfZ,
+        height: built.height,
+        stageUnlock,
+        active: isActive,
+        emergeProgress: isActive ? 1 : 0,
+        animatedParts: built.animatedParts
+      });
+    };
+
+    if (mode === 'tutorial') {
+      // No Tutorial (E4-07), posiciona 3 obstáculos variados afastados da rota guiada central
+      const tutKinds = shuffle(allKinds).slice(0, 3);
+      const tutSpots = [
+        [-8.2, 7.6, 0],
+        [8.2, 7.6, 1],
+        [-8.4, -7.8, 0]
+      ];
+      tutSpots.forEach(([x, z, rot], idx) => {
+        placeObstacle(tutKinds[idx], x, z, rot, 1);
+      });
+      return;
+    }
+
+    const isPositionValid = (x, z, minCenterDist, minSpacing, halfBound) => {
+      if (Math.abs(x) > halfBound || Math.abs(z) > halfBound) return false;
+      if (Math.hypot(x, z) < minCenterDist) return false;
+      for (const existing of this.obstacles) {
+        if (Math.hypot(x - existing.x, z - existing.z) < minSpacing) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    // 1. Estágio 1: sorteia 5 ou 6 obstáculos distintos distribuídos pelos 4 quadrantes + 1-2 extras
+    const stage1Kinds = shuffle(allKinds);
+    const stage1Count = Math.random() < 0.5 ? 5 : 6;
+    const quadrants = shuffle([
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1]
+    ]);
+
+    for (let i = 0; i < stage1Count; i++) {
+      const kind = stage1Kinds[i % stage1Kinds.length];
+      const rotSteps = Math.floor(Math.random() * 4);
+      let placed = false;
+
+      for (let attempt = 0; attempt < 45; attempt++) {
+        let rx;
+        let rz;
+        if (i < 4) {
+          const [qx, qz] = quadrants[i];
+          rx = qx * (3.6 + Math.random() * 6.4);
+          rz = qz * (3.6 + Math.random() * 6.4);
+        } else {
+          rx = (Math.random() * 2 - 1) * 10.1;
+          rz = (Math.random() * 2 - 1) * 10.1;
+        }
+
+        if (isPositionValid(rx, rz, 4.2, 4.9, 10.3)) {
+          placeObstacle(kind, rx, rz, rotSteps, 1);
+          placed = true;
+          break;
+        }
+      }
+
+      if (!placed && i < 4) {
+        const [qx, qz] = quadrants[i];
+        placeObstacle(kind, qx * 7.2, qz * 7.2, rotSteps, 1);
+      }
+    }
+
+    // 2. Estágio 2 (01:30): sorteia 4 novos obstáculos no anel expandido da praça (emergem ao expandir!)
+    const stage2Kinds = shuffle(allKinds);
+    const stage2Quadrants = shuffle([
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1]
+    ]);
+    for (let i = 0; i < 4; i++) {
+      const kind = stage2Kinds[i % stage2Kinds.length];
+      const rotSteps = Math.floor(Math.random() * 4);
+      const [qx, qz] = stage2Quadrants[i];
+
+      for (let attempt = 0; attempt < 45; attempt++) {
+        // Anel externo entre o limite do Estágio 1 (~13.5) e a borda do Estágio 2 (~18.2)
+        const onHorizontalBand = Math.random() < 0.5;
+        const rx = onHorizontalBand
+          ? qx * (14.4 + Math.random() * 3.8)
+          : qx * (3.5 + Math.random() * 14.5);
+        const rz = onHorizontalBand
+          ? qz * (3.5 + Math.random() * 14.5)
+          : qz * (14.4 + Math.random() * 3.8);
+
+        if (isPositionValid(rx, rz, 14.2, 5.6, 18.2)) {
+          placeObstacle(kind, rx, rz, rotSteps, 2);
+          break;
+        }
+      }
+    }
+  }
+
+  getObstacles() {
+    return this.obstacles.filter((obs) => obs.active);
+  }
+
+  /**
+   * E1-03 — Resolve colisão Círculo vs AABB no plano (X, Z) contra todos os obstáculos 3D ativos da arena
    * Empurra a posição suavemente para fora e retorna a normal do bloqueio para deslize fluido
    */
   resolveCircleCollision(pos, radius = 0.55) {
@@ -543,6 +765,7 @@ export class ArenaScene {
     let hitObstacle = null;
 
     for (const obs of this.obstacles) {
+      if (!obs.active) continue;
       const minX = obs.x - obs.halfX;
       const maxX = obs.x + obs.halfX;
       const minZ = obs.z - obs.halfZ;
@@ -601,10 +824,11 @@ export class ArenaScene {
   }
 
   /**
-   * E1-03 — Verifica se um projétil colidiu com qualquer obstáculo 3D sólido da arena
+   * E1-03 — Verifica se um projétil colidiu com qualquer obstáculo 3D sólido ativo da arena
    */
   findProjectileObstacleHit(pos, radius = 0.25) {
     for (const obs of this.obstacles) {
+      if (!obs.active) continue;
       if (pos.y > obs.height + 0.45) continue;
       const closestX = THREE.MathUtils.clamp(pos.x, obs.x - obs.halfX, obs.x + obs.halfX);
       const closestZ = THREE.MathUtils.clamp(pos.z, obs.z - obs.halfZ, obs.z + obs.halfZ);
@@ -752,13 +976,6 @@ export class ArenaScene {
       tree.group.position.set(tree.baseX * treeFactor, 0, tree.baseZ * treeFactor);
     }
 
-    // E1-03 — Mantém os 4 obstáculos 3D ancorados proporcionalmente nos quadrantes da praça (Estágio 1 -> 2)
-    for (const obs of this.obstacles) {
-      obs.x = obs.baseX * ratio;
-      obs.z = obs.baseZ * ratio;
-      obs.group.position.set(obs.x, 0, obs.z);
-    }
-
     if (this.dirLight) {
       const shadowBound = halfSize + 11.5;
       this.dirLight.shadow.camera.left = -shadowBound;
@@ -820,6 +1037,24 @@ export class ArenaScene {
     // Balanço sutil das copas das árvores com a brisa do parque
     for (const tree of this.trees) {
       tree.group.rotation.z = Math.sin(elapsedTime * 1.5 + tree.phase) * 0.02;
+    }
+
+    // E1-03 — Anima surgimento dos obstáculos do Estágio 2 e detalhes vivos (ex.: chafariz)
+    for (const obs of this.obstacles) {
+      if (obs.active && obs.emergeProgress < 1) {
+        obs.emergeProgress = Math.min(1, obs.emergeProgress + dt * 2.4);
+        // Ease-out suave para brotar do chão da praça expandida
+        const eased = 1 - Math.pow(1 - obs.emergeProgress, 3);
+        obs.group.scale.y = Math.max(0.02, eased);
+      }
+      if (obs.active && obs.animatedParts && obs.animatedParts.length > 0) {
+        for (const part of obs.animatedParts) {
+          if (part.kind === 'fountain_drop') {
+            part.mesh.position.y = part.baseY + Math.sin(elapsedTime * 5.2 + obs.x) * 0.1;
+            part.mesh.rotation.y = elapsedTime * 2.4;
+          }
+        }
+      }
     }
 
     if (isMenuBackdrop) {

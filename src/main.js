@@ -502,6 +502,7 @@ class EcoComboMVPApp {
     this.gameState = 'TUTORIAL';
 
     this.arena.setStageSize(1, true);
+    this.arena.randomizeObstacles({ mode: 'tutorial' });
     this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.tutorialManager.start();
@@ -541,6 +542,7 @@ class EcoComboMVPApp {
     this.gameState = 'PLAYING';
 
     this.arena.setStageSize(1, true);
+    this.arena.randomizeObstacles({ mode: 'match' });
     this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.player.reset();
@@ -767,6 +769,7 @@ class EcoComboMVPApp {
     this.hud.hideStageTransitionBanner();
 
     this.arena.setStageSize(1, true);
+    this.arena.randomizeObstacles({ mode: 'match' });
     this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
     this.player.reset();

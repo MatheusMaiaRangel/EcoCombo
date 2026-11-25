@@ -1098,152 +1098,205 @@ export function createReticleTexture() {
 }
 
 /**
- * E1-03 — Texturas Pixel Art (THREE.NearestFilter) para Pilares de Pedra 3D da Praça
+ * E1-03 — Pacote de Texturas Pixel Art (THREE.NearestFilter) para Obstáculos Diversos da Praça
+ * (Chafariz/Canteiro Florido, Ecoponto CONAMA, Banco com Vaso, Rocha Florida, Composteira e Totem Solar)
  */
-export function createPixelStonePillarTextures() {
-  // 1. Face lateral do pilar (pedra esculpida com musgo e emblema ecológico)
-  const sideCanvas = document.createElement('canvas');
-  sideCanvas.width = 32;
-  sideCanvas.height = 48;
-  const sctx = sideCanvas.getContext('2d');
-  sctx.imageSmoothingEnabled = false;
+export function createParkObstacleTextures() {
+  const makeTex = (w, h, drawFn) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    drawFn(ctx, w, h);
+    return applyNearestPixelFilter(new THREE.CanvasTexture(canvas));
+  };
 
-  sctx.fillStyle = '#94a3b8';
-  sctx.fillRect(0, 0, 32, 48);
+  // 1. Tijolinho quente de jardim / canteiro de praça
+  const brickPlanter = makeTex(32, 24, (ctx, w, h) => {
+    ctx.fillStyle = '#7c2d12';
+    ctx.fillRect(0, 0, w, h);
+    const brickColors = ['#c25934', '#d46a42', '#b54d2b', '#de7a52'];
+    for (let row = 0; row < 4; row++) {
+      const y = row * 6;
+      const offset = (row % 2) * 5;
+      for (let bx = -offset; bx < w; bx += 10) {
+        const col = brickColors[(row * 3 + Math.abs(bx)) % brickColors.length];
+        ctx.fillStyle = col;
+        ctx.fillRect(bx + 1, y + 1, 8, 4);
+        ctx.fillStyle = '#f2a27c';
+        ctx.fillRect(bx + 1, y + 1, 8, 1);
+      }
+    }
+    ctx.fillStyle = '#e7e5e4';
+    ctx.fillRect(0, 0, w, 2);
+    ctx.fillStyle = '#57534e';
+    ctx.fillRect(0, h - 2, w, 2);
+  });
 
-  const rows = [0, 10, 20, 30, 40];
-  rows.forEach((y, idx) => {
-    const h = idx === rows.length - 1 ? 8 : 10;
-    sctx.fillStyle = idx % 2 === 0 ? '#cbd5e1' : '#b8c5d6';
-    sctx.fillRect(1, y + 1, 30, h - 2);
-    sctx.fillStyle = '#475569';
-    sctx.fillRect(0, y, 32, 1);
-    sctx.fillStyle = '#e2e8f0';
-    sctx.fillRect(1, y + 1, 30, 1);
-    sctx.fillRect(1, y + 1, 2, h - 2);
-    sctx.fillStyle = '#64748b';
-    sctx.fillRect(29, y + 1, 2, h - 2);
-    const splitX = idx % 2 === 0 ? 15 : 9;
-    sctx.fillStyle = '#475569';
-    sctx.fillRect(splitX, y, 1, h);
-    if (idx % 2 !== 0) {
-      sctx.fillRect(23, y, 1, h);
+  // 2. Solo gramado com flores coloridas para canteiros
+  const planterSoil = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#2d7a3e';
+    ctx.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 4) {
+      for (let x = 0; x < w; x += 4) {
+        ctx.fillStyle = ((x + y) / 4) % 2 === 0 ? '#37944b' : '#266b35';
+        ctx.fillRect(x, y, 4, 4);
+      }
+    }
+    // Folhinhas e flores pixeladas
+    const flowers = [
+      [5, 6, '#fb7185'], [11, 22, '#facc15'], [23, 8, '#38bdf8'],
+      [25, 23, '#f472b6'], [16, 14, '#fde047'], [7, 25, '#ffffff'],
+      [21, 17, '#fb923c']
+    ];
+    flowers.forEach(([fx, fy, color]) => {
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(fx - 1, fy + 1, 4, 2);
+      ctx.fillStyle = color;
+      ctx.fillRect(fx, fy, 3, 3);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(fx + 1, fy + 1, 1, 1);
+    });
+  });
+
+  // 3. Madeira ripada quente estilo parque Until Then
+  const woodSlats = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#5c3317';
+    ctx.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 8) {
+      ctx.fillStyle = y % 16 === 0 ? '#b46a37' : '#a15b2d';
+      ctx.fillRect(1, y + 1, w - 2, 6);
+      ctx.fillStyle = '#d48c55';
+      ctx.fillRect(1, y + 1, w - 2, 1);
+      ctx.fillStyle = '#7c431f';
+      ctx.fillRect(4 + (y % 12), y + 3, 6, 1);
+      ctx.fillRect(18, y + 5, 7, 1);
+    }
+    ctx.fillStyle = '#3b1f0d';
+    ctx.fillRect(0, 0, 1, h);
+    ctx.fillRect(w - 1, 0, 1, h);
+  });
+
+  // 4. Telhado pixelado azul-petróleo / verde-parque para o Ecoponto
+  const roofTiles = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#0f3d4c';
+    ctx.fillRect(0, 0, w, h);
+    for (let row = 0; row < 4; row++) {
+      const y = row * 8;
+      const shift = (row % 2) * 4;
+      for (let x = -shift; x < w; x += 8) {
+        ctx.fillStyle = row % 2 === 0 ? '#0d9488' : '#14b8a6';
+        ctx.fillRect(x + 1, y + 1, 6, 6);
+        ctx.fillStyle = '#5eead4';
+        ctx.fillRect(x + 1, y + 1, 6, 1);
+      }
     }
   });
 
-  sctx.fillStyle = '#1e293b';
-  sctx.fillRect(0, 0, 1, 48);
-  sctx.fillRect(31, 0, 1, 48);
-  sctx.fillRect(0, 46, 32, 2);
+  // 5. Rocha de parque com musgo natural
+  const mossyRock = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(0, 0, w, h);
+    // Facetas de pedra
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(2, 2, 18, 12);
+    ctx.fillRect(12, 14, 16, 10);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(3, 3, 12, 5);
+    ctx.fillRect(15, 15, 10, 4);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(0, 24, w, 8);
+    ctx.fillRect(22, 4, 10, 10);
+    // Musgo vibrante no topo e rachaduras
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(0, 0, 14, 5);
+    ctx.fillRect(16, 0, 16, 4);
+    ctx.fillRect(4, 21, 9, 4);
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(2, 1, 9, 2);
+    ctx.fillRect(18, 1, 10, 2);
+    ctx.fillRect(6, 21, 5, 2);
+  });
 
-  // Placa ecológica central (folha verde reciclagem)
-  sctx.fillStyle = '#1e293b';
-  sctx.fillRect(8, 16, 16, 14);
-  sctx.fillStyle = '#0f172a';
-  sctx.fillRect(9, 17, 14, 12);
-  sctx.fillStyle = '#22c55e';
-  sctx.fillRect(14, 19, 4, 2);
-  sctx.fillRect(12, 21, 8, 4);
-  sctx.fillRect(14, 25, 4, 2);
-  sctx.fillStyle = '#bbf7d0';
-  sctx.fillRect(15, 20, 2, 5);
+  // 6. Painel Solar Fotovoltaico para o Totem Solar
+  const solarPanel = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(2, 2, w - 4, h - 4);
+    ctx.fillStyle = '#2563eb';
+    for (let y = 3; y < h - 3; y += 7) {
+      for (let x = 3; x < w - 3; x += 7) {
+        ctx.fillRect(x, y, 5, 5);
+      }
+    }
+    // Reflexo diagonal luminoso
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillRect(4, 4, 5, 2);
+    ctx.fillRect(11, 11, 5, 2);
+    ctx.fillRect(18, 18, 5, 2);
+  });
 
-  // Musgo pixelado na base e no capitel
-  sctx.fillStyle = '#15803d';
-  sctx.fillRect(2, 43, 8, 3);
-  sctx.fillRect(20, 44, 9, 2);
-  sctx.fillRect(3, 2, 7, 2);
-  sctx.fillStyle = '#4ade80';
-  sctx.fillRect(3, 43, 5, 1);
-  sctx.fillRect(22, 44, 5, 1);
+  // 7. Tela ecológica do Totem Solar / Placa de Compostagem
+  const ecoScreen = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(3, 3, 26, 26);
+    // Moldura neon verde-água
+    ctx.fillStyle = '#2dd4bf';
+    ctx.fillRect(4, 4, 24, 2);
+    ctx.fillRect(4, 26, 24, 2);
+    // Folha central + barras CONAMA
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(13, 8, 6, 3);
+    ctx.fillRect(11, 11, 10, 5);
+    ctx.fillRect(14, 16, 4, 2);
+    ctx.fillStyle = '#ff3b30';
+    ctx.fillRect(6, 21, 4, 3);
+    ctx.fillStyle = '#007aff';
+    ctx.fillRect(11, 21, 4, 3);
+    ctx.fillStyle = '#34c759';
+    ctx.fillRect(16, 21, 4, 3);
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillRect(21, 21, 5, 3);
+  });
 
-  // 2. Topo do pilar (capitel de pedra)
-  const topCanvas = document.createElement('canvas');
-  topCanvas.width = 32;
-  topCanvas.height = 32;
-  const tctx = topCanvas.getContext('2d');
-  tctx.imageSmoothingEnabled = false;
-
-  tctx.fillStyle = '#334155';
-  tctx.fillRect(0, 0, 32, 32);
-  tctx.fillStyle = '#cbd5e1';
-  tctx.fillRect(2, 2, 28, 28);
-  tctx.fillStyle = '#e2e8f0';
-  tctx.fillRect(4, 4, 24, 24);
-  tctx.fillStyle = '#94a3b8';
-  tctx.fillRect(7, 7, 18, 18);
-  tctx.fillStyle = '#f8fafc';
-  tctx.fillRect(4, 4, 24, 2);
-  tctx.fillRect(4, 4, 2, 24);
-
-  return {
-    side: applyNearestPixelFilter(new THREE.CanvasTexture(sideCanvas)),
-    top: applyNearestPixelFilter(new THREE.CanvasTexture(topCanvas))
-  };
-}
-
-/**
- * E1-03 — Texturas Pixel Art (THREE.NearestFilter) para Lixeiras Urbanas 3D (Estação Ecológica)
- */
-export function createPixelUrbanBinTextures() {
-  const sideCanvas = document.createElement('canvas');
-  sideCanvas.width = 32;
-  sideCanvas.height = 40;
-  const sctx = sideCanvas.getContext('2d');
-  sctx.imageSmoothingEnabled = false;
-
-  sctx.fillStyle = '#1e293b';
-  sctx.fillRect(0, 0, 32, 40);
-  sctx.fillStyle = '#475569';
-  sctx.fillRect(2, 2, 28, 36);
-  sctx.fillStyle = '#64748b';
-  sctx.fillRect(3, 3, 24, 34);
-  sctx.fillStyle = '#94a3b8';
-  sctx.fillRect(3, 3, 4, 34);
-
-  // Boca de descarte superior
-  sctx.fillStyle = '#0f172a';
-  sctx.fillRect(6, 6, 20, 6);
-  sctx.fillStyle = '#334155';
-  sctx.fillRect(6, 5, 20, 1);
-
-  // Faixa de reciclagem CONAMA (Vermelho, Azul, Verde, Amarelo)
-  sctx.fillStyle = '#0f172a';
-  sctx.fillRect(2, 16, 28, 8);
-  sctx.fillStyle = '#ff3b30';
-  sctx.fillRect(4, 18, 6, 4);
-  sctx.fillStyle = '#007aff';
-  sctx.fillRect(10, 18, 6, 4);
-  sctx.fillStyle = '#34c759';
-  sctx.fillRect(16, 18, 6, 4);
-  sctx.fillStyle = '#ffcc00';
-  sctx.fillRect(22, 18, 6, 4);
-
-  // Frisos metálicos inferiores
-  sctx.fillStyle = '#334155';
-  sctx.fillRect(6, 28, 20, 2);
-  sctx.fillRect(6, 32, 20, 2);
-
-  // Tampa superior 3D da lixeira urbana
-  const topCanvas = document.createElement('canvas');
-  topCanvas.width = 32;
-  topCanvas.height = 32;
-  const tctx = topCanvas.getContext('2d');
-  tctx.imageSmoothingEnabled = false;
-
-  tctx.fillStyle = '#0f172a';
-  tctx.fillRect(0, 0, 32, 32);
-  tctx.fillStyle = '#334155';
-  tctx.fillRect(2, 2, 28, 28);
-  tctx.fillStyle = '#475569';
-  tctx.fillRect(4, 4, 24, 24);
-  tctx.fillStyle = '#22c55e';
-  tctx.fillRect(11, 11, 10, 10);
-  tctx.fillStyle = '#0f172a';
-  tctx.fillRect(14, 14, 4, 4);
+  // 8. Folhagem densa pixel art para arbustos floridos
+  const foliage = makeTex(32, 32, (ctx, w, h) => {
+    ctx.fillStyle = '#14532d';
+    ctx.fillRect(0, 0, w, h);
+    const blobs = [
+      [2, 2, 12, 10, '#166534'],
+      [14, 4, 15, 11, '#15803d'],
+      [3, 14, 14, 14, '#15803d'],
+      [16, 15, 13, 14, '#166534'],
+      [5, 4, 8, 6, '#22c55e'],
+      [18, 6, 9, 5, '#4ade80'],
+      [8, 17, 7, 5, '#22c55e']
+    ];
+    blobs.forEach(([x, y, bw, bh, c]) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, bw, bh);
+    });
+    // Flores vibrantes no arbusto
+    ctx.fillStyle = '#fb7185';
+    ctx.fillRect(7, 8, 3, 3);
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(21, 11, 3, 3);
+    ctx.fillStyle = '#f472b6';
+    ctx.fillRect(13, 22, 3, 3);
+  });
 
   return {
-    side: applyNearestPixelFilter(new THREE.CanvasTexture(sideCanvas)),
-    top: applyNearestPixelFilter(new THREE.CanvasTexture(topCanvas))
+    brickPlanter,
+    planterSoil,
+    woodSlats,
+    roofTiles,
+    mossyRock,
+    solarPanel,
+    ecoScreen,
+    foliage
   };
 }
