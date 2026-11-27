@@ -340,8 +340,8 @@ class EcoComboMVPApp {
       });
     }
 
-    // E6-03: Botões e fluxo do Modal "Meus Dados (LGPD)"
-    ['btn-start-open-lgpd', 'btn-options-open-lgpd', 'btn-records-open-lgpd'].forEach((id) => {
+    // E6-03: Botões e fluxo do Modal "Meus Dados (LGPD)" (apenas fora da gameplay: Menu Inicial e Recordes)
+    ['btn-start-open-lgpd', 'btn-records-open-lgpd'].forEach((id) => {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
