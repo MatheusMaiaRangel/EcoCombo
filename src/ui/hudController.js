@@ -140,6 +140,14 @@ export class HUDController {
     this.gameoverRecipesProgress = document.getElementById('gameover-recipes-progress');
     this.gameoverAlchemistChip = document.getElementById('gameover-alchemist-chip');
 
+    // E6-03 — Modal "Meus Dados (LGPD)"
+    this.lgpdModalOverlay = document.getElementById('lgpd-modal-overlay');
+    this.lgpdStorageSummary = document.getElementById('lgpd-storage-summary');
+    this.lgpdDataList = document.getElementById('lgpd-data-list');
+    this.lgpdConfirmBox = document.getElementById('lgpd-confirm-box');
+    this.lgpdFeedback = document.getElementById('lgpd-feedback');
+    this.lgpdRequestClearBtn = document.getElementById('btn-lgpd-request-clear');
+
     // Menu Inicial e Menu de Pausa com Opções (ESC — E4-06)
     this.startMenuOverlay = document.getElementById('start-menu-overlay');
     this.pauseMenuOverlay = document.getElementById('pause-menu-overlay');
@@ -1006,6 +1014,78 @@ export class HUDController {
   hideRecordsModal() {
     if (this.recordsModalOverlay) {
       this.recordsModalOverlay.classList.add('hidden');
+    }
+  }
+
+  /**
+   * E6-03 — Renderiza e abre o modal "Meus Dados (LGPD)" com inventário vivo do localStorage
+   */
+  renderLgpdDataSnapshot(snapshot, feedbackMsg = '') {
+    if (!snapshot) return;
+    if (this.lgpdStorageSummary) {
+      this.lgpdStorageSummary.textContent = `${snapshot.totalKeysPresent} chave(s) salva(s) · ${snapshot.totalBytes} bytes no localStorage`;
+    }
+    if (this.lgpdDataList) {
+      this.lgpdDataList.innerHTML = '';
+      snapshot.items.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = `lgpd-data-item${item.present ? ' has-data' : ''}`;
+
+        const top = document.createElement('div');
+        top.className = 'lgpd-data-top';
+
+        const title = document.createElement('span');
+        title.className = 'lgpd-data-title';
+        title.textContent = `${item.label} (${item.key})`;
+
+        const size = document.createElement('span');
+        size.className = 'lgpd-data-size';
+        size.textContent = item.present ? `${item.bytes} B` : 'VAZIO';
+
+        top.append(title, size);
+
+        const summary = document.createElement('div');
+        summary.className = 'lgpd-data-summary';
+        summary.textContent = item.summary;
+
+        const purpose = document.createElement('div');
+        purpose.className = 'lgpd-data-purpose';
+        purpose.textContent = item.purpose;
+
+        li.append(top, summary, purpose);
+        this.lgpdDataList.appendChild(li);
+      });
+    }
+    if (this.lgpdConfirmBox) {
+      this.lgpdConfirmBox.classList.add('hidden');
+    }
+    if (this.lgpdRequestClearBtn) {
+      this.lgpdRequestClearBtn.disabled = snapshot.totalKeysPresent === 0;
+    }
+    if (this.lgpdFeedback) {
+      this.lgpdFeedback.textContent = feedbackMsg;
+    }
+  }
+
+  showLgpdModal(snapshot) {
+    this.renderLgpdDataSnapshot(snapshot, '');
+    if (this.lgpdModalOverlay) {
+      this.lgpdModalOverlay.classList.remove('hidden');
+    }
+  }
+
+  hideLgpdModal() {
+    if (this.lgpdConfirmBox) {
+      this.lgpdConfirmBox.classList.add('hidden');
+    }
+    if (this.lgpdModalOverlay) {
+      this.lgpdModalOverlay.classList.add('hidden');
+    }
+  }
+
+  toggleLgpdConfirmBox(visible) {
+    if (this.lgpdConfirmBox) {
+      this.lgpdConfirmBox.classList.toggle('hidden', !visible);
     }
   }
 

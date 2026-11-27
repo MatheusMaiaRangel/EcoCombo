@@ -7,7 +7,40 @@
 export const RECORDS_STORAGE_KEY = 'ecocombo_records_v1';
 export const LAST_NICKNAME_STORAGE_KEY = 'ecocombo_last_nick_v1';
 export const BADGES_STORAGE_KEY = 'ecocombo_badges_v1';
+export const SETTINGS_STORAGE_KEY = 'ecocombo_settings_v1';
+export const INTRO_SEEN_STORAGE_KEY = 'ecocombo_intro_seen_v1';
 export const MAX_TOP_RECORDS = 5;
+
+/**
+ * E6-03 — Inventário transparente de chaves locais (RN13 / LGPD)
+ */
+export const ECOCOMBO_LOCAL_STORAGE_CATALOG = [
+  {
+    key: RECORDS_STORAGE_KEY,
+    label: 'Top 5 Recordes Locais',
+    purpose: 'Apelido curto (3–12 chars), pontuação, estágio, rank e tempo das 5 melhores partidas.'
+  },
+  {
+    key: LAST_NICKNAME_STORAGE_KEY,
+    label: 'Último Apelido Informado',
+    purpose: 'Pré-preenche o apelido ao salvar um novo recorde no Top 5.'
+  },
+  {
+    key: BADGES_STORAGE_KEY,
+    label: 'Insígnias e Combinações Descobertas',
+    purpose: 'Lista de medalhas desbloqueadas e habilidades do grimório já experimentadas.'
+  },
+  {
+    key: SETTINGS_STORAGE_KEY,
+    label: 'Preferências do Jogo',
+    purpose: 'Estado do som, volume, ritmo da arena, brilho neon (bloom) e textos flutuantes.'
+  },
+  {
+    key: INTRO_SEEN_STORAGE_KEY,
+    label: 'História / Cutscene Inicial',
+    purpose: 'Indica se a cutscene de abertura já foi exibida ao menos uma vez.'
+  }
+];
 
 /**
  * E6-02 — Catálogo de Insígnias / Conquistas desbloqueáveis do EcoCombo 3D
@@ -221,5 +254,93 @@ export class ProgressionStore {
       this.saveBadgesState(state);
     }
     return { newlyUnlocked, badge, state };
+  }
+
+  /**
+   * E6-03 — Inspeciona todos os dados locais armazenados pelo EcoCombo no navegador (LGPD)
+   */
+  inspectLocalData() {
+    const records = this.loadTop5Records();
+    const badgesState = this.loadBadgesState();
+    let totalKeysPresent = 0;
+    let totalBytes = 0;
+
+    const items = ECOCOMBO_LOCAL_STORAGE_CATALOG.map((meta) => {
+      let raw = null;
+      try {
+        raw = window.localStorage.getItem(meta.key);
+      } catch {
+        raw = null;
+      }
+      const present = raw !== null;
+      const bytes = present ? new Blob([raw]).size : 0;
+      if (present) {
+        totalKeysPresent += 1;
+        totalBytes += bytes;
+      }
+
+      let summary = 'Vazio (nenhum dado salvo)';
+      if (present) {
+        if (meta.key === RECORDS_STORAGE_KEY) {
+          summary =
+            records.length > 0
+              ? `${records.length} recorde(s) salvo(s) — maior: ${records[0].nickname} (${records[0].score.toLocaleString('pt-BR')} pts)`
+              : 'Lista de recordes vazia';
+        } else if (meta.key === LAST_NICKNAME_STORAGE_KEY) {
+          summary = `Apelido salvo: "${raw}"`;
+        } else if (meta.key === BADGES_STORAGE_KEY) {
+          summary = `${badgesState.unlockedIds.length}/${ACHIEVEMENT_BADGE_LIST.length} medalha(s) · ${badgesState.discoveredSpellIds.length}/12 habilidade(s) descoberta(s)`;
+        } else if (meta.key === SETTINGS_STORAGE_KEY) {
+          try {
+            const cfg = JSON.parse(raw);
+            summary = `Som: ${cfg.soundEnabled ? 'ON' : 'OFF'} (${cfg.volumePercent ?? 85}%) · Ritmo: ${cfg.difficulty || 'NORMAL'} · Bloom: ${cfg.bloomEnabled ? 'ON' : 'OFF'}`;
+          } catch {
+            summary = 'Preferências salvas localmente';
+          }
+        } else if (meta.key === INTRO_SEEN_STORAGE_KEY) {
+          summary = raw === '1' ? 'Cutscene inicial já assistida' : 'Não assistida';
+        }
+      }
+
+      return {
+        ...meta,
+        present,
+        bytes,
+        summary
+      };
+    });
+
+    return {
+      items,
+      totalKeysPresent,
+      totalBytes,
+      records,
+      badgesState
+    };
+  }
+
+  /**
+   * E6-03 — Limpa imediatamente todas as chaves do EcoCombo no localStorage (LGPD)
+   */
+  clearAllLocalData() {
+    let clearedCount = 0;
+    try {
+      const keysToRemove = new Set(ECOCOMBO_LOCAL_STORAGE_CATALOG.map((item) => item.key));
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith('ecocombo_')) {
+          keysToRemove.add(key);
+        }
+      }
+      keysToRemove.forEach((key) => {
+        if (window.localStorage.getItem(key) !== null) {
+          clearedCount += 1;
+        }
+        window.localStorage.removeItem(key);
+      });
+    } catch {
+      return { cleared: false, clearedCount: 0 };
+    }
+    return { cleared: true, clearedCount };
   }
 }

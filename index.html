@@ -398,6 +398,9 @@
                 <button id="btn-start-open-records" type="button" class="btn-secondary-retro">
                   🏆 RECORDES
                 </button>
+                <button id="btn-start-open-lgpd" type="button" class="btn-secondary-retro">
+                  🔒 LGPD
+                </button>
                 <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
                   ⚙ OPÇÕES
                 </button>
@@ -508,6 +511,9 @@
                 <button id="btn-pause-restart" type="button" class="btn-secondary-retro">
                   🔄 REINICIAR PARTIDA
                 </button>
+                <button id="btn-options-open-lgpd" type="button" class="btn-secondary-retro">
+                  🔒 MEUS DADOS (LGPD)
+                </button>
                 <button id="btn-pause-to-start" type="button" class="btn-secondary-retro btn-danger-outline">
                   🏠 MENU INICIAL
                 </button>
@@ -611,7 +617,55 @@
             </div>
 
             <div class="menu-actions-stack">
+              <button id="btn-records-open-lgpd" type="button" class="btn-secondary-retro">
+                🔒 MEUS DADOS &amp; PRIVACIDADE (LGPD)
+              </button>
               <button id="btn-records-close" type="button" class="btn-primary-retro">
+                ✕ FECHAR (ESC)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- E6-03 — Modal "Meus Dados (LGPD)": transparência total e exclusão imediata do localStorage -->
+        <div id="lgpd-modal-overlay" class="arena-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lgpd-modal-title">
+          <div class="arena-modal-card lgpd-modal-card">
+            <div class="modal-badge">PRIVACIDADE &amp; TRANSPARÊNCIA // RN13 (LGPD)</div>
+            <h2 id="lgpd-modal-title">🔒 MEUS DADOS (LGPD)</h2>
+
+            <div class="lgpd-notice-box">
+              <strong>100% Local e Privado:</strong> Nenhuma informação pessoal é coletada ou enviada a servidores externos. O EcoCombo 3D guarda apenas dados locais do jogo no <code>localStorage</code> deste navegador, e você pode apagá-los a qualquer momento.
+            </div>
+
+            <div class="lgpd-storage-bar">
+              <span class="lgpd-storage-label">ARMAZENAMENTO LOCAL ATUAL</span>
+              <span id="lgpd-storage-summary" class="lgpd-storage-summary">0 chaves · 0 bytes</span>
+            </div>
+
+            <ul id="lgpd-data-list" class="lgpd-data-list"></ul>
+
+            <!-- Confirmação em 2 etapas para exclusão segura do localStorage -->
+            <div id="lgpd-confirm-box" class="lgpd-confirm-box hidden" role="alert">
+              <p class="lgpd-confirm-text">
+                ⚠ Confirmar exclusão imediata? Todos os recordes Top 5, insígnias, combinações descobertas e preferências serão apagados do navegador.
+              </p>
+              <div class="lgpd-confirm-actions">
+                <button id="btn-lgpd-confirm-clear" type="button" class="btn-danger-solid">
+                  🗑 SIM, APAGAR TUDO
+                </button>
+                <button id="btn-lgpd-cancel-clear" type="button" class="btn-secondary-retro">
+                  CANCELAR
+                </button>
+              </div>
+            </div>
+
+            <div id="lgpd-feedback" class="lgpd-feedback" aria-live="polite"></div>
+
+            <div class="menu-actions-stack">
+              <button id="btn-lgpd-request-clear" type="button" class="btn-secondary-retro btn-danger-outline">
+                🗑 APAGAR DADOS LOCAIS
+              </button>
+              <button id="btn-lgpd-close" type="button" class="btn-primary-retro">
                 ✕ FECHAR (ESC)
               </button>
             </div>

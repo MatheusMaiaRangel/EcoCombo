@@ -47,6 +47,7 @@ class EcoComboMVPApp {
     this.progressionStore = new ProgressionStore();
     this.recordSavedThisMatch = false;
     this.recordsModalOpen = false;
+    this.lgpdModalOpen = false;
     this.matchBadgesAwarded = new Set();
 
     // 1. Áudio Sintetizado Procedural (Web Audio API)
@@ -339,6 +340,46 @@ class EcoComboMVPApp {
       });
     }
 
+    // E6-03: Botões e fluxo do Modal "Meus Dados (LGPD)"
+    ['btn-start-open-lgpd', 'btn-options-open-lgpd', 'btn-records-open-lgpd'].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          this.openLgpdModal();
+        });
+      }
+    });
+
+    const lgpdCloseBtn = document.getElementById('btn-lgpd-close');
+    if (lgpdCloseBtn) {
+      lgpdCloseBtn.addEventListener('click', () => {
+        this.closeLgpdModal();
+      });
+    }
+
+    const lgpdRequestClearBtn = document.getElementById('btn-lgpd-request-clear');
+    if (lgpdRequestClearBtn) {
+      lgpdRequestClearBtn.addEventListener('click', () => {
+        this.sound.playMenuClick(true);
+        this.hud.toggleLgpdConfirmBox(true);
+      });
+    }
+
+    const lgpdCancelClearBtn = document.getElementById('btn-lgpd-cancel-clear');
+    if (lgpdCancelClearBtn) {
+      lgpdCancelClearBtn.addEventListener('click', () => {
+        this.sound.playMenuClick(false);
+        this.hud.toggleLgpdConfirmBox(false);
+      });
+    }
+
+    const lgpdConfirmClearBtn = document.getElementById('btn-lgpd-confirm-clear');
+    if (lgpdConfirmClearBtn) {
+      lgpdConfirmClearBtn.addEventListener('click', () => {
+        this.handleConfirmClearLocalData();
+      });
+    }
+
     const recordForm = document.getElementById('gameover-record-form');
     if (recordForm) {
       recordForm.addEventListener('submit', (e) => {
@@ -483,6 +524,10 @@ class EcoComboMVPApp {
 
       if (e.code === 'Escape') {
         e.preventDefault();
+        if (this.lgpdModalOpen) {
+          this.closeLgpdModal();
+          return;
+        }
         if (this.recordsModalOpen) {
           this.closeRecordsModal();
           return;
@@ -510,7 +555,7 @@ class EcoComboMVPApp {
       }
 
       if (e.code === 'Enter') {
-        if (this.recordsModalOpen) return;
+        if (this.recordsModalOpen || this.lgpdModalOpen) return;
         if (this.gameState === 'MENU') {
           e.preventDefault();
           this.startNewMatchFromMenu();
@@ -541,6 +586,39 @@ class EcoComboMVPApp {
     this.sound.playMenuClick(false);
     this.recordsModalOpen = false;
     this.hud.hideRecordsModal();
+  }
+
+  /**
+   * E6-03 — Abre/fecha o Modal "Meus Dados (LGPD)" e executa limpeza imediata do localStorage
+   */
+  openLgpdModal() {
+    this.sound.playMenuClick(true);
+    this.lgpdModalOpen = true;
+    const snapshot = this.progressionStore.inspectLocalData();
+    this.hud.showLgpdModal(snapshot);
+  }
+
+  closeLgpdModal() {
+    this.sound.playMenuClick(false);
+    this.lgpdModalOpen = false;
+    this.hud.hideLgpdModal();
+  }
+
+  handleConfirmClearLocalData() {
+    const result = this.progressionStore.clearAllLocalData();
+    this.settings = this.loadSettings();
+    this.applySettingsToSystems();
+
+    // Atualiza o modal LGPD e também o modal de Recordes caso esteja aberto por trás
+    const freshSnapshot = this.progressionStore.inspectLocalData();
+    const feedback = result.cleared
+      ? `✓ ${result.clearedCount} registro(s) local(is) apagado(s) do navegador com sucesso!`
+      : 'Não foi possível limpar o localStorage neste navegador.';
+    this.hud.renderLgpdDataSnapshot(freshSnapshot, feedback);
+    this.hud.renderRecordsList(this.hud.recordsModalList, [], null);
+    this.hud.renderBadgesPanel(freshSnapshot.badgesState);
+    this.hud.renderRecordsList(this.hud.gameoverRecordsList, [], null);
+    this.sound.playTutorialStepComplete();
   }
 
   handleSaveRecordSubmit() {
