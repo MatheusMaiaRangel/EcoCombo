@@ -5,6 +5,7 @@ import { ComboSystem } from './game/comboSystem.js';
 import { EnemyManager } from './game/enemyManager.js';
 import { BossManager } from './game/bossManager.js';
 import { TutorialManager } from './game/tutorialManager.js';
+import { ProgressionStore } from './game/progressionStore.js';
 import { SidebarCharacterRenderer } from './ui/sidebarCharacter.js';
 import { HUDController } from './ui/hudController.js';
 import { StartMenuAnimator } from './ui/startMenuAnimator.js';
@@ -39,9 +40,13 @@ class EcoComboMVPApp {
     this.bestRankColor = '#8d99ae';
     this.bossDefeatedCount = 0;
     this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
+    this.recordSavedThisMatch = false;
     this.isGameOver = false;
 
     this.settings = this.loadSettings();
+    this.progressionStore = new ProgressionStore();
+    this.recordSavedThisMatch = false;
+    this.recordsModalOpen = false;
 
     // 1. Áudio Sintetizado Procedural (Web Audio API)
     this.sound = new SoundEngine();
@@ -315,6 +320,29 @@ class EcoComboMVPApp {
       });
     }
 
+    // E6-01: Botão "RECORDES" no Menu Inicial e modal Top 5
+    const startRecordsBtn = document.getElementById('btn-start-open-records');
+    if (startRecordsBtn) {
+      startRecordsBtn.addEventListener('click', () => {
+        this.openRecordsModal();
+      });
+    }
+
+    const recordsCloseBtn = document.getElementById('btn-records-close');
+    if (recordsCloseBtn) {
+      recordsCloseBtn.addEventListener('click', () => {
+        this.closeRecordsModal();
+      });
+    }
+
+    const recordForm = document.getElementById('gameover-record-form');
+    if (recordForm) {
+      recordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSaveRecordSubmit();
+      });
+    }
+
     // ==================== EVENTOS DO TUTORIAL INTERATIVO (E4-07) ====================
     const tutorialExitBtn = document.getElementById('btn-tutorial-exit');
     if (tutorialExitBtn) {
@@ -442,12 +470,19 @@ class EcoComboMVPApp {
       gameoverToMenuBtn.addEventListener('click', () => this.returnToStartMenu());
     }
 
-    // Atalhos Globais de Teclado: ESC (Pausa / Pular Cutscene / Sair do Tutorial), ESPAÇO (Cutscene) e ENTER
+    // Atalhos Globais de Teclado: ESC (Pausa / Pular Cutscene / Sair do Tutorial / Fechar Recordes), ESPAÇO e ENTER
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
 
+      const activeTag = document.activeElement?.tagName;
+      const isTypingInField = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+
       if (e.code === 'Escape') {
         e.preventDefault();
+        if (this.recordsModalOpen) {
+          this.closeRecordsModal();
+          return;
+        }
         if (this.gameState === 'CUTSCENE') {
           this.cutscenePlayer.skip();
         } else if (this.gameState === 'TUTORIAL') {
@@ -460,6 +495,8 @@ class EcoComboMVPApp {
         return;
       }
 
+      if (isTypingInField) return;
+
       if (this.gameState === 'CUTSCENE') {
         if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
@@ -469,6 +506,7 @@ class EcoComboMVPApp {
       }
 
       if (e.code === 'Enter') {
+        if (this.recordsModalOpen) return;
         if (this.gameState === 'MENU') {
           e.preventDefault();
           this.startNewMatchFromMenu();
@@ -481,6 +519,56 @@ class EcoComboMVPApp {
           this.restartMatch();
         }
       }
+    });
+  }
+
+  /**
+   * E6-01 — Abre/fecha o Modal de Top 5 Recordes Locais e salva novos recordes com apelido (3–12 chars)
+   */
+  openRecordsModal() {
+    this.sound.playMenuClick(true);
+    this.recordsModalOpen = true;
+    const records = this.progressionStore.loadTop5Records();
+    this.hud.showRecordsModal(records);
+  }
+
+  closeRecordsModal() {
+    this.sound.playMenuClick(false);
+    this.recordsModalOpen = false;
+    this.hud.hideRecordsModal();
+  }
+
+  handleSaveRecordSubmit() {
+    if (this.recordSavedThisMatch || this.gameState !== 'GAMEOVER') return;
+    const nickInput = document.getElementById('input-record-nickname');
+    const rawNick = nickInput ? nickInput.value : '';
+    const result = this.progressionStore.saveTop5Record({
+      nickname: rawNick,
+      score: this.score,
+      stage: this.stage,
+      kills: this.kills,
+      bestRank: this.bestRank,
+      elapsedSec: this.matchElapsedSec
+    });
+
+    if (!result.saved) {
+      this.sound.playBlockedKey();
+      this.hud.setRecordFormStatus({
+        message: result.error,
+        isError: true,
+        lockForm: false
+      });
+      return;
+    }
+
+    this.recordSavedThisMatch = true;
+    this.sound.playTutorialStepComplete();
+    this.hud.setRecordFormStatus({
+      message: `✓ Salvo em #${result.rankPosition} no Top 5 local!`,
+      isError: false,
+      lockForm: true,
+      records: result.records,
+      highlightId: result.entry?.id || null
     });
   }
 
@@ -544,6 +632,7 @@ class EcoComboMVPApp {
     this.bestRankColor = '#8d99ae';
     this.bossDefeatedCount = 0;
     this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
+    this.recordSavedThisMatch = false;
     this.isGameOver = false;
     this.gameState = 'TUTORIAL';
 
@@ -592,6 +681,7 @@ class EcoComboMVPApp {
     this.bestRankColor = '#8d99ae';
     this.bossDefeatedCount = 0;
     this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
+    this.recordSavedThisMatch = false;
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
@@ -697,6 +787,7 @@ class EcoComboMVPApp {
     this.bestRankColor = '#8d99ae';
     this.bossDefeatedCount = 0;
     this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
+    this.recordSavedThisMatch = false;
     this.isGameOver = false;
     this.gameState = 'MENU';
 
@@ -920,6 +1011,15 @@ class EcoComboMVPApp {
         bestRankColor: this.bestRankColor,
         masteryCount: this.comboSystem.masteryCount || 0
       });
+      // E6-01 — Verifica elegibilidade no Top 5 local e exibe tabela + formulário de apelido
+      this.recordSavedThisMatch = false;
+      const top5Records = this.progressionStore.loadTop5Records();
+      const eligible = this.progressionStore.isTop5Eligible(this.score);
+      this.hud.setupGameOverRecordForm({
+        eligible,
+        lastNickname: this.progressionStore.getLastNickname(),
+        records: top5Records
+      });
     }
   }
 
@@ -980,6 +1080,7 @@ class EcoComboMVPApp {
     this.bestRankColor = '#8d99ae';
     this.bossDefeatedCount = 0;
     this.nextBossSpawnTimeSec = STAGE_3_BOSS_UNLOCK_TIME_SEC;
+    this.recordSavedThisMatch = false;
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 

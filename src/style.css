@@ -811,15 +811,205 @@ html, body {
 }
 
 .gameover-modal-card {
-  max-width: 540px;
+  max-width: 560px;
+  max-height: 92vh;
+  overflow-y: auto;
 }
 
 .gameover-stats-grid {
-  gap: 9px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .gameover-stats-grid .modal-stat-item {
-  padding: 9px 6px;
+  padding: 8px 6px;
+}
+
+/* ==========================================================================
+   E6-01 — TOP 5 RECORDES LOCAIS E FORMULÁRIO DE APELIDO
+   ========================================================================== */
+.record-form-box {
+  background: linear-gradient(135deg, rgba(16, 65, 58, 0.9) 0%, rgba(23, 21, 36, 0.95) 100%);
+  border: 2px solid #00f5d4;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.record-form-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  color: #fde047;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.record-form-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.record-nick-input {
+  flex: 1;
+  background: #100f1c;
+  border: 2px solid #38bdf8;
+  border-radius: 5px;
+  padding: 8px 10px;
+  color: #ffffff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.record-nick-input:focus {
+  border-color: #00f5d4;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.45);
+}
+
+.btn-save-record {
+  background: #00f5d4;
+  color: #082026;
+  border: 2px solid #ffffff;
+  border-radius: 5px;
+  padding: 9px 12px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.56rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.btn-save-record:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.btn-save-record:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+.record-form-feedback {
+  margin-top: 6px;
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  min-height: 1.1em;
+  text-align: center;
+  color: #86efac;
+}
+
+.record-form-feedback.error {
+  color: #ff8fa3;
+}
+
+.gameover-records-wrap {
+  background: #161423;
+  border: 2px solid #3c3757;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.gameover-records-header {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  color: #ffd166;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.records-modal-card {
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.records-modal-subtitle {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+
+.records-ranking-list {
+  list-style: none;
+  margin: 0 0 16px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.records-ranking-list.compact {
+  margin-bottom: 0;
+  gap: 4px;
+}
+
+.record-row-item {
+  display: grid;
+  grid-template-columns: 38px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  background: #1d1b2e;
+  border: 2px solid #35304f;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  color: #f1f5f9;
+}
+
+.records-ranking-list.compact .record-row-item {
+  padding: 4px 8px;
+  font-size: 0.98rem;
+}
+
+.record-row-item.highlight-new {
+  border-color: #00f5d4;
+  background: #103238;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.35);
+}
+
+.record-pos-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
+  color: #fde047;
+  text-align: center;
+}
+
+.record-nick-cell {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-meta-cell {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.record-score-cell {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.68rem;
+  color: #00f5d4;
+}
+
+.records-empty-state {
+  text-align: center;
+  padding: 12px 8px;
+  color: #94a3b8;
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+  border: 1px dashed #475569;
+  border-radius: 5px;
 }
 
 .modal-stat-item {

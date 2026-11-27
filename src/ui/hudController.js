@@ -119,6 +119,15 @@ export class HUDController {
     this.finalMasteriesVal = document.getElementById('final-masteries-val');
     this.gameoverSummaryText = document.getElementById('gameover-summary-text');
 
+    // E6-01 — Top 5 Recordes Locais (Game Over e Modal de Recordes)
+    this.recordFormBox = document.getElementById('gameover-record-form-box');
+    this.recordNickInput = document.getElementById('input-record-nickname');
+    this.saveRecordBtn = document.getElementById('btn-save-record');
+    this.recordFormFeedback = document.getElementById('record-form-feedback');
+    this.gameoverRecordsList = document.getElementById('gameover-records-list');
+    this.recordsModalOverlay = document.getElementById('records-modal-overlay');
+    this.recordsModalList = document.getElementById('records-modal-list');
+
     // Menu Inicial e Menu de Pausa com Opções (ESC — E4-06)
     this.startMenuOverlay = document.getElementById('start-menu-overlay');
     this.pauseMenuOverlay = document.getElementById('pause-menu-overlay');
@@ -809,6 +818,96 @@ export class HUDController {
 
     if (this.purityOverlay) {
       this.purityOverlay.classList.remove('hidden');
+    }
+  }
+
+  /**
+   * E6-01 — Renderiza a lista ordenada (decrescente) dos Top 5 recordes locais
+   */
+  renderRecordsList(listEl, records = [], highlightId = null) {
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (!records || records.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'records-empty-state';
+      empty.textContent = 'Nenhum recorde salvo ainda. Jogue uma partida para entrar no Top 5!';
+      listEl.appendChild(empty);
+      return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉', '#4', '#5'];
+    records.forEach((rec, idx) => {
+      const li = document.createElement('li');
+      li.className = `record-row-item${highlightId && rec.id === highlightId ? ' highlight-new' : ''}`;
+
+      const pos = document.createElement('span');
+      pos.className = 'record-pos-badge';
+      pos.textContent = medals[idx] || `#${idx + 1}`;
+
+      const nick = document.createElement('span');
+      nick.className = 'record-nick-cell';
+      nick.textContent = rec.nickname;
+
+      const meta = document.createElement('span');
+      meta.className = 'record-meta-cell';
+      meta.textContent = `EST.${rec.stage} · ${rec.bestRank} · ${formatMatchTime(rec.elapsedSec || 0)}`;
+
+      const score = document.createElement('span');
+      score.className = 'record-score-cell';
+      score.textContent = `${rec.score.toLocaleString('pt-BR')} PTS`;
+
+      li.append(pos, nick, meta, score);
+      listEl.appendChild(li);
+    });
+  }
+
+  setupGameOverRecordForm({ eligible = false, lastNickname = '', records = [] } = {}) {
+    if (this.recordFormBox) {
+      this.recordFormBox.classList.toggle('hidden', !eligible);
+    }
+    if (this.recordNickInput) {
+      this.recordNickInput.value = lastNickname || '';
+      this.recordNickInput.disabled = false;
+    }
+    if (this.saveRecordBtn) {
+      this.saveRecordBtn.disabled = false;
+      this.saveRecordBtn.textContent = '💾 SALVAR';
+    }
+    if (this.recordFormFeedback) {
+      this.recordFormFeedback.textContent = '';
+      this.recordFormFeedback.classList.remove('error');
+    }
+    this.renderRecordsList(this.gameoverRecordsList, records, null);
+  }
+
+  setRecordFormStatus({ message = '', isError = false, lockForm = false, records = null, highlightId = null } = {}) {
+    if (this.recordFormFeedback) {
+      this.recordFormFeedback.textContent = message;
+      this.recordFormFeedback.classList.toggle('error', Boolean(isError));
+    }
+    if (lockForm) {
+      if (this.recordNickInput) this.recordNickInput.disabled = true;
+      if (this.saveRecordBtn) {
+        this.saveRecordBtn.disabled = true;
+        this.saveRecordBtn.textContent = '✓ SALVO';
+      }
+    }
+    if (Array.isArray(records)) {
+      this.renderRecordsList(this.gameoverRecordsList, records, highlightId);
+    }
+  }
+
+  showRecordsModal(records = []) {
+    this.renderRecordsList(this.recordsModalList, records, null);
+    if (this.recordsModalOverlay) {
+      this.recordsModalOverlay.classList.remove('hidden');
+    }
+  }
+
+  hideRecordsModal() {
+    if (this.recordsModalOverlay) {
+      this.recordsModalOverlay.classList.add('hidden');
     }
   }
 

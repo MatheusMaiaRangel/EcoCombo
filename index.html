@@ -385,6 +385,9 @@
                 <button id="btn-start-watch-intro" type="button" class="btn-secondary-retro">
                   🎬 HISTÓRIA
                 </button>
+                <button id="btn-start-open-records" type="button" class="btn-secondary-retro">
+                  🏆 RECORDES
+                </button>
                 <button id="btn-start-open-options" type="button" class="btn-secondary-retro">
                   ⚙ OPÇÕES
                 </button>
@@ -503,7 +506,7 @@
           </div>
         </div>
 
-        <!-- Overlay de Fim de Partida quando Pureza chega a 0% (RN11 / E4-04) -->
+        <!-- Overlay de Fim de Partida quando Pureza chega a 0% (RN11 / E4-04 / E6-01) -->
         <div id="purity-depleted-overlay" class="arena-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameover-modal-title">
           <div class="arena-modal-card gameover-modal-card">
             <div class="modal-badge">FIM DE PARTIDA // PUREZA AMBIENTAL 0%</div>
@@ -535,12 +538,55 @@
                 <span id="final-masteries-val" class="stat-num">0</span>
               </div>
             </div>
+
+            <!-- E6-01 — Registro de Novo Recorde no Top 5 Local com Apelido (3 a 12 caracteres) -->
+            <div id="gameover-record-form-box" class="record-form-box hidden">
+              <div class="record-form-title">🏆 NOVO RECORDE NO TOP 5! SALVE SEU APELIDO</div>
+              <form id="gameover-record-form" class="record-form-row" autocomplete="off">
+                <input
+                  id="input-record-nickname"
+                  class="record-nick-input"
+                  type="text"
+                  minlength="3"
+                  maxlength="12"
+                  placeholder="Apelido (3–12 chars)"
+                  aria-label="Apelido para o Top 5 de recordes"
+                  required
+                />
+                <button id="btn-save-record" type="submit" class="btn-save-record">
+                  💾 SALVAR
+                </button>
+              </form>
+              <div id="record-form-feedback" class="record-form-feedback" aria-live="polite"></div>
+            </div>
+
+            <!-- E6-01 — Prévia da Tabela Top 5 Recordes Locais no Game Over -->
+            <div class="gameover-records-wrap">
+              <div class="gameover-records-header">🏆 TOP 5 RECORDES LOCAIS</div>
+              <ol id="gameover-records-list" class="records-ranking-list compact"></ol>
+            </div>
+
             <div class="menu-actions-stack">
               <button id="btn-restart-match" type="button" class="btn-primary-retro">
                 🔄 JOGAR NOVAMENTE (ENTER)
               </button>
               <button id="btn-gameover-to-menu" type="button" class="btn-secondary-retro">
                 🏠 VOLTAR AO MENU INICIAL
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- E6-01 — Modal de Top 5 Recordes Locais (Acessível pelo Menu Inicial) -->
+        <div id="records-modal-overlay" class="arena-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="records-modal-title">
+          <div class="arena-modal-card records-modal-card">
+            <div class="modal-badge">PLACAR LOCAL // TOP 5 DO NAVEGADOR</div>
+            <h2 id="records-modal-title">🏆 RECORDES ECOCOMBO</h2>
+            <p class="records-modal-subtitle">Os 5 maiores placares salvos localmente neste navegador (sem cadastro nem servidor externo).</p>
+            <ol id="records-modal-list" class="records-ranking-list"></ol>
+            <div class="menu-actions-stack">
+              <button id="btn-records-close" type="button" class="btn-primary-retro">
+                ✕ FECHAR (ESC)
               </button>
             </div>
           </div>
