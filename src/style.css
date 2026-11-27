@@ -2053,6 +2053,25 @@ html, body {
   grid-column: 1 / -1;
 }
 
+/* ==========================================================================
+   E6-01 / E6-03 — OVERLAYS FIXOS DE RECORDES & LGPD ACIMA DO MENU INICIAL E PAUSA
+   ========================================================================== */
+#records-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(10, 14, 28, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+#lgpd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 105;
+  background: rgba(10, 14, 28, 0.78);
+  backdrop-filter: blur(5px);
+}
+
 /* Menu de Pausa (ESC): Cobre a tela (sobre o fundo Pixel Art quando aberto do Menu Inicial ou sobre a Arena 3D na partida) */
 .pause-menu-overlay {
   position: fixed;

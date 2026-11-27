@@ -655,6 +655,13 @@ class EcoComboMVPApp {
     });
   }
 
+  closeAllUtilityModals() {
+    this.recordsModalOpen = false;
+    this.lgpdModalOpen = false;
+    this.hud.hideRecordsModal();
+    this.hud.hideLgpdModal();
+  }
+
   /**
    * Inicia a partida a partir do Menu Inicial (E4-06 / E4-08)
    * Na 1ª vez, reproduz a Cutscene Inicial legendada e pulável antes de entrar na arena.
@@ -672,6 +679,7 @@ class EcoComboMVPApp {
    * E4-08 — Reproduz a Cutscene Inicial em Pixel Art (legendada e pulável)
    */
   startCutscene({ thenPlayMatch = true } = {}) {
+    this.closeAllUtilityModals();
     this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
@@ -703,6 +711,7 @@ class EcoComboMVPApp {
    */
   startTutorialFromMenu() {
     this.sound.playMenuClick(true);
+    this.closeAllUtilityModals();
     this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
@@ -753,6 +762,7 @@ class EcoComboMVPApp {
    * Inicia efetivamente o loop de combate na arena (usado após a cutscene ou diretamente nas partidas seguintes)
    */
   beginPlayMatch() {
+    this.closeAllUtilityModals();
     this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
@@ -886,6 +896,7 @@ class EcoComboMVPApp {
     this.isGameOver = false;
     this.gameState = 'MENU';
 
+    this.closeAllUtilityModals();
     this.hud.clearFloatingTexts();
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
@@ -1239,6 +1250,7 @@ class EcoComboMVPApp {
     this.isGameOver = false;
     this.gameState = 'PLAYING';
 
+    this.closeAllUtilityModals();
     this.hud.clearFloatingTexts();
     this.hud.hideStartMenu();
     this.hud.hidePauseMenu();
