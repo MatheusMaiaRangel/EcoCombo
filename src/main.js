@@ -47,6 +47,7 @@ class EcoComboMVPApp {
     this.progressionStore = new ProgressionStore();
     this.recordSavedThisMatch = false;
     this.recordsModalOpen = false;
+    this.matchBadgesAwarded = new Set();
 
     // 1. Áudio Sintetizado Procedural (Web Audio API)
     this.sound = new SoundEngine();
@@ -92,6 +93,9 @@ class EcoComboMVPApp {
       },
       onElementalMastery: (event) => {
         this.handleElementalMastery(event);
+      },
+      onUniqueSpellUsed: (event) => {
+        this.handleUniqueSpellUsed(event);
       }
     });
 
@@ -529,7 +533,8 @@ class EcoComboMVPApp {
     this.sound.playMenuClick(true);
     this.recordsModalOpen = true;
     const records = this.progressionStore.loadTop5Records();
-    this.hud.showRecordsModal(records);
+    const badgesState = this.progressionStore.loadBadgesState();
+    this.hud.showRecordsModal(records, badgesState);
   }
 
   closeRecordsModal() {
@@ -594,6 +599,10 @@ class EcoComboMVPApp {
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
+    this.hud.hideAchievementToast();
+    if (this.matchBadgesAwarded) {
+      this.matchBadgesAwarded.clear();
+    }
     if (this.tutorialManager.active) {
       this.tutorialManager.stop();
     }
@@ -621,6 +630,10 @@ class EcoComboMVPApp {
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
+    this.hud.hideAchievementToast();
+    if (this.matchBadgesAwarded) {
+      this.matchBadgesAwarded.clear();
+    }
 
     this.score = 0;
     this.stage = 1;
@@ -667,6 +680,10 @@ class EcoComboMVPApp {
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
+    this.hud.hideAchievementToast();
+    if (this.matchBadgesAwarded) {
+      this.matchBadgesAwarded.clear();
+    }
     if (this.tutorialManager.active) {
       this.tutorialManager.stop();
     }
@@ -795,6 +812,10 @@ class EcoComboMVPApp {
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
+    this.hud.hideAchievementToast();
+    if (this.matchBadgesAwarded) {
+      this.matchBadgesAwarded.clear();
+    }
     this.arena.setStageSize(1, true);
     this.arena.setPurity(this.purity, true);
     this.hud.setCurrentStage(1);
@@ -848,6 +869,56 @@ class EcoComboMVPApp {
       this.enemyManager.enemies.length,
       this.matchElapsedSec
     );
+  }
+
+  /**
+   * E6-02 — Desbloqueia e concede o bônus de pontos de uma insígnia (uma vez por partida + salvo no localStorage)
+   */
+  awardMatchBadge(badgeId) {
+    if (this.gameState !== 'PLAYING' || this.isGameOver) return;
+    if (this.matchBadgesAwarded.has(badgeId)) return;
+
+    const { badge } = this.progressionStore.unlockBadge(badgeId);
+    if (!badge) return;
+
+    this.matchBadgesAwarded.add(badgeId);
+    this.score += badge.bonusPoints;
+
+    if (typeof this.sound.playAchievementUnlock === 'function') {
+      this.sound.playAchievementUnlock();
+    }
+    this.hud.showAchievementToast(badge);
+    this.hud.spawnFloatingText(
+      this.player.position.clone().add(new THREE.Vector3(0, 3.05, 0)),
+      this.arena.camera,
+      this.viewportEl,
+      `${badge.icon} ${badge.title.toUpperCase()}! +${badge.bonusPoints.toLocaleString('pt-BR')} PTS`,
+      badge.accent || '#ffd166'
+    );
+    this.hud.updateStageAndScore(
+      this.stage,
+      this.score,
+      this.enemyManager.enemies.length,
+      this.matchElapsedSec,
+      { bossActive: this.bossManager.isActive(), nextBossTimeSec: this.nextBossSpawnTimeSec }
+    );
+  }
+
+  /**
+   * E6-02 — Monitora novas combinações disparadas na partida:
+   * ao atingir a 10ª combinação distinta, desbloqueia "Alquimista da Reciclagem" (+1.000 pts)!
+   */
+  handleUniqueSpellUsed({ spell, uniqueCount } = {}) {
+    if (this.gameState !== 'PLAYING' || this.isGameOver) return;
+    if (spell?.id) {
+      this.progressionStore.recordDiscoveredSpell(spell.id);
+    }
+    if (uniqueCount >= 10) {
+      this.awardMatchBadge('ALCHEMIST');
+    }
+    if (uniqueCount >= 12) {
+      this.awardMatchBadge('HWEI_GRANDMASTER');
+    }
   }
 
   /**
@@ -916,6 +987,7 @@ class EcoComboMVPApp {
       scoreBonus,
       purityBonus
     });
+    this.awardMatchBadge('COLOSSUS_SLAYER');
 
     const anchorPos = (position || this.player.position).clone().add(new THREE.Vector3(0, 3.2, 0));
     this.hud.spawnFloatingText(
@@ -961,6 +1033,7 @@ class EcoComboMVPApp {
       `🌟 MAESTRIA ELEMENTAL! +${purityBonus}% PUREZA · +${scoreBonus} PTS`,
       '#00f5d4'
     );
+    this.awardMatchBadge('ELEMENTAL_MASTERY');
 
     this.hud.updateStageAndScore(
       this.stage,
@@ -1019,6 +1092,10 @@ class EcoComboMVPApp {
         eligible,
         lastNickname: this.progressionStore.getLastNickname(),
         records: top5Records
+      });
+      this.hud.updateGameOverBadgesStrip({
+        uniqueSpellsCount: this.comboSystem.usedSpellsThisMatch.size,
+        alchemistUnlocked: this.matchBadgesAwarded.has('ALCHEMIST')
       });
     }
   }
@@ -1089,6 +1166,10 @@ class EcoComboMVPApp {
     this.hud.hidePauseMenu();
     this.hud.hidePurityDepletedModal();
     this.hud.hideStageTransitionBanner();
+    this.hud.hideAchievementToast();
+    if (this.matchBadgesAwarded) {
+      this.matchBadgesAwarded.clear();
+    }
 
     this.arena.setStageSize(1, true);
     this.arena.randomizeObstacles({ mode: 'match' });
@@ -1141,6 +1222,9 @@ class EcoComboMVPApp {
         this.bestRankIndex = currentStyle.index;
         this.bestRank = currentStyle.rank;
         this.bestRankColor = currentStyle.color;
+        if (currentStyle.index >= 4) {
+          this.awardMatchBadge('STYLE_S_RANK');
+        }
       }
       this.hud.updateStageAndScore(
         this.stage,

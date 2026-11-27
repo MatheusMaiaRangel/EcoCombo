@@ -6,6 +6,7 @@ import {
   getBinItemNamesForStage,
   resolveHweiSpell
 } from '../constants/recipes.js';
+import { ACHIEVEMENT_BADGE_LIST } from '../game/progressionStore.js';
 
 function formatMatchTime(totalSeconds = 0) {
   const safe = Math.max(0, Math.floor(totalSeconds));
@@ -127,6 +128,17 @@ export class HUDController {
     this.gameoverRecordsList = document.getElementById('gameover-records-list');
     this.recordsModalOverlay = document.getElementById('records-modal-overlay');
     this.recordsModalList = document.getElementById('records-modal-list');
+
+    // E6-02 — Insígnias / Conquistas desbloqueadas e Toast
+    this.achievementToast = document.getElementById('achievement-toast');
+    this.achievementToastIcon = document.getElementById('achievement-toast-icon');
+    this.achievementToastTitle = document.getElementById('achievement-toast-title');
+    this.achievementToastBonus = document.getElementById('achievement-toast-bonus');
+    this.achievementToastTimeout = null;
+    this.badgesProgressPill = document.getElementById('badges-progress-pill');
+    this.recordsBadgesGrid = document.getElementById('records-badges-grid');
+    this.gameoverRecipesProgress = document.getElementById('gameover-recipes-progress');
+    this.gameoverAlchemistChip = document.getElementById('gameover-alchemist-chip');
 
     // Menu Inicial e Menu de Pausa com Opções (ESC — E4-06)
     this.startMenuOverlay = document.getElementById('start-menu-overlay');
@@ -898,8 +910,94 @@ export class HUDController {
     }
   }
 
-  showRecordsModal(records = []) {
+  /**
+   * E6-02 — Exibe o Toast comemorativo ao desbloquear uma insígnia (ex.: "Alquimista da Reciclagem" +1.000 pts)
+   */
+  showAchievementToast(badge, durationMs = 4200) {
+    if (!this.achievementToast || !badge) return;
+    if (this.achievementToastTimeout) {
+      clearTimeout(this.achievementToastTimeout);
+    }
+    if (this.achievementToastIcon) this.achievementToastIcon.textContent = badge.icon || '🏅';
+    if (this.achievementToastTitle) this.achievementToastTitle.textContent = badge.title;
+    if (this.achievementToastBonus) {
+      this.achievementToastBonus.textContent = `+${badge.bonusPoints.toLocaleString('pt-BR')} PONTOS EXTRAS!`;
+    }
+    this.achievementToast.style.borderColor = badge.accent || '#ffd166';
+    this.achievementToast.classList.remove('hidden');
+
+    this.achievementToastTimeout = setTimeout(() => {
+      this.hideAchievementToast();
+    }, durationMs);
+  }
+
+  hideAchievementToast() {
+    if (this.achievementToastTimeout) {
+      clearTimeout(this.achievementToastTimeout);
+      this.achievementToastTimeout = null;
+    }
+    if (this.achievementToast) {
+      this.achievementToast.classList.add('hidden');
+    }
+  }
+
+  /**
+   * E6-02 — Atualiza o painel de Insígnias desbloqueadas dentro do modal de Recordes
+   */
+  renderBadgesPanel(badgesState = { unlockedIds: [], discoveredSpellIds: [] }) {
+    const unlockedSet = new Set(badgesState.unlockedIds || []);
+    const discoveredCount = (badgesState.discoveredSpellIds || []).length;
+
+    if (this.badgesProgressPill) {
+      this.badgesProgressPill.textContent = `${unlockedSet.size}/${ACHIEVEMENT_BADGE_LIST.length} MEDALHAS · ${discoveredCount}/12 HABILIDADES`;
+    }
+    if (!this.recordsBadgesGrid) return;
+    this.recordsBadgesGrid.innerHTML = '';
+
+    ACHIEVEMENT_BADGE_LIST.forEach((badge) => {
+      const isUnlocked = unlockedSet.has(badge.id);
+      const card = document.createElement('div');
+      card.className = `badge-card${isUnlocked ? ' unlocked' : ''}`;
+
+      const icon = document.createElement('div');
+      icon.className = 'badge-card-icon';
+      icon.textContent = isUnlocked ? badge.icon : '🔒';
+
+      const info = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'badge-card-title';
+      title.textContent = badge.title;
+
+      const desc = document.createElement('div');
+      desc.className = 'badge-card-desc';
+      desc.textContent = badge.description;
+
+      const bonus = document.createElement('div');
+      bonus.className = 'badge-card-bonus';
+      bonus.textContent = isUnlocked
+        ? `✓ DESBLOQUEADA (+${badge.bonusPoints.toLocaleString('pt-BR')} PTS)`
+        : `Recompensa: +${badge.bonusPoints.toLocaleString('pt-BR')} PTS`;
+
+      info.append(title, desc, bonus);
+      card.append(icon, info);
+      this.recordsBadgesGrid.appendChild(card);
+    });
+  }
+
+  updateGameOverBadgesStrip({ uniqueSpellsCount = 0, alchemistUnlocked = false } = {}) {
+    if (this.gameoverRecipesProgress) {
+      this.gameoverRecipesProgress.textContent = `🧪 Combinações únicas na partida: ${uniqueSpellsCount}/10 (de 12)`;
+    }
+    if (this.gameoverAlchemistChip) {
+      this.gameoverAlchemistChip.classList.toggle('hidden', !alchemistUnlocked);
+    }
+  }
+
+  showRecordsModal(records = [], badgesState = null) {
     this.renderRecordsList(this.recordsModalList, records, null);
+    if (badgesState) {
+      this.renderBadgesPanel(badgesState);
+    }
     if (this.recordsModalOverlay) {
       this.recordsModalOverlay.classList.remove('hidden');
     }

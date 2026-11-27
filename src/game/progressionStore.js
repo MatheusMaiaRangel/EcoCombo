@@ -6,7 +6,56 @@
 
 export const RECORDS_STORAGE_KEY = 'ecocombo_records_v1';
 export const LAST_NICKNAME_STORAGE_KEY = 'ecocombo_last_nick_v1';
+export const BADGES_STORAGE_KEY = 'ecocombo_badges_v1';
 export const MAX_TOP_RECORDS = 5;
+
+/**
+ * E6-02 — Catálogo de Insígnias / Conquistas desbloqueáveis do EcoCombo 3D
+ */
+export const ACHIEVEMENT_BADGES = {
+  ALCHEMIST: {
+    id: 'ALCHEMIST',
+    icon: '🏅',
+    title: 'Alquimista da Reciclagem',
+    description: 'Dispare 10 combinações distintas de recicláveis em uma mesma partida.',
+    bonusPoints: 1000,
+    accent: '#00f5d4'
+  },
+  HWEI_GRANDMASTER: {
+    id: 'HWEI_GRANDMASTER',
+    icon: '🌟',
+    title: 'Grão-Mestre do Grimório',
+    description: 'Use todas as 12 habilidades (4 lixeiras × 3 modos) em uma mesma partida.',
+    bonusPoints: 1500,
+    accent: '#ffd166'
+  },
+  ELEMENTAL_MASTERY: {
+    id: 'ELEMENTAL_MASTERY',
+    icon: '✦',
+    title: 'Maestria Elemental',
+    description: 'Complete uma sequência de 4 combos inéditos seguidos sem repetir.',
+    bonusPoints: 400,
+    accent: '#38bdf8'
+  },
+  COLOSSUS_SLAYER: {
+    id: 'COLOSSUS_SLAYER',
+    icon: '👑',
+    title: 'Purificador do Colosso',
+    description: 'Derrote o Chefão Colosso de Entulho ao final do Estágio 3.',
+    bonusPoints: 500,
+    accent: '#c084fc'
+  },
+  STYLE_S_RANK: {
+    id: 'STYLE_S_RANK',
+    icon: '⚡',
+    title: 'Estilo Sustentável (S+)',
+    description: 'Alcance o Rank S (4.0x) ou superior no Medidor Devil May Cry.',
+    bonusPoints: 500,
+    accent: '#ff7b00'
+  }
+};
+
+export const ACHIEVEMENT_BADGE_LIST = Object.values(ACHIEVEMENT_BADGES);
 
 export function sanitizeNickname(raw = '') {
   return String(raw)
@@ -116,5 +165,61 @@ export class ProgressionStore {
       rankPosition,
       entry
     };
+  }
+
+  /**
+   * E6-02 — Carrega e persiste insígnias desbloqueadas e combinações descobertas no navegador
+   */
+  loadBadgesState() {
+    const fallback = {
+      unlockedIds: [],
+      unlockedAt: {},
+      discoveredSpellIds: []
+    };
+    try {
+      const raw = window.localStorage.getItem(BADGES_STORAGE_KEY);
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return {
+        unlockedIds: Array.isArray(parsed.unlockedIds) ? parsed.unlockedIds : [],
+        unlockedAt: parsed.unlockedAt && typeof parsed.unlockedAt === 'object' ? parsed.unlockedAt : {},
+        discoveredSpellIds: Array.isArray(parsed.discoveredSpellIds) ? parsed.discoveredSpellIds : []
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  saveBadgesState(state) {
+    try {
+      window.localStorage.setItem(BADGES_STORAGE_KEY, JSON.stringify(state));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  recordDiscoveredSpell(spellId) {
+    if (!spellId) return this.loadBadgesState();
+    const state = this.loadBadgesState();
+    if (!state.discoveredSpellIds.includes(spellId)) {
+      state.discoveredSpellIds.push(spellId);
+      this.saveBadgesState(state);
+    }
+    return state;
+  }
+
+  unlockBadge(badgeId) {
+    const badge = ACHIEVEMENT_BADGES[badgeId];
+    const state = this.loadBadgesState();
+    if (!badge) return { newlyUnlocked: false, badge: null, state };
+
+    const newlyUnlocked = !state.unlockedIds.includes(badgeId);
+    if (newlyUnlocked) {
+      state.unlockedIds.push(badgeId);
+      state.unlockedAt[badgeId] = new Date().toISOString();
+      this.saveBadgesState(state);
+    }
+    return { newlyUnlocked, badge, state };
   }
 }

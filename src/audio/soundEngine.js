@@ -450,6 +450,33 @@ export class SoundEngine {
   }
 
   /**
+   * E6-02 — Som de conquista/insígnia desbloqueada ("Alquimista da Reciclagem" etc.)
+   */
+  playAchievementUnlock() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      const t0 = now + idx * 0.06;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx === notes.length - 1 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.linearRampToValueAtTime(idx === notes.length - 1 ? 0.15 : 0.11, t0 + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + (idx === notes.length - 1 ? 0.42 : 0.2));
+
+      osc.connect(gain);
+      gain.connect(this.getOutput(ctx));
+      osc.start(t0);
+      osc.stop(t0 + (idx === notes.length - 1 ? 0.45 : 0.22));
+    });
+  }
+
+  /**
    * E5-04 — Fanfarra heroica triunfal ao derrotar o Chefão Colosso de Entulho (+3.000 pts / +50% Pureza)
    */
   playBossVictory() {

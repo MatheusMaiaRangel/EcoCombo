@@ -240,6 +240,16 @@
           </div>
         </div>
 
+        <!-- E6-02 — Toast Animado de Insígnia / Conquista Desbloqueada -->
+        <div id="achievement-toast" class="achievement-toast hidden" role="status" aria-live="polite">
+          <div id="achievement-toast-icon" class="achievement-toast-icon">🏅</div>
+          <div class="achievement-toast-body">
+            <div class="achievement-toast-kicker">INSÍGNIA DESBLOQUEADA!</div>
+            <div id="achievement-toast-title" class="achievement-toast-title">Alquimista da Reciclagem</div>
+            <div id="achievement-toast-bonus" class="achievement-toast-bonus">+1.000 PONTOS EXTRAS</div>
+          </div>
+        </div>
+
         <!-- LEQUE DE OPÇÕES ESTILO HWEI (Abre na parte inferior da Arena ao pressionar Q, E, R ou F — E3-05 / E4-05) -->
         <div id="hwei-arena-fan" class="hwei-arena-fan hidden" aria-live="polite">
           <div id="hwei-fan-header" class="hwei-fan-header">
@@ -539,6 +549,12 @@
               </div>
             </div>
 
+            <!-- E6-02 — Resumo de Combinações Descobertas e Insígnias na Partida -->
+            <div id="gameover-badges-strip" class="gameover-badges-strip">
+              <span id="gameover-recipes-progress" class="gameover-recipes-chip">🧪 Combinações usadas: 0/10</span>
+              <span id="gameover-alchemist-chip" class="gameover-alchemist-chip hidden">🏅 Alquimista da Reciclagem (+1.000 PTS)</span>
+            </div>
+
             <!-- E6-01 — Registro de Novo Recorde no Top 5 Local com Apelido (3 a 12 caracteres) -->
             <div id="gameover-record-form-box" class="record-form-box hidden">
               <div class="record-form-title">🏆 NOVO RECORDE NO TOP 5! SALVE SEU APELIDO</div>
@@ -577,13 +593,23 @@
           </div>
         </div>
 
-        <!-- E6-01 — Modal de Top 5 Recordes Locais (Acessível pelo Menu Inicial) -->
+        <!-- E6-01 / E6-02 — Modal de Top 5 Recordes Locais e Insígnias Desbloqueadas -->
         <div id="records-modal-overlay" class="arena-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="records-modal-title">
           <div class="arena-modal-card records-modal-card">
-            <div class="modal-badge">PLACAR LOCAL // TOP 5 DO NAVEGADOR</div>
-            <h2 id="records-modal-title">🏆 RECORDES ECOCOMBO</h2>
-            <p class="records-modal-subtitle">Os 5 maiores placares salvos localmente neste navegador (sem cadastro nem servidor externo).</p>
+            <div class="modal-badge">PLACAR LOCAL &amp; INSÍGNIAS // NAVEGADOR</div>
+            <h2 id="records-modal-title">🏆 RECORDES &amp; INSÍGNIAS</h2>
+            <p class="records-modal-subtitle">Os 5 maiores placares e conquistas salvos localmente neste navegador (sem cadastro nem servidor externo).</p>
             <ol id="records-modal-list" class="records-ranking-list"></ol>
+
+            <!-- E6-02 — Painel de Insígnias / Medalhas Desbloqueadas -->
+            <div class="badges-section-wrap">
+              <div class="badges-section-header">
+                <span class="badges-section-title">🏅 INSÍGNIAS DO GRIMÓRIO</span>
+                <span id="badges-progress-pill" class="badges-progress-pill">0/5 · 0/12 HABILIDADES</span>
+              </div>
+              <div id="records-badges-grid" class="badges-grid"></div>
+            </div>
+
             <div class="menu-actions-stack">
               <button id="btn-records-close" type="button" class="btn-primary-retro">
                 ✕ FECHAR (ESC)

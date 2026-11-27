@@ -24,6 +24,7 @@ export class ComboSystem {
     camera,
     onShotFired,
     onElementalMastery,
+    onUniqueSpellUsed,
     isGameplayActive,
     getArenaHalfSize,
     findObstacleHit
@@ -36,6 +37,7 @@ export class ComboSystem {
     this.camera = camera;
     this.onShotFired = onShotFired;
     this.onElementalMastery = onElementalMastery || null;
+    this.onUniqueSpellUsed = onUniqueSpellUsed || null;
     this.isGameplayActive = isGameplayActive || (() => true);
     this.getArenaHalfSize = getArenaHalfSize || (() => ARENA_HALF_SIZE);
     this.findObstacleHit = findObstacleHit || null;
@@ -49,6 +51,9 @@ export class ComboSystem {
     this.repeatCount = 0;
     this.recentSpellIds = [];
     this.consecutiveShieldBlocks = 0;
+
+    // E6-02 — Combinações/habilidades distintas disparadas na partida atual
+    this.usedSpellsThisMatch = new Set();
 
     // E3-04 — Maestria Elemental (4 combos/habilidades distintos em sequência = +10% Pureza + Pulso em Área)
     this.masteryChain = [];
@@ -285,6 +290,17 @@ export class ComboSystem {
     }
     this.recordSpellCast(spell.id);
     this.lastSpell = spell;
+
+    // E6-02 — Rastreia combinações distintas usadas na partida para desbloqueio de insígnias
+    const isNewInMatch = !this.usedSpellsThisMatch.has(spell.id);
+    this.usedSpellsThisMatch.add(spell.id);
+    if (isNewInMatch && this.onUniqueSpellUsed) {
+      this.onUniqueSpellUsed({
+        spell,
+        uniqueCount: this.usedSpellsThisMatch.size,
+        totalSpells: 12
+      });
+    }
 
     // Se for o Modo 3 (R = Escudo Protetivo Seletivo), ativa na hora ao redor do jogador!
     if (modeId === 'SHIELD') {
@@ -957,6 +973,7 @@ export class ComboSystem {
     this.repeatCount = 0;
     this.recentSpellIds = [];
     this.consecutiveShieldBlocks = 0;
+    this.usedSpellsThisMatch.clear();
     this.masteryChain = [];
     this.masteryCount = 0;
     this.masteryResetNoticeTimer = 0;
